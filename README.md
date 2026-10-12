@@ -83,9 +83,11 @@ On Windows with Node.js 24 installed:
 git clone https://github.com/Martin123132/im-accessibility.git
 cd im-accessibility
 npm.cmd ci --prefix tv-reliability-v0.5/cast
+npm.cmd run doctor
+npm.cmd test
 ~~~
 
-Then run the non-destructive unit tests described in [Testing](docs/TESTING.md). Tests do not start research work or submit Codex messages. The Codex Desk can be started separately once an installed Codex CLI is configured.
+The read-only doctor reports local prerequisites; the test runner executes only the known safe suites. It will not submit a Codex message, pair a TV or start desktop control. See [Testing](docs/TESTING.md) for the baseline results. Tests do not start research work or submit Codex messages. The Codex Desk can be started separately once an installed Codex CLI is configured.
 
 ## Licence and commercial use
 

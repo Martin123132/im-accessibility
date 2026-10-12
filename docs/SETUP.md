@@ -25,6 +25,14 @@ Use npm.cmd on Windows if PowerShell blocks npm.ps1. There is no need to change 
 ## Run the safe checks
 
 ~~~powershell
+npm.cmd run doctor
+npm.cmd run check:source
+npm.cmd test
+~~~
+
+The doctor checks prerequisites without operating the TV or Codex. The root test runner selects only explicit safe test files; the original individual commands remain below for diagnosing a particular component.
+
+~~~powershell
 node --test .\codex-chat-control-pilot-20261012\tests\pilot-safety.test.cjs .\codex-chat-control-pilot-20261012\tests\selection-safety.test.cjs
 node --test .\tv-reliability-v0.5\tests\session-policy.test.cjs
 ~~~

@@ -1,0 +1,16 @@
+{
+  "name": "im-accessibility",
+  "version": "0.2.0-preview",
+  "private": true,
+  "description": "I’m-accessibility: human-led Windows accessibility, TV control and optional AI assistance",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node scripts/run-tests.cjs",
+    "test:tv": "node scripts/run-tests.cjs tv",
+    "test:codex": "node scripts/run-tests.cjs codex",
+    "doctor": "node scripts/doctor.cjs",
+    "check:source": "node scripts/check-source.cjs"
+  }
+}

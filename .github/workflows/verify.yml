@@ -1,0 +1,31 @@
+name: Safe source verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  source-tests:
+    name: Windows source tests
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Restore pinned TV dependency (without postinstall scripts)
+        shell: pwsh
+        run: npm.cmd ci --prefix tv-reliability-v0.5/cast --ignore-scripts --no-audit --no-fund
+      - name: Check source packaging
+        shell: pwsh
+        run: npm.cmd run check:source
+      - name: Run non-destructive tests
+        shell: pwsh
+        run: npm.cmd test
