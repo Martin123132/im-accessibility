@@ -87,6 +87,16 @@ npm.cmd ci --prefix tv-reliability-v0.5/cast
 
 Then run the non-destructive unit tests described in [Testing](docs/TESTING.md). Tests do not start research work or submit Codex messages. The Codex Desk can be started separately once an installed Codex CLI is configured.
 
+## Licence and commercial use
+
+**Use I’m-accessibility for personal and other qualifying non-commercial purposes** under the [PolyForm Noncommercial License 1.0.0](LICENSE) and its [Required Notice](NOTICE.md).
+
+Repackaging or selling the original project, offering it as part of a paid service, or other commercial exploitation requires a **separate written licence** from **TWO HANDS NETWORK LTD**. Commercial enquiries: **glyn@twohandsnetwork.co.uk**.
+
+Third-party software retains its own licence terms; the PolyForm licence does not replace them.
+
+---
+
 ## Where we’re going
 
 **V1 should be a product, not a folder of scripts.** We’re working toward an understandable installer, clear device setup, a single control/status experience, accessible navigation, verifiable instructions and tested recovery when something goes wrong.
@@ -97,4 +107,4 @@ Apple Music, YouTube, supported streaming services, checkers, Worms and more dem
 
 ---
 
-**Release status:** Private development preview. The original verified source snapshot is preserved at **v0.1.0-private-preview**. This repository does not include the full installed PC Bridge application, does not grant remote access by itself, and has no chosen public software licence.
+**Release status:** Private development preview. The original verified source snapshot is preserved at **v0.1.0-private-preview**. This repository does not include the full installed PC Bridge application, does not grant remote access by itself, and remains a private source preview.
