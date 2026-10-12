@@ -1,7 +1,25 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const ROOT=path.resolve(__dirname,'..'),read=name=>fs.readFileSync(path.join(ROOT,name),'utf8');
-const cast=require('../cast/server.cjs'),viewer=require('../viewer/server.cjs'),host=require('../resume-host.cjs');
+// Unit tests use a synthetic private-LAN interface. CI runners do not have the
+// owner's 192.168.x.x adapter. This changes only the test process, never runtime.
+const os=require('node:os');
+const originalNetworkInterfaces=os.networkInterfaces;
+let cast;
+try{
+ os.networkInterfaces=()=>({
+  'PhysicalEthernet':[{family:'IPv4',internal:false,address:'192.168.4.36',netmask:'255.255.255.0'}]
+ });
+ cast=require('../cast/server.cjs');
+}finally{
+ os.networkInterfaces=originalNetworkInterfaces;
+}
+const viewer=require('../viewer/server.cjs'),host=require('../resume-host.cjs');
+test('TV LAN policy fixture does not alter host networking',()=>{
+ assert.equal(os.networkInterfaces,originalNetworkInterfaces);
+ assert.equal(cast.LAN_IP,'192.168.4.36');
+ assert.equal(cast.PORT,43196);
+});
 test('private TV video, viewer and host have explicit four-hour maximum',()=>{
  const fourHours=4*60*60*1000,now=Date.now();
  assert.equal(host.MAX_MS,fourHours);
