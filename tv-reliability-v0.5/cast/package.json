@@ -1,0 +1,14 @@
+{
+  "name": "pcbridge-tv-cast-pilot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Isolated LAN-only TV casting prototype using H264 HLS and LG webOS SSAP pairing",
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "start": "node server.cjs",
+    "status": "node status.cjs"
+  },
+  "dependencies": {
+    "lgtv2": "2.0.2"
+  }
+}

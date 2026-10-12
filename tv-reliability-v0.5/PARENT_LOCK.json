@@ -1,0 +1,127 @@
+{
+  "createdUtc": "2026-10-12T01:38:18.937Z",
+  "purpose": "Long lived owner-triggered independent TV video/click controller",
+  "originalFilesVerified": 23,
+  "parent": [
+    {
+      "file": "cast/server.cjs",
+      "original": "tv-cast-pilot-20261011/server.cjs",
+      "sha256": "bc025f0fda62cd52fc436db3fff192c93cdf8d84b93255fb07f9fb6e133acb47"
+    },
+    {
+      "file": "cast/lan.cjs",
+      "original": "tv-cast-pilot-20261011/lan.cjs",
+      "sha256": "6e71fea7ff33f7b463b435a16f26e2d5ab8267e33d52a9feafa8f6860f69c637"
+    },
+    {
+      "file": "cast/tv-discovery.cjs",
+      "original": "tv-cast-pilot-20261011/tv-discovery.cjs",
+      "sha256": "fd872d8becfac8c059604c84d92bb3c24950d7657b43be73cf7982bed0b267dd"
+    },
+    {
+      "file": "cast/lg-launch.cjs",
+      "original": "tv-cast-pilot-20261011/lg-launch.cjs",
+      "sha256": "d9f8bd964759812370d9739b6e49248d81aaea2aa4ff403d73550de320d2990e"
+    },
+    {
+      "file": "cast/package.json",
+      "original": "tv-cast-pilot-20261011/package.json",
+      "sha256": "bd6e8c9c69db7d36a9405ec9484eaccc39ea23c1aa9323efa32bc7657a75811c"
+    },
+    {
+      "file": "cast/package-lock.json",
+      "original": "tv-cast-pilot-20261011/package-lock.json",
+      "sha256": "3e5d43398d862ddbf3e1ccda8e93d710ef72d7f65dbb3a3a9aec8097d351c297"
+    },
+    {
+      "file": "cast/web/controller.html",
+      "original": "tv-cast-pilot-20261011/web/controller.html",
+      "sha256": "4f75b83727f8f81903f2391e0223dfb5bbae0bc409aa67294e52a6e058b7bbc4"
+    },
+    {
+      "file": "cast/web/controller.js",
+      "original": "tv-cast-pilot-20261011/web/controller.js",
+      "sha256": "1e5efafbef0aedb9c457af77e325e1c273d4af3bd70fc2f3130a0ae4c88a14b1"
+    },
+    {
+      "file": "cast/web/tv.html",
+      "original": "tv-cast-pilot-20261011/web/tv.html",
+      "sha256": "f321aa6c7f95e20a08d979460161393675d73b9984077ef897fc7e4e441a366b"
+    },
+    {
+      "file": "cast/web/tv.js",
+      "original": "tv-cast-pilot-20261011/web/tv.js",
+      "sha256": "4c97234f3111eef2ebf96489a907719c67b8f61bf9167080aa3a6ab7069f4937"
+    },
+    {
+      "file": "cast/web/style.css",
+      "original": "tv-cast-pilot-20261011/web/style.css",
+      "sha256": "a82174a1d73309e3b316881ffd6ba1eb141cd761e31ed47102507f2c70862642"
+    },
+    {
+      "file": "viewer/server.cjs",
+      "original": "tv-touchpad-pilot-20261011/server.cjs",
+      "sha256": "677a2dfbf54080b2bf60290ddcff4f432c1c6f540e6b84d0f2b52ad9e96945bd"
+    },
+    {
+      "file": "viewer/snapshot.cjs",
+      "original": "tv-touchpad-pilot-20261011/snapshot.cjs",
+      "sha256": "e25ae19c2fa8acbf40f92a8406a0de90b7c4a41f7d9c203b9fba37764c0db758"
+    },
+    {
+      "file": "viewer/web/viewer.html",
+      "original": "tv-touchpad-pilot-20261011/web/viewer.html",
+      "sha256": "f40c84e2d20989c0f31223ed5ce043064d7243890119984772000382da5d0d92"
+    },
+    {
+      "file": "viewer/web/viewer.js",
+      "original": "tv-touchpad-pilot-20261011/web/viewer.js",
+      "sha256": "cdcbb5c98aa97b3633f29bce6d41ea2d74b82a76d3451ccd847732caabb16741"
+    },
+    {
+      "file": "viewer/web/style.css",
+      "original": "tv-touchpad-pilot-20261011/web/style.css",
+      "sha256": "ce8d87346d13b07c1c1249e3d93f86bf825d3ddf101938ea303db5750cee60fc"
+    },
+    {
+      "file": "viewer/native/TvPointer.cs",
+      "original": "tv-touchpad-pilot-20261011/native/TvPointer.cs",
+      "sha256": "bef0e40007043259050a08ab4ba447c7cd0fc342a9fa65b9bd65082141537ec6"
+    },
+    {
+      "file": "viewer/native/TvPointer.exe",
+      "original": "tv-touchpad-pilot-20261011/native/TvPointer.exe",
+      "sha256": "c9d058fd4b98683466245a836dd040afda9df254c6f703be4632f94c6181c064"
+    },
+    {
+      "file": "viewer/tests/pointer.test.cjs",
+      "original": "tv-touchpad-pilot-20261011/tests/pointer.test.cjs",
+      "sha256": "643f97886ded8690a4a1c61086cb89dcdd8c2c738b0aa910db9e84834d15d1fb"
+    },
+    {
+      "file": "viewer/tests/webos-click.test.cjs",
+      "original": "tv-touchpad-pilot-20261011/tests/webos-click.test.cjs",
+      "sha256": "a34c02b9311c194debec54bbc854f35bd76f50b0b42b3b2a7763ed7e33015a69"
+    },
+    {
+      "file": "viewer/tests/snapshot.test.cjs",
+      "original": "tv-touchpad-pilot-20261011/tests/snapshot.test.cjs",
+      "sha256": "5d0aa27c5916ff91e8fc01a36dd2fe7501e226d3f1269787719126be4fdd1772"
+    },
+    {
+      "file": "viewer/tests/preview-csp.test.cjs",
+      "original": "tv-touchpad-pilot-20261011/tests/preview-csp.test.cjs",
+      "sha256": "abe75f75e76646741baa8334b1f2e3c9a7dd8176570eec9c385c47a347219b5a"
+    },
+    {
+      "file": "viewer/tests/preview-layout.test.cjs",
+      "original": "tv-touchpad-pilot-20261011/tests/preview-layout.test.cjs",
+      "sha256": "a156a1a462d09d8b9d3ca23f3b460f5a064c66816246fe7e8bdff95a2fa831d1"
+    }
+  ],
+  "lgDependenciesCopied": [
+    "lgtv2",
+    "ws"
+  ],
+  "liveSourceUnchanged": true
+}

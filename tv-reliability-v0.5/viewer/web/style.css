@@ -1,0 +1,44 @@
+*{box-sizing:border-box}html,body{margin:0;background:#02080c;color:#f4fafc;font:16px/1.4 Arial,sans-serif}body{overflow:auto}.app{max-width:100vw;min-height:100vh;padding:10px 13px 12px}.header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 2px 8px;color:#8debd2;font-weight:bold}.header strong{letter-spacing:.1em;font-size:15px}.header span{font-size:15px}.stage{position:relative;width:100%;aspect-ratio:16/9;max-height:calc(100vh - 178px);margin:auto;background:#000;overflow:hidden;border:1px solid #4b7581}.stage video{width:100%;height:100%;object-fit:contain;display:block;background:#000}.clicklayer{position:absolute;inset:0;pointer-events:none;background:transparent;cursor:crosshair}.clicklayer.active{pointer-events:auto;border:4px solid rgba(91,234,179,.55)}.clicklayer:focus{outline:4px solid #8debd2}.hint{position:absolute;left:12px;top:12px;background:rgba(0,0,0,.75);padding:8px 14px;border:1px solid #536b72;border-radius:8px;pointer-events:none;color:#fff;font-size:15px}.clickflash{position:absolute;transform:translate(-50%,-50%);color:#ff685d;text-shadow:0 0 8px #fff;font-size:35px;pointer-events:none}.toolbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:9px 0}.toolbar button{border:0;border-radius:8px;color:#042b2d;background:#9deed7;font-size:16px;font-weight:bold;min-height:44px;padding:9px 13px}.toolbar button.on{background:#7aedaa}.toolbar button.off{background:#ffb4ae}.toolbar button:disabled{opacity:.38}.toolbar button:focus{outline:3px solid white;outline-offset:2px}.small{font-size:14px;color:#91eacc}.note{padding:0 4px;margin:0;color:#b2c7cc;font-size:13px;line-height:1.3}@media(max-height:800px){.stage{max-height:calc(100vh - 155px)}.note{font-size:11px}.toolbar button{min-height:39px;padding:7px 10px}}
+/* webOS media controls consumed LG Magic Remote OK. Video itself must not capture clicks. */
+.stage video{pointer-events:none!important;user-select:none;-webkit-user-select:none}.clicklayer{z-index:3;background:rgba(0,0,0,.002);touch-action:none;-webkit-tap-highlight-color:transparent}.clicklayer.active{z-index:4;cursor:crosshair}.hint{z-index:5}.clickflash{z-index:6}
+
+/* LG webOS video takes its own pointer events; keep actual PC control buttons outside video. */
+.remote-pad[hidden]{display:none!important}
+.remote-pad{border:2px solid #70e0c0;background:#182e36;padding:8px 12px;margin:8px 0;color:#f2fffa;border-radius:10px}
+.pad-title,.pad-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:5px 0}
+.pad-title{justify-content:space-between;font-size:15px}.pad-title span{color:#acebd8}
+.pad-row button{font-size:17px;min-height:45px;padding:7px 13px;border:0;border-radius:7px;background:#a6ead7;color:#072931;font-weight:bold}
+.pad-row button:disabled{opacity:.36}
+.pad-row.directions button{min-width:60px}
+.pad-row button.click-pc{background:#ffa765;color:#1b1b16;font-size:20px;min-width:195px}
+.pad-row label{color:#d4fff1}.pad-row select{min-height:42px;font-size:16px;border-radius:7px;padding:5px;background:#fff}
+.pad-note{font-size:13px;margin:5px 0;color:#d3e9e5}
+body.nav-open .stage{max-height:calc(100vh - 320px)}
+@media(max-height:790px){body.nav-open .stage{max-height:calc(100vh - 305px)}.pad-row button{min-height:38px;font-size:15px}.pad-row button.click-pc{font-size:17px}}
+
+/* v0.4: static JPEG desktop within an ordinary LG-clickable HTML button, never video hit-testing. */
+button.picture-button{background:#8de9c9;color:#062b29;font-size:18px}
+#end-viewing{background:#ffb2a1;color:#32151a}#session-remaining{font-size:13px;color:#9ce9d5}
+.picture-pad[hidden]{display:none!important}
+.picture-pad{display:block;max-width:1480px;margin:10px auto 6px;padding:10px;border:2px solid #72e8c8;border-radius:13px;background:#132c34}
+.picture-title{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:8px;color:#aaf6e5;font-size:16px}
+.picture-title span{font-size:13px;color:#c5e7e2}
+.snapshot-frame{display:block;position:relative;width:100%;max-width:100%;min-height:120px;overflow:hidden;border:3px solid #85e1c6;border-radius:6px;background:#07181f}
+.snapshot-target{display:block;position:absolute;top:0;left:0;right:0;bottom:0;z-index:2;margin:0;padding:0;width:100%;height:100%;border:0;background:rgba(0,0,0,0.001)!important;cursor:crosshair;-webkit-appearance:none;appearance:none}
+/* In-flow intrinsic 960x540 JPEG sets height; transparent ordinary HTML button captures TV OK separately. */
+.snapshot-target:focus-visible{outline:4px solid #ffffff;outline-offset:-6px}
+.snapshot-target:disabled{cursor:not-allowed}
+.snapshot-frame > img{display:block;position:static;width:100%;max-width:100%;height:auto;border:0;margin:0;padding:0;pointer-events:none;-webkit-user-select:none;user-select:none}
+ .snapshot-hint{position:absolute;z-index:3;top:12px;left:12px;color:#fff;background:rgba(0,0,0,.69);padding:10px 12px;border-radius:6px;font-size:15px;pointer-events:none;max-width:85%}
+.aim-point{position:absolute;z-index:3;color:#ff584d;text-shadow:0 0 8px #fff;transform:translate(-50%,-50%);pointer-events:none;font:bold 36px/1 Arial,sans-serif}
+.aim-point[hidden]{display:none}
+.picture-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 3px}
+.picture-actions button{min-height:43px;border:0;border-radius:7px;background:#a3e5da;color:#0a282f;font:bold 16px Arial,sans-serif;padding:8px 13px}
+.picture-actions button.click-pc{background:#ffaa76;color:#272014}
+.picture-actions button:disabled{opacity:.4}
+.picture-actions span{font-size:13px;color:#bde5de}
+body.picture-open .stage{display:none}
+body.picture-open .remote-pad{display:none!important}
+body.picture-open .note{display:none}
+body.picture-open .toolbar{margin:0}
+@media(max-height:740px){.picture-pad{padding:6px;margin:4px auto}.picture-title{font-size:13px}.snapshot-hint{font-size:12px;padding:6px}.picture-actions{margin:4px 0}.picture-actions button{min-height:36px;font-size:14px}}

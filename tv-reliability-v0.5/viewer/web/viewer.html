@@ -1,0 +1,50 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PC Bridge Interactive TV</title><link rel="stylesheet" href="/style.css"></head>
+<body><div class="app">
+<div class="header"><strong>PC BRIDGE / INTERACTIVE TV · LIVE DESKTOP RESUME v0.5</strong><span id="status" role="status">Loading desktop…</span></div>
+<div class="stage" id="stage">
+<video id="display" muted autoplay playsinline preload="auto" aria-label="Live Windows desktop"></video>
+<div id="clicklayer" class="clicklayer" role="button" tabindex="0" aria-label="Click this area to control the Windows desktop" title="Point and click the Windows desktop with your LG remote"></div>
+<div class="hint" id="hint">Controls are OFF. Enable them below to click Windows.</div>
+<div class="clickflash" id="clickflash" hidden>●</div>
+</div>
+<div class="toolbar">
+<button id="play">Play video</button><button id="full">Full screen</button>
+<button id="arm" class="on">Enable PC controls</button><button id="disarm" class="off" disabled>Pause PC controls</button>
+<button id="clicklast" disabled>Click at pointer</button><button id="showpicture" class="picture-button">Click desktop picture</button><button id="showpad">Arrow fallback</button><button id="end-viewing" class="off">End TV session</button><span id="session-remaining" class="small">Four-hour viewer</span><button id="up" disabled>Scroll ↑</button><button id="down" disabled>Scroll ↓</button>
+<span class="small" id="result" role="status">Waiting for TV remote.</span>
+
+<section id="picture-pad" class="picture-pad" hidden aria-label="Click directly on a desktop picture">
+ <div class="picture-title"><strong>INTERACTIVE DESKTOP PREVIEW</strong><span id="preview-age">Preparing a fresh picture…</span></div>
+ <div id="snapshot-frame" class="snapshot-frame">
+  <img id="snapshot" width="960" height="540" alt="A periodically refreshed picture of your Windows desktop">
+  <button id="snapshot-target" type="button" class="snapshot-target" aria-label="Click an item in this desktop picture to click Windows" disabled></button>
+  <span id="aim-point" class="aim-point" hidden>+</span>
+  <span id="snapshot-hint" class="snapshot-hint">Enable PC controls, then click a conversation in this picture</span>
+ </div>
+ <div class="picture-actions">
+  <button id="aimed-click" class="click-pc" disabled>CLICK SELECTED POSITION</button>
+  <button id="refresh-picture">Refresh picture</button>
+  <span id="picture-coords">No position selected</span>
+  <span id="picture-size">Waiting for image dimensions…</span>
+  <span id="video-lag">Measuring video buffer…</span>
+ </div>
+ <p class="pad-note">This is a refreshed screenshot, not the LG video player. Click any position in the screenshot to send ONE Windows click, then watch the live video above update. The arrow fallback remains available.</p>
+</section>
+<section class="remote-pad" id="remote-pad" hidden aria-label="Windows remote navigation">
+ <div class="pad-title"><strong>WINDOWS CLICK PAD · separate from video</strong><span id="target-readout" aria-live="polite">Cursor target: centre (50%, 50%)</span></div>
+ <div class="pad-row">
+  <button id="preset-chat" disabled>Chats column</button>
+  <button id="preset-center" disabled>Centre</button>
+  <button id="preset-right" disabled>Right panel</button>
+  <label>Move size <select id="step" aria-label="Move distance"><option value="900">Normal</option><option value="250">Fine</option><option value="1800">Large</option></select></label>
+ </div>
+ <div class="pad-row directions">
+  <button id="move-left" disabled>◀</button><button id="move-up" disabled>▲</button>
+  <button id="clickpc" class="click-pc" disabled>CLICK WINDOWS</button>
+  <button id="move-down" disabled>▼</button><button id="move-right" disabled>▶</button>
+ </div>
+ <p class="pad-note">Use the buttons outside the video. First position the cursor with a preset and arrows, then choose CLICK WINDOWS. Watch the delayed TV picture before clicking again.</p>
+</section>
+</div>
+<p class="note">Four-hour TV video; you can re-enable PC controls for another ten minutes whenever needed. Use the separate clickable desktop picture for direct positioning. The video remains view-only; only explicitly enabled mouse input is forwarded to Windows. No keyboard or Codex message submission is enabled.</p>
+</div><script src="/viewer.js"></script></body></html>

@@ -1,0 +1,345 @@
+{
+    "schema":  1,
+    "release":  "v0.1.0-private-preview",
+    "createdUtc":  "2026-10-12T13:31:02.4645811Z",
+    "scope":  "Curated TV v0.5 + Codex pilot source only",
+    "files":  [
+                  {
+                      "originalSha256":  null,
+                      "path":  ".gitattributes",
+                      "sha256":  "5152ef3b54a470ba5ecb9ba1e1bbdb4a8fc4865d43faa3ba63ee527240df913f",
+                      "bytes":  153
+                  },
+                  {
+                      "originalSha256":  "e59e0b2e5b7b054d318feb8a23b85e604ac6f9f89c5309e80ea83e08fa5ce264",
+                      "path":  ".gitignore",
+                      "sha256":  "e5a050d0a72def28c0b3c10f3f963e0fee8a7d90be24d2fb7c57162628e20818",
+                      "bytes":  373
+                  },
+                  {
+                      "originalSha256":  "16ebdc332f0c3b276b656ad6af734b6b99ed0c8492317a7054a95963d417f540",
+                      "path":  "codex-chat-control-pilot-20261012/cli.cjs",
+                      "sha256":  "16ebdc332f0c3b276b656ad6af734b6b99ed0c8492317a7054a95963d417f540",
+                      "bytes":  4572
+                  },
+                  {
+                      "originalSha256":  "6a1db795746558104422370a4ce9da3639677f43d063c5673f58e997e6b1c59c",
+                      "path":  "codex-chat-control-pilot-20261012/codex-dispatch.cjs",
+                      "sha256":  "6a1db795746558104422370a4ce9da3639677f43d063c5673f58e997e6b1c59c",
+                      "bytes":  3588
+                  },
+                  {
+                      "originalSha256":  "e1529b84480089918900733886c2797b089e0784de55ab608075bc9b4f6612db",
+                      "path":  "codex-chat-control-pilot-20261012/codex-rpc.cjs",
+                      "sha256":  "cc7393b989d67cd92535ae0ff80967c65cb4ec9daeb38f1513f2ccea781adb87",
+                      "bytes":  5194
+                  },
+                  {
+                      "originalSha256":  "e2e0257d80810f15426685599358a34baf2ccda4d2a1ef3027fc9c05c259fbb8",
+                      "path":  "codex-chat-control-pilot-20261012/desk.cjs",
+                      "sha256":  "e2e0257d80810f15426685599358a34baf2ccda4d2a1ef3027fc9c05c259fbb8",
+                      "bytes":  8407
+                  },
+                  {
+                      "originalSha256":  "670bb7dda0189ad683491b844e358517099eff8bfba9a1554d94472aafc3d964",
+                      "path":  "codex-chat-control-pilot-20261012/draft-ledger.cjs",
+                      "sha256":  "670bb7dda0189ad683491b844e358517099eff8bfba9a1554d94472aafc3d964",
+                      "bytes":  4717
+                  },
+                  {
+                      "originalSha256":  "ae2f96f9661035f095ebea0229c25a4e8d601070fae5d560ac3818553ffa25c7",
+                      "path":  "codex-chat-control-pilot-20261012/selected-thread.cjs",
+                      "sha256":  "ae2f96f9661035f095ebea0229c25a4e8d601070fae5d560ac3818553ffa25c7",
+                      "bytes":  2892
+                  },
+                  {
+                      "originalSha256":  "4e959fba9315e42310311c84667b7bca670cb9b7d0f5979dbb468f6f4aae8a88",
+                      "path":  "codex-chat-control-pilot-20261012/start-codex-desk.cmd",
+                      "sha256":  "34e48fe0da46a1d496539e756636a5b353183c759c0493427f9af0f565c853f6",
+                      "bytes":  380
+                  },
+                  {
+                      "originalSha256":  "3f51b4573b9ee5ac4c98c6dd956df980eebe8b2ee49a9dfd14d39c9cbe0d66d1",
+                      "path":  "codex-chat-control-pilot-20261012/tests/live-readonly-smoke.cjs",
+                      "sha256":  "3f51b4573b9ee5ac4c98c6dd956df980eebe8b2ee49a9dfd14d39c9cbe0d66d1",
+                      "bytes":  1479
+                  },
+                  {
+                      "originalSha256":  "6d96d4f5ff3ff023285ac00ef74ebbe80199dae4140c4a4dde679700acf6f62b",
+                      "path":  "codex-chat-control-pilot-20261012/tests/pilot-safety.test.cjs",
+                      "sha256":  "6d96d4f5ff3ff023285ac00ef74ebbe80199dae4140c4a4dde679700acf6f62b",
+                      "bytes":  7648
+                  },
+                  {
+                      "originalSha256":  "5ef389881f818d6ccecc2deb1f94be21084059930472b0407810ef0895d112ef",
+                      "path":  "codex-chat-control-pilot-20261012/tests/selection-safety.test.cjs",
+                      "sha256":  "5ef389881f818d6ccecc2deb1f94be21084059930472b0407810ef0895d112ef",
+                      "bytes":  2492
+                  },
+                  {
+                      "originalSha256":  "fec0f9868ce52db51e9d77d4ed593b636b6e23e61973ef13cbc526c0440d720b",
+                      "path":  "codex-chat-control-pilot-20261012/tests/ui-selection-probe.ps1",
+                      "sha256":  "fec0f9868ce52db51e9d77d4ed593b636b6e23e61973ef13cbc526c0440d720b",
+                      "bytes":  3044
+                  },
+                  {
+                      "originalSha256":  null,
+                      "path":  "docs/RELEASE_NOTES.md",
+                      "sha256":  "21753bd3d2f64b5172875aeb992325e7fb7a974641e49db7fb095b4d85e398dc",
+                      "bytes":  1615
+                  },
+                  {
+                      "originalSha256":  null,
+                      "path":  "docs/ROADMAP.md",
+                      "sha256":  "e18e4338c682f1c2012cdc4dd8d1fea97e06fe05be6113405806b2fcccc62e55",
+                      "bytes":  1257
+                  },
+                  {
+                      "originalSha256":  null,
+                      "path":  "docs/SECURITY.md",
+                      "sha256":  "0371daef03d4ed2bbcf91ef77a8d52265d4526af0ef531a82134a3b752abb457",
+                      "bytes":  1148
+                  },
+                  {
+                      "originalSha256":  null,
+                      "path":  "docs/SETUP.md",
+                      "sha256":  "71639f88535b328dbc163e29c17093f90dffa91f4163e8415fed1540cf6b4a3e",
+                      "bytes":  1409
+                  },
+                  {
+                      "originalSha256":  null,
+                      "path":  "NOTICE.md",
+                      "sha256":  "796a746fe3429d5f9554d89d9d1511bc63e7cdaeb584a59a34a0da17e099d624",
+                      "bytes":  412
+                  },
+                  {
+                      "originalSha256":  "dc3bca95f631471affd7fec13eb3d7be6226810a1ae2a58df64823c7bcc86c6a",
+                      "path":  "README.md",
+                      "sha256":  "076ed1ab365ed3e2c760ae4571ecafbf8e2429fb972134e5473e1ec220f687bb",
+                      "bytes":  4076
+                  },
+                  {
+                      "originalSha256":  "6e71fea7ff33f7b463b435a16f26e2d5ab8267e33d52a9feafa8f6860f69c637",
+                      "path":  "tv-reliability-v0.5/cast/lan.cjs",
+                      "sha256":  "6e71fea7ff33f7b463b435a16f26e2d5ab8267e33d52a9feafa8f6860f69c637",
+                      "bytes":  1352
+                  },
+                  {
+                      "originalSha256":  "d9f8bd964759812370d9739b6e49248d81aaea2aa4ff403d73550de320d2990e",
+                      "path":  "tv-reliability-v0.5/cast/lg-launch.cjs",
+                      "sha256":  "d9f8bd964759812370d9739b6e49248d81aaea2aa4ff403d73550de320d2990e",
+                      "bytes":  2290
+                  },
+                  {
+                      "originalSha256":  "bd6e8c9c69db7d36a9405ec9484eaccc39ea23c1aa9323efa32bc7657a75811c",
+                      "path":  "tv-reliability-v0.5/cast/package.json",
+                      "sha256":  "bd6e8c9c69db7d36a9405ec9484eaccc39ea23c1aa9323efa32bc7657a75811c",
+                      "bytes":  354
+                  },
+                  {
+                      "originalSha256":  "3e5d43398d862ddbf3e1ccda8e93d710ef72d7f65dbb3a3a9aec8097d351c297",
+                      "path":  "tv-reliability-v0.5/cast/package-lock.json",
+                      "sha256":  "3e5d43398d862ddbf3e1ccda8e93d710ef72d7f65dbb3a3a9aec8097d351c297",
+                      "bytes":  1266
+                  },
+                  {
+                      "originalSha256":  "ba512a67772632c042e8932e0eb775594208828a9a42c220e890e9ef15dc8d0e",
+                      "path":  "tv-reliability-v0.5/cast/server.cjs",
+                      "sha256":  "12ea69db0179cf060599fd9cce9fb9fb9a4f9dee372f70ba772b16b3c82cfd54",
+                      "bytes":  10086
+                  },
+                  {
+                      "originalSha256":  "fd872d8becfac8c059604c84d92bb3c24950d7657b43be73cf7982bed0b267dd",
+                      "path":  "tv-reliability-v0.5/cast/tv-discovery.cjs",
+                      "sha256":  "fd872d8becfac8c059604c84d92bb3c24950d7657b43be73cf7982bed0b267dd",
+                      "bytes":  1725
+                  },
+                  {
+                      "originalSha256":  "4f75b83727f8f81903f2391e0223dfb5bbae0bc409aa67294e52a6e058b7bbc4",
+                      "path":  "tv-reliability-v0.5/cast/web/controller.html",
+                      "sha256":  "4f75b83727f8f81903f2391e0223dfb5bbae0bc409aa67294e52a6e058b7bbc4",
+                      "bytes":  2327
+                  },
+                  {
+                      "originalSha256":  "1e5efafbef0aedb9c457af77e325e1c273d4af3bd70fc2f3130a0ae4c88a14b1",
+                      "path":  "tv-reliability-v0.5/cast/web/controller.js",
+                      "sha256":  "1e5efafbef0aedb9c457af77e325e1c273d4af3bd70fc2f3130a0ae4c88a14b1",
+                      "bytes":  4339
+                  },
+                  {
+                      "originalSha256":  "a82174a1d73309e3b316881ffd6ba1eb141cd761e31ed47102507f2c70862642",
+                      "path":  "tv-reliability-v0.5/cast/web/style.css",
+                      "sha256":  "a82174a1d73309e3b316881ffd6ba1eb141cd761e31ed47102507f2c70862642",
+                      "bytes":  2028
+                  },
+                  {
+                      "originalSha256":  "f321aa6c7f95e20a08d979460161393675d73b9984077ef897fc7e4e441a366b",
+                      "path":  "tv-reliability-v0.5/cast/web/tv.html",
+                      "sha256":  "f321aa6c7f95e20a08d979460161393675d73b9984077ef897fc7e4e441a366b",
+                      "bytes":  737
+                  },
+                  {
+                      "originalSha256":  "4c97234f3111eef2ebf96489a907719c67b8f61bf9167080aa3a6ab7069f4937",
+                      "path":  "tv-reliability-v0.5/cast/web/tv.js",
+                      "sha256":  "4c97234f3111eef2ebf96489a907719c67b8f61bf9167080aa3a6ab7069f4937",
+                      "bytes":  1687
+                  },
+                  {
+                      "originalSha256":  "fb283cba39255221621bd0271f0fd5f646503227de2c4b101e49cffa67eeb152",
+                      "path":  "tv-reliability-v0.5/lg-pair.cjs",
+                      "sha256":  "fb283cba39255221621bd0271f0fd5f646503227de2c4b101e49cffa67eeb152",
+                      "bytes":  3525
+                  },
+                  {
+                      "originalSha256":  "383ee54318ddd9071c28bad3fd7efa12c2892f6653764b2b3c1ecd244f7a7566",
+                      "path":  "tv-reliability-v0.5/PARENT_LOCK.json",
+                      "sha256":  "383ee54318ddd9071c28bad3fd7efa12c2892f6653764b2b3c1ecd244f7a7566",
+                      "bytes":  4851
+                  },
+                  {
+                      "originalSha256":  "9dc549c31ecab75efb66fed69f38c872cac59cdca5131f319c497b56caade116",
+                      "path":  "tv-reliability-v0.5/PC Bridge TV Status.cmd",
+                      "sha256":  "9dc549c31ecab75efb66fed69f38c872cac59cdca5131f319c497b56caade116",
+                      "bytes":  138
+                  },
+                  {
+                      "originalSha256":  "f309062d3fc59ff5c1bf5399e414d78ced57bea86bc95be2f84601b32e15a1c5",
+                      "path":  "tv-reliability-v0.5/README.md",
+                      "sha256":  "41357d338a4f96e6b07a99085b88b26eeae1ea52b9d9908cab3c6675d83723ee",
+                      "bytes":  4855
+                  },
+                  {
+                      "originalSha256":  "3468f205073c9f22cf1679c5ab3333915557033042074e842f1bf0ffbcfa8519",
+                      "path":  "tv-reliability-v0.5/Resume PC Bridge TV.cmd",
+                      "sha256":  "3468f205073c9f22cf1679c5ab3333915557033042074e842f1bf0ffbcfa8519",
+                      "bytes":  314
+                  },
+                  {
+                      "originalSha256":  "0a229a6e7a968d31a295b76196cd96eefbf0fd8b5cdb49b154fb5e039a319ec3",
+                      "path":  "tv-reliability-v0.5/resume.cjs",
+                      "sha256":  "0a229a6e7a968d31a295b76196cd96eefbf0fd8b5cdb49b154fb5e039a319ec3",
+                      "bytes":  4376
+                  },
+                  {
+                      "originalSha256":  "b5644bf62ec46ad6fe13df4dac702f2d27cf388f2516cb4c8a48cfe205da1851",
+                      "path":  "tv-reliability-v0.5/resume-host.cjs",
+                      "sha256":  "b5644bf62ec46ad6fe13df4dac702f2d27cf388f2516cb4c8a48cfe205da1851",
+                      "bytes":  7841
+                  },
+                  {
+                      "originalSha256":  "ef3a8a7211066a49ed45bf46d70ef2ff42e35c1cea2dbde479f18784dac40e6f",
+                      "path":  "tv-reliability-v0.5/Stop PC Bridge TV.cmd",
+                      "sha256":  "ef3a8a7211066a49ed45bf46d70ef2ff42e35c1cea2dbde479f18784dac40e6f",
+                      "bytes":  218
+                  },
+                  {
+                      "originalSha256":  "c42ba63b7afc547f2665f3983c0d10f59d5e2f84822a0f2fa8243e79cb08cd4a",
+                      "path":  "tv-reliability-v0.5/tests/session-policy.test.cjs",
+                      "sha256":  "c42ba63b7afc547f2665f3983c0d10f59d5e2f84822a0f2fa8243e79cb08cd4a",
+                      "bytes":  2902
+                  },
+                  {
+                      "originalSha256":  "bef0e40007043259050a08ab4ba447c7cd0fc342a9fa65b9bd65082141537ec6",
+                      "path":  "tv-reliability-v0.5/viewer/native/TvPointer.cs",
+                      "sha256":  "bef0e40007043259050a08ab4ba447c7cd0fc342a9fa65b9bd65082141537ec6",
+                      "bytes":  4508
+                  },
+                  {
+                      "originalSha256":  "c9d058fd4b98683466245a836dd040afda9df254c6f703be4632f94c6181c064",
+                      "path":  "tv-reliability-v0.5/viewer/native/TvPointer.exe",
+                      "sha256":  "c9d058fd4b98683466245a836dd040afda9df254c6f703be4632f94c6181c064",
+                      "bytes":  7168
+                  },
+                  {
+                      "originalSha256":  "5fae3f62e19f1e8569c01b1f0bdcddb7359cb0e8d61a543029db4552f2d0f5b3",
+                      "path":  "tv-reliability-v0.5/viewer/server.cjs",
+                      "sha256":  "5fae3f62e19f1e8569c01b1f0bdcddb7359cb0e8d61a543029db4552f2d0f5b3",
+                      "bytes":  11587
+                  },
+                  {
+                      "originalSha256":  "dd8276c46bdadf9e8e7094ba546621c7e45646427f13abc6021ceda6bb248a3e",
+                      "path":  "tv-reliability-v0.5/viewer/snapshot.cjs",
+                      "sha256":  "9952b6a4659f1cfa6971c1f9a7bdff697caec8c067cf95017a88facb120fd0fc",
+                      "bytes":  3479
+                  },
+                  {
+                      "originalSha256":  "643f97886ded8690a4a1c61086cb89dcdd8c2c738b0aa910db9e84834d15d1fb",
+                      "path":  "tv-reliability-v0.5/viewer/tests/pointer.test.cjs",
+                      "sha256":  "643f97886ded8690a4a1c61086cb89dcdd8c2c738b0aa910db9e84834d15d1fb",
+                      "bytes":  1568
+                  },
+                  {
+                      "originalSha256":  "abe75f75e76646741baa8334b1f2e3c9a7dd8176570eec9c385c47a347219b5a",
+                      "path":  "tv-reliability-v0.5/viewer/tests/preview-csp.test.cjs",
+                      "sha256":  "abe75f75e76646741baa8334b1f2e3c9a7dd8176570eec9c385c47a347219b5a",
+                      "bytes":  1329
+                  },
+                  {
+                      "originalSha256":  "cf14af988652aa7c46b5d0e83b991ab211950bada00ffc573ff832dcad15c9a1",
+                      "path":  "tv-reliability-v0.5/viewer/tests/preview-layout.test.cjs",
+                      "sha256":  "cf14af988652aa7c46b5d0e83b991ab211950bada00ffc573ff832dcad15c9a1",
+                      "bytes":  2360
+                  },
+                  {
+                      "originalSha256":  "5d0aa27c5916ff91e8fc01a36dd2fe7501e226d3f1269787719126be4fdd1772",
+                      "path":  "tv-reliability-v0.5/viewer/tests/snapshot.test.cjs",
+                      "sha256":  "3e2244cc7d9ec61a19f1600000f16bd99eecdc7a7a3c93d8bb0a9e20ea3f1c0e",
+                      "bytes":  2315
+                  },
+                  {
+                      "originalSha256":  "11a1020c54380e1666ae37a15f2d2ffc313937b23cb33f3b55da523d5debca16",
+                      "path":  "tv-reliability-v0.5/viewer/tests/webos-click.test.cjs",
+                      "sha256":  "11a1020c54380e1666ae37a15f2d2ffc313937b23cb33f3b55da523d5debca16",
+                      "bytes":  7148
+                  },
+                  {
+                      "originalSha256":  "61ea3320b5b2eabe5c81774d752df0699f39df3f7ef3beb49115a6f18028e013",
+                      "path":  "tv-reliability-v0.5/viewer/web/style.css",
+                      "sha256":  "61ea3320b5b2eabe5c81774d752df0699f39df3f7ef3beb49115a6f18028e013",
+                      "bytes":  5980
+                  },
+                  {
+                      "originalSha256":  "0ca95a5a907d79d4c3d2375e90789f42a5f7cc33e248848e41df9b07f4952d2c",
+                      "path":  "tv-reliability-v0.5/viewer/web/viewer.html",
+                      "sha256":  "0ca95a5a907d79d4c3d2375e90789f42a5f7cc33e248848e41df9b07f4952d2c",
+                      "bytes":  4433
+                  },
+                  {
+                      "originalSha256":  "5168175fbd3476b7ad82e1b18992fdd9d2eefdd50ae8981de3f235d76cb579d5",
+                      "path":  "tv-reliability-v0.5/viewer/web/viewer.js",
+                      "sha256":  "1df6c6e6e55037b994568e9f9933a2673a8565a547d60d9e360503ce53e24ec0",
+                      "bytes":  13685
+                  }
+              ],
+    "sourceChangedOrAdapted":  [
+                                   ".gitignore",
+                                   "codex-chat-control-pilot-20261012/codex-rpc.cjs",
+                                   "codex-chat-control-pilot-20261012/start-codex-desk.cmd",
+                                   "README.md",
+                                   "tv-reliability-v0.5/cast/server.cjs",
+                                   "tv-reliability-v0.5/README.md",
+                                   "tv-reliability-v0.5/viewer/snapshot.cjs",
+                                   "tv-reliability-v0.5/viewer/tests/snapshot.test.cjs",
+                                   "tv-reliability-v0.5/viewer/web/viewer.js"
+                               ],
+    "reviewedExclusions":  [
+                               "runtime",
+                               "evidence",
+                               "node_modules",
+                               "profiles",
+                               "research conversation screenshots",
+                               "app credentials",
+                               "browser caches",
+                               "local preparation scripts",
+                               "installed PC Bridge core"
+                           ],
+    "tests":  {
+                  "nodeVersion":  "24.15.0",
+                  "total":  39,
+                  "passed":  37,
+                  "failed":  0,
+                  "skipped":  2,
+                  "skippedReason":  "requires an active HLS desktop stream",
+                  "localReport":  "_private_tests/regression-fixed-node24-20261012.txt"
+              }
+}

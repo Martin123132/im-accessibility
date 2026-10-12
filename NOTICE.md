@@ -1,0 +1,3 @@
+# Private preview rights and third-party packages
+
+No general redistribution licence is granted in this private source snapshot. Third-party packages, including the lgtv2 npm dependency, remain subject to their own licences. Public/commercial distribution requires a deliberate licence and security review. This repository does not bundle the installed PC Bridge app or the proprietary Codex desktop application.
