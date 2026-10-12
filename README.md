@@ -1,41 +1,100 @@
-# PC Bridge Control Suite â€” private preview
+<div align="center">
 
-**Status: owner-operated source checkpoint, 12 October 2026.** A Windows/LG television desktop-control build plus a separate Codex conversation-control pilot. This repository is *not* a complete copy of the installed PC Bridge app, a public remote-desktop product, or an unattended Codex assistant.
+# I’m-accessibility
 
-## Contents
+### Your computer. Your pace. Your control.
 
-| Module | Included capabilities | Verified scope |
+**Use your Windows PC from your television, share control with an AI assistant, and decide what happens next.**
+
+**Private v1 development · Windows + LG webOS · Human-led AI assistance**
+
+[Get started](docs/SETUP.md) · [Features](docs/FEATURES.md) · [V1 release plan](docs/V1_RELEASE_PLAN.md) · [Safety](docs/SECURITY.md)
+
+</div>
+
+---
+
+## What if the computer worked around you?
+
+I’m-accessibility is being built for people who want **more than one way to use their computer**. Instead of staying at a desk, you can put your Windows desktop on the television, navigate it with a familiar remote, and ask an assistant to prepare more involved actions.
+
+**You remain in control.** AI support is optional, permissions are explicit, and pressing Send yourself is a perfectly valid workflow.
+
+The current project joins two independently tested components: a local-network LG television desktop controller and an AI-assisted Codex Conversation Desk.
+
+## What we’ve demonstrated
+
+| Feature | Evidence | Status |
 | --- | --- | --- |
-| tv-reliability-v0.5 | H.264/HLS live Windows desktop to LG webOS; clickable JPEG preview; TV-side mouse enable, ten-minute leases, scrolling, owner Stop and Resume; bounded four-hour sessions | 19/19 frozen regression checks; physical remote control and four-hour session subsequently owner-confirmed |
-| codex-chat-control-pilot-20261012 | Restricted Codex App Server client, SHA-256-bound durable draft ledger, exact-thread picker, local review page, approval and one-shot dispatch logic | 20/20 isolated mock tests, live read-only Codex connection, owner-supervised Windows UI staging |
+| Windows desktop on an LG television | H.264/HLS session, owner-tested remote navigation | **Working prototype** |
+| Magic Remote pointer, click and scroll | Clickable desktop preview, fallback controls | **Demonstrated** |
+| Time-limited PC control | Mouse starts OFF; renewable 10-minute permission lease | **Verified prototype** |
+| TV session recovery | Four-hour viewing session, Stop and Resume, rotated credentials | **Verified prototype** |
+| Codex Conversation Desk | Exact-thread selector, durable drafts and review interface | **Prototype** |
+| ChatGPT prepares text in Codex | Owner reviewed and sent the instruction with the TV remote | **Demonstrated live** |
+| Automatic submission into the selected Codex window | Foreground UI ↔ persistent API thread matching unresolved | **Not yet verified** |
+| Voice, music, video apps and games | Defined for the edge-testing programme | **Planned** |
 
-## Real-world handoff demonstrated
+**One real example:** ChatGPT inserted an instruction into the *stokes* Codex conversation on the laptop. The owner pressed Send using the LG Magic Remote. Codex received it and began working. The assistant did not claim to submit the message itself.
 
-On 12 October 2026, ChatGPT used PC Bridge to insert an instruction into the **visibly confirmed foreground Codex conversation**. The owner manually pressed Send with an LG Magic Remote. A separate screenshot confirmed the message in that conversation and Codex responding. This was a genuine full-loop user-assisted handoff, *not* an unattended turn/start call.
+## How shared control works
 
-The direct Codex App Server connection has **not** been proven to track the foreground desktop chat. A later read-only thread search timed out. Never infer an exact API thread ID from a desktop window title. Real App Server submission still needs a separately approved, verified target and an authoritative receipt.
+~~~text
+               I’M-ACCESSIBILITY
+                       |
+           +-----------+-----------+
+           |                       |
+     CONTROL IT YOURSELF       ASK FOR HELP
+           |                       |
+      LG Magic Remote            ChatGPT
+           |                       |
+      TV desktop view           PC Bridge
+           |                       |
+      Bounded mouse            Windows actions
+           |                       |
+           +-------- Windows PC ---+
+                                  |
+                             Codex Desk
+                          (draft and review)
+~~~
 
-## Running this snapshot
+The television can keep showing the desktop while mouse-control permission expires. The owner can pause input or end the session. AI-prepared actions are separate from direct remote navigation.
 
-This is source, not a one-click installer. The existing working PC Bridge installation, Windows on-demand TV task, shortcuts, LG pairing, local network and video encoder are configured **outside** this repository. Cloning does not reproduce machine permissions or those owner-specific settings.
+## Start exploring
 
-TV source expects Windows, Node.js, FFmpeg/video tooling (set PC_BRIDGE_FFMPEG_EXE to the local ffmpeg.exe path or place ffmpeg on PATH), npm dependencies and an owner-paired LG webOS TV on a private LAN. Run npm ci in tv-reliability-v0.5/cast to restore the pinned lgtv2 package; node_modules is never committed. The native Windows pointer helper is included as original C# source plus its locally tested small binary.
+| | |
+| --- | --- |
+| [Setup](docs/SETUP.md) | Prerequisites, source checkout and local test commands |
+| [Features](docs/FEATURES.md) | What works now, what is only a prototype, what is planned |
+| [Architecture](docs/ARCHITECTURE.md) | TV, Windows, ChatGPT, PC Bridge and Codex boundaries |
+| [Accessibility](docs/ACCESSIBILITY.md) | Design principles, control alternatives and testing goals |
+| [Testing](docs/TESTING.md) | Reproducible tests and real hardware evidence |
+| [V1 release plan](docs/V1_RELEASE_PLAN.md) | The acceptance gates for a product people can actually install |
+| [Security & privacy](docs/SECURITY.md) | Owner permissions, private-network assumptions and recoverability |
+| [Changelog](CHANGELOG.md) | Product repository milestones |
 
-Codex source expects Codex CLI, Node.js and a localhost browser. Set PC_BRIDGE_CODEX_EXE to the local path of codex.exe, or ensure codex is available on PATH, before running the Codex Desk. The Desk listens on 127.0.0.1:43191 and has no browser Send route. Its text and thread selection are local, and a separate explicit approval is needed before any real Codex turn.
+## Test the source preview
 
-## Tests
+**This is not yet a one-click installer.** The separately installed PC Bridge application, the owner’s LG pairing, Windows task and local device settings are not included in the repository.
 
-Tests designed not to send messages:
-- node --test codex-chat-control-pilot-20261012/tests/pilot-safety.test.cjs codex-chat-control-pilot-20261012/tests/selection-safety.test.cjs
-- node --test tv-reliability-v0.5/tests/session-policy.test.cjs
-- node --test the files in tv-reliability-v0.5/viewer/tests/
+On Windows with Node.js 24 installed:
 
-The extra live-readonly-smoke.cjs is an explicit opt-in check of Codex App Server, not part of the default unit suite.
+~~~powershell
+git clone https://github.com/Martin123132/im-accessibility.git
+cd im-accessibility
+npm.cmd ci --prefix tv-reliability-v0.5/cast
+~~~
 
-## Archive policy
+Then run the non-destructive unit tests described in [Testing](docs/TESTING.md). Tests do not start research work or submit Codex messages. The Codex Desk can be started separately once an installed Codex CLI is configured.
 
-Included files are a curated source allowlist from the working modules. Credentials, TV pairing keys, runtime state, research work, screenshots, browser profiles, evidence caches and one-off experiments involving real conversations are excluded. The compiled TvPointer helper is retained because the verified Windows build used it. See RELEASE_MANIFEST.json for source fingerprints.
+## Where we’re going
 
-Older TV prototypes, the experimental phone stage, the full installed PC Bridge app and the 107-folder development/research workspace remain outside this repository and were not modified.
+**V1 should be a product, not a folder of scripts.** We’re working toward an understandable installer, clear device setup, a single control/status experience, accessible navigation, verifiable instructions and tested recovery when something goes wrong.
 
-See docs/RELEASE_NOTES.md, docs/SECURITY.md, docs/ROADMAP.md and docs/SETUP.md. Treat this repository as PRIVATE pending a separate public-release, dependency-licensing and security review.
+Apple Music, YouTube, supported streaming services, checkers, Worms and more demanding games are useful **edge tests**, not features we're pretending already work.
+
+[See exactly what must pass before v1 ships →](docs/V1_RELEASE_PLAN.md)
+
+---
+
+**Release status:** Private development preview. The original verified source snapshot is preserved at **v0.1.0-private-preview**. This repository does not include the full installed PC Bridge application, does not grant remote access by itself, and has no chosen public software licence.
