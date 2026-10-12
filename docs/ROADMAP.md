@@ -1,16 +1,28 @@
-# BRIDGE-EDGE-30: next-stage benchmark plan
+# Roadmap
 
-Measure actual limits before adding integrations.
+I’m-accessibility is moving from a verified owner-operated prototype toward a usable **v1 accessibility product**.
 
-1. Apple Music: open, search, playlist edit/save, play, pause, skip, shuffle, recommend songs.
-2. YouTube: search, open videos, navigate channels and playlists, fullscreen, resume.
-3. Sky streaming: supported browser/app navigation plus video/audio and DRM compatibility.
-4. Turn-based games: checkers, chess, UNO; then Worms for time/trajectory and action complexity.
-5. Real-time gaming: measure input latency, visual recognition and feasibility before proposing FPS control.
-6. Multi-app switching: retain correct target and foreground window identity.
-7. Codex supervision: prepare, review, approve, submit once, verify acceptance/completion and record evidence.
-8. Bad-instruction recovery: deliberate mishearing in an isolated dummy project, stop/detect/rollback tests.
-9. Failure conditions: connection loss, suspended computer, stale thread, duplicate click and uncertain receipt.
-10. Voice: ambiguous targets and hands-free operation with owner confirmation for actions.
+## Product milestones
 
-For each task record result, duration, owner interventions, target correctness, recovery time, residual file modifications and repeatability. Keep tests reproducible on the laptop.
+1. **One place to start.** Guided setup, device compatibility checks, easy Stop/Resume and an understandable permissions screen.
+2. **Shared control.** TV remote navigation, owner-approved AI assistance, visible target selection and alternative input routes.
+3. **Safe execution.** Draft review, exact target confirmation, one-shot send, completion receipts and rollback where possible.
+4. **Accessibility testing.** Real users, clear focus and input states, adjustable readability and accessible error recovery.
+5. **Wider compatibility.** Test music, browser video, supported streaming, games and voice rather than assuming support.
+
+The full release gates are in [V1 release plan](V1_RELEASE_PLAN.md).
+
+## BRIDGE-EDGE-30: planned capability exploration
+
+| Area | Proposed tasks | State |
+| --- | --- | --- |
+| Apple Music | Open, play, create playlist, skip, recommend related songs | Not benchmarked |
+| YouTube | Search, navigate channels, playlists, fullscreen and playback | Not benchmarked |
+| Sky / streaming | Programmes and guides; detect DRM limitations | Not benchmarked |
+| Games | Checkers, Worms, basic platformers, harder real-time games | Not benchmarked |
+| Multiple applications | Switch and recover correct window/session | Not benchmarked |
+| Misheard instructions | Stop, inspect, recover and measure residual changes | Planned recovery drills |
+
+Every test should record success, elapsed time, human interventions, target accuracy, recovery time, residual changes and repeatability. New adapters should be built only where actual tests justify them.
+
+**Accessibility is the product goal.** The entertainment and gaming tests are a useful way to exercise its technical limits.
