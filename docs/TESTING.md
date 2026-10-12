@@ -8,6 +8,15 @@ Tests should not require a personal research conversation, a live Codex submissi
 npm.cmd ci --prefix tv-reliability-v0.5/cast
 ~~~
 
+## Run all safe tests
+
+~~~powershell
+npm.cmd run check:source
+npm.cmd test
+~~~
+
+**npm test** runs only the known TV and Codex test files; it excludes live-readonly-smoke and any real Codex submission. Windows GitHub Actions uses the same commands after restoring the pinned TV dependency. The existing checkpoint recorded 37 passed, 0 failed and 2 live-HLS skips.
+
 ## Run the Codex safety suite
 
 ~~~powershell
