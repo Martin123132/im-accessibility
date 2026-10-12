@@ -1,18 +1,27 @@
-# Private preview â€” 12 October 2026
+# Release notes
 
-Version: v0.1.0-private-preview. Status: source snapshot, not an installed release.
+## In development: I’m-accessibility v1
 
-- TV Reliability 0.5: prior 19/19 regression checks; Stop and Resume with rotated credentials; four-hour video session and ten-minute TV-side mouse-control lease.
-- Owner physically confirmed remote pointer/click/navigation from LG television controlling the actual Windows desktop.
-- Codex integration: separate Desk, per-thread selection, durable drafts, and 20/20 mock safety tests after correcting a non-idle-thread guard and a wrong-thread completion-notification acceptance bug.
-- Real owner-supervised example: ChatGPT typed in a foreground Codex conversation; the owner pressed Send on the LG remote; a read-only screenshot confirmed the submitted message and a new Codex working turn.
-- This did not prove unattended app-server submission; Codex selected-UI-thread correlation remains open.
+This repository is now presented as **I’m-accessibility**, a human-led accessibility product for alternative Windows control and AI-assisted workflows.
 
-Known limitations:
-- Original installed PC Bridge app, Windows on-demand tasks and LG pairing are separate, not vendored.
-- Source includes owner-era paths/port assumptions; clone into a suitable Windows environment and review configuration before starting.
-- Codex executable path is now configurable via PC_BRIDGE_CODEX_EXE in the release copy.
-- No browser-side Send route exists in the Codex Desk.
-- Real-time desktop control is not designed for public Internet exposure.
-- Windows/TV encoder and hardware regression is not reproducible in GitHub CI without the original environment.
-- Per-session stokes UI automation and screenshots remain local and are intentionally not in Git.
+The product-facing documentation, architecture boundaries, accessibility goals and v1 acceptance criteria are under development. The installed PC Bridge application, unified installer and broad device-compatibility claims are **not** part of the original source preview.
+
+## v0.1.0-private-preview — 12 October 2026
+
+The original private tag remains frozen and reproducible.
+
+**TV reliability v0.5**
+- Four-hour television desktop session, Stop/Resume and rotated credentials.
+- Renewable ten-minute TV mouse-control lease, owner Stop and clickable desktop preview.
+- Previously verified 19/19 regression checks and owner-confirmed physical LG remote navigation.
+
+**Codex integration pilot**
+- App Server client, exact-thread selector, local review Desk and durable SHA-256 draft/approval ledger.
+- Twenty isolated safety and selection tests passed at source checkpoint.
+- Live handoff: ChatGPT entered text into the foreground Codex conversation and the owner used the TV remote to submit it. Codex started responding.
+
+**Package verification**
+- Fresh isolation run: 39 tests discovered, 37 passed, 0 failed and 2 skipped because a fresh live HLS stream was unavailable.
+- Source and manifest preserved; pairing keys, screenshots, browser profiles and local execution receipts excluded.
+
+This tag is a source checkpoint rather than a shipping Windows installer or a certified unattended AI controller.
