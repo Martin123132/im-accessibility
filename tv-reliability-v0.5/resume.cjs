@@ -1,14 +1,17 @@
 'use strict';
 // Owner-run "Resume PC Bridge" and "Stop PC Bridge". Does not launch arbitrary code.
 const cp=require('node:child_process'),fs=require('node:fs'),path=require('node:path');
-const ROOT=__dirname,NAME='PCBridge TV Resume 0.5';
-const NODE='C:\\Program Files\\nodejs\\node.exe',HOST=path.join(ROOT,'resume-host.cjs');
+const SETTINGS=process.env.IM_ACCESSIBILITY_CONFIG_PATH!==undefined
+ ?require('./release-config.cjs').readUserSettings():null;
+const ROOT=__dirname,NAME=SETTINGS?SETTINGS.taskName:'PCBridge TV Resume 0.5';
+const NODE=SETTINGS?SETTINGS.executables.nodeExe:'C:\\Program Files\\nodejs\\node.exe',
+ LAN=SETTINGS?SETTINGS.network.ip:'192.168.4.36',HOST=path.join(ROOT,'resume-host.cjs');
 const STATE=path.join(ROOT,'runtime','state.json'),STOP=path.join(ROOT,'runtime','stop-request.json');
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function read(file){try{return JSON.parse(fs.readFileSync(file,'utf8'))}catch{return null}}
 async function service(port){
  try{
-  const r=await fetch('http://192.168.4.36:'+port+'/health',{signal:AbortSignal.timeout(1300)});
+  const r=await fetch('http://'+LAN+':'+port+'/health',{signal:AbortSignal.timeout(1300)});
   const j=await r.json();
   return r.ok&&j.build==='tv-resume-v0.5'?j:null;
  }catch{return null}
@@ -23,9 +26,9 @@ async function status(){
 function exactTaskStart(){
  const script=[
   '$ErrorActionPreference="Stop";',
-  '$n="PCBridge TV Resume 0.5";',
+  '$n="'+NAME+'";',
   '$t=Get-ScheduledTask -TaskName $n -ErrorAction Stop;',
-  '$exe="C:\\Program Files\\nodejs\\node.exe";',
+  '$exe="'+NODE+'";',
   "$arg='"+'"'+HOST.replace(/'/g,"''")+'"'+"';",
   'if(@($t.Actions).Count -ne 1 -or $t.Actions[0].Execute -ne $exe -or $t.Actions[0].Arguments -ne $arg){throw "Task identity mismatch"};',
   'if(@($t.Triggers|Where-Object{$null -ne $_}).Count -ne 0){throw "Task unexpectedly has autostart triggers"};',
@@ -76,5 +79,10 @@ async function run(){
  if(cmd==='stop'){await stop();return}
  throw Error('Use only resume, status or stop');
 }
-if(require.main===module)run().catch(e=>{console.error('PC_BRIDGE_RESUME_ERROR '+String(e.message||e));process.exitCode=1});
+if(require.main===module){
+ if(process.env.IM_ACCESSIBILITY_CONFIG_PATH===undefined){
+  console.error('IM_ACCESSIBILITY_CONFIG_REQUIRED: select a validated per-user settings.json first');
+  process.exitCode=1;
+ }else run().catch(e=>{console.error('PC_BRIDGE_RESUME_ERROR '+String(e.message||e));process.exitCode=1});
+}
 module.exports={status,resume,stop};

@@ -17,6 +17,8 @@ const codex = [
 const viewerDir = absolute('tv-reliability-v0.5/viewer/tests');
 const tv = [
   'tv-reliability-v0.5/tests/session-policy.test.cjs',
+  'tv-reliability-v0.5/tests/release-config.test.cjs',
+  'tv-reliability-v0.5/tests/release-runtime-config.test.cjs',
   ...fs.readdirSync(viewerDir).filter(n=>n.endsWith('.test.cjs'))
     .sort().map(n=>'tv-reliability-v0.5/viewer/tests/'+n)
 ];

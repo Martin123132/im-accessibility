@@ -7,7 +7,9 @@ const {LAN_IP,PORT,isLocalIp}=require('./lan.cjs');
 const {discover}=require('./tv-discovery.cjs');
 const {launchTv}=require('./lg-launch.cjs');
 const ROOT=__dirname,RUNTIME=path.join(ROOT,'runtime'),SEGMENTS=path.join(RUNTIME,'stream');
-const FFMPEG=process.env.PC_BRIDGE_FFMPEG_EXE||'ffmpeg';
+const FFMPEG=process.env.IM_ACCESSIBILITY_CONFIG_PATH!==undefined
+ ?require('../release-config.cjs').readUserSettings().executables.ffmpegExe
+ :(process.env.PC_BRIDGE_FFMPEG_EXE||'ffmpeg');
 const WEB=path.join(ROOT,'web'),MAX_MS=4*60*60*1000,created=Date.now();
 const controlKey=crypto.randomBytes(24).toString('hex'),watchKey=crypto.randomBytes(24).toString('hex');
 const ctrlOrigin='http://'+LAN_IP+':'+PORT;
@@ -161,5 +163,10 @@ async function serve(){
  process.once('SIGINT',exit);process.once('SIGTERM',exit);
  const timer=setTimeout(()=>{exit();},MAX_MS);timer.unref();
 }
-if(require.main===module)serve().catch(e=>{console.error('TVCAST_FAILED '+e.message);process.exitCode=1});
+if(require.main===module){
+ if(process.env.IM_ACCESSIBILITY_CONFIG_PATH===undefined){
+  console.error('IM_ACCESSIBILITY_CONFIG_REQUIRED: video cast will not start without validated settings');
+  process.exitCode=1;
+ }else serve().catch(e=>{console.error('TVCAST_FAILED '+e.message);process.exitCode=1});
+}
 module.exports={makeServer,status,startCapture,stopCapture,validMedia,equalToken,LAN_IP,PORT};
