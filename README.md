@@ -6,9 +6,9 @@
 
 **Use your Windows PC from your television, share control with an AI assistant, and decide what happens next.**
 
-**Private v1 development · Windows + LG webOS · Human-led AI assistance**
+**Public source preview · Windows + LG webOS · Human-led AI assistance**
 
-[Get started](docs/SETUP.md) · [Features](docs/FEATURES.md) · [V1 release plan](docs/V1_RELEASE_PLAN.md) · [Safety](docs/SECURITY.md)
+[Get started](docs/SETUP.md) · [Features](docs/FEATURES.md) · [7-day release sprint](docs/V1_7_DAY_SPRINT_2026-10-20.md) · [V1 release plan](docs/V1_RELEASE_PLAN.md) · [Safety](docs/SECURITY.md)
 
 </div>
 
@@ -109,4 +109,4 @@ Apple Music, YouTube, supported streaming services, checkers, Worms and more dem
 
 ---
 
-**Release status:** Private development preview. The original verified source snapshot is preserved at **v0.1.0-private-preview**. This repository does not include the full installed PC Bridge application, does not grant remote access by itself, and remains a private source preview.
+**Release status:** Public source preview in v1 development. The original verified source snapshot is preserved at **v0.1.0-private-preview**. This repository does not include the full installed PC Bridge application, does not grant remote access by itself, and is not a general-release installer.
