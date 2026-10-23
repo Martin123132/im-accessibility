@@ -4,9 +4,9 @@
 const fs=require('node:fs'),path=require('node:path');
 const core=require('./package-core.cjs');
 const repo=path.resolve(__dirname,'..');
-const version='v0.3.2-verified-clickpad-preview';
+const version='v0.3.3-active-view-preview';
 const tv=[
- 'lg-pair.cjs','release-config.cjs','resume.cjs','resume-host.cjs',
+ 'lg-pair.cjs','lg-active-view.cjs','release-config.cjs','resume.cjs','resume-host.cjs',
  'cast/lan.cjs','cast/lg-launch.cjs','cast/package.json','cast/package-lock.json',
  'cast/server.cjs','cast/tv-discovery.cjs',
  'cast/web/controller.html','cast/web/controller.js','cast/web/style.css',
@@ -99,6 +99,8 @@ function build(out){
    'Installation does not launch TV, create Windows tasks or pair any device.',
    'Run Setup.cmd in the installed folder to select your PC adapter, LG TV and tool locations.',
    'Run Start.cmd only after owner-confirmed setup; it checks TV identity and refuses active/uncertain sessions.',
+   'During an active four-hour viewing session, the optional LG activity guard sends only bounded one-pixel TV pointer movements while the TV browser and video are active.',
+   'This does not disable OLED protection; Stop or switching away from the browser ends the signal.',
    'Stop.cmd requests shutdown; Uninstall.cmd removes only unchanged installed files.',
    'PC Bridge and Codex are NOT bundled. Binary provenance and Windows 11 TV acceptance pending.',
    'SHA-256 checksums are recorded in package-manifest.json.'
