@@ -5,6 +5,7 @@
  function el(id){return document.getElementById(id)}
  var video=el('desktop'),surface=el('surface'),status=el('status'),hint=el('hint');
  var armed=false,pending=false,pausePending=false,pauseEpoch=0,lastClickAt=0,expiresAt=0,confirmStopUntil=0;
+ var audioAvailable=false;
  if(!key){status.textContent='Invalid private TV session';return}
  // webOS must keep an HTML hit target. Never enable the video control surface.
  video.controls=false;video.removeAttribute('controls');
@@ -37,6 +38,12 @@
    'Mouse ON for up to 10 minutes. Point at a Windows item and press OK. Pause when finished.':
    'Mouse OFF. Enable mouse to click the full-screen desktop.');
  }
+ function setSound(allowed){
+  audioAvailable=!!allowed;
+  el('sound').disabled=!audioAvailable;
+  if(!audioAvailable){video.muted=true;video.defaultMuted=true}
+  el('sound').textContent=audioAvailable?(video.muted?'Sound OFF':'Sound ON'):'Sound unavailable';
+ }
  function healthy(){
   if(pending||pausePending)return;
   var epoch=pauseEpoch;
@@ -44,6 +51,7 @@
    if(pausePending||epoch!==pauseEpoch)return;
    if(err){mark(false);report('Viewing controls unavailable');return}
    mark(s.enabled);
+   setSound(s.audioAvailable===true);
    expiresAt=Date.parse(s.expiresAt);
    if(!s.canArm){mark(false);el('enable').disabled=true;report('Session expired');return}
    var remain=Math.max(0,Math.floor((expiresAt-Date.now())/60e3));
@@ -59,6 +67,7 @@
  video.addEventListener('error',function(){report('Live video unavailable. Try Play video.')});
  el('play').addEventListener('click',play);
  el('sound').addEventListener('click',function(){
+  if(!audioAvailable){info('Audio is not active. Start a new session using StartSound.cmd.');return}
   // Audio is opt-in: autoplay remains muted, and only a deliberate LG click unmutes.
   video.muted=!video.muted;
   video.defaultMuted=video.muted;
@@ -153,5 +162,5 @@
    report(err?'Unable to stop: '+err:'TV session ending');
   });
  });
- mark(false);healthy();setInterval(healthy,2800);play();
+ mark(false);setSound(false);healthy();setInterval(healthy,2800);play();
 })();
