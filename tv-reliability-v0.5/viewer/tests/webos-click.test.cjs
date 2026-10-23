@@ -55,6 +55,10 @@ test('armed Magic Remote overlay click forwards one bounded Windows click, fallb
   console
  };
  vm.runInNewContext(script,context,{timeout:3000});
+ assert.equal(els.get('remote-pad').hidden,false,'Physically verified click pad must be visible immediately');
+ assert.equal(els.get('showpad').textContent,'Hide click pad');
+ assert.equal(context.document.body.className,'nav-open');
+ assert.equal(els.get('clickpc').disabled,true,'Click stays OFF until owner arms');
  assert.equal(els.get('display').controls,false);
  assert.equal(els.get('display').style.pointerEvents,'none');
  assert.ok(removed.includes('controls'));
@@ -80,7 +84,9 @@ test('armed Magic Remote overlay click forwards one bounded Windows click, fallb
  events.get('clicklayer:click')(event);
  assert.equal(posts.length,2,'Disarmed clicks must never reach native mouse driver');
  events.get('showpad:click')();
- assert.equal(els.get('remote-pad').hidden,false,'Remote pad must open independently of video');
+ assert.equal(els.get('remote-pad').hidden,true,'Owner can hide pad');
+ events.get('showpad:click')();
+ assert.equal(els.get('remote-pad').hidden,false,'Owner can reopen pad without touching video');
  assert.equal(context.document.body.className,'nav-open');
  events.get('arm:click')();
  events.get('preset-chat:click')();
