@@ -45,6 +45,14 @@ test('portable preview: content hashes, bounded install, stop and reversible uni
   const startCmd=fs.readFileSync(path.join(installed,'Start.cmd'),'utf8');
   assert.match(startCmd,/launch-host\.cjs/);
   assert.doesNotMatch(startCmd,/start.*resume-host\.cjs/i);
+  const viewerHtml=fs.readFileSync(path.join(installed,'tv-reliability-v0.5','viewer','web','viewer.html'),'utf8');
+  const viewerJs=fs.readFileSync(path.join(installed,'tv-reliability-v0.5','viewer','web','viewer.js'),'utf8');
+  assert.match(viewerHtml,/<section class="remote-pad" id="remote-pad" aria-label="Windows remote navigation">/,'Proven LG click pad must be visible by default');
+  assert.doesNotMatch(viewerHtml,/id="remote-pad"[^>]*\shidden/,'Known working click pad cannot be hidden by the installer');
+  assert.match(viewerHtml,/>CLICK WINDOWS<\/button>/,'Preserve owner-verified click control');
+  assert.match(viewerJs,/\$\('remote-pad'\)\.hidden=false/,'Proven pad must be shown on TV page load');
+  assert.match(viewerJs,/setArmed\(false\)/,'Never auto-enable Windows mouse on install');
+  assert.match(viewerHtml,/id="disarm"/,'Pause must remain accessible');
   assert.ok(fs.existsSync(path.join(installed,'Start.cmd')));
   assert.ok(fs.existsSync(path.join(installed,'Stop.cmd')));
   assert.ok(fs.existsSync(path.join(installed,'Uninstall.cmd')));
