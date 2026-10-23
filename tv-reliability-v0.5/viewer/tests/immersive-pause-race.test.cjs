@@ -4,10 +4,10 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const code=fs.readFileSync(path.join(__dirname,'..','web','immersive.js'),'utf8');
 test('Pause cancels local clicks immediately, survives stale Arm and in-flight Click replies',()=>{
  const events=new Map(),elements=new Map(),requests=[];
- const ids=['desktop','surface','status','hint','enable','pause','play','sound','laptop','classic','stop','marker'];
+ const ids=['desktop','surface','status','hint','control-toggle','control-panel','enable','pause','play','sound','laptop','classic','stop','marker'];
  for(const id of ids)elements.set(id,{
   id,style:{},disabled:false,hidden:true,textContent:'',controls:true,
-  videoWidth:1280,videoHeight:720,removeAttribute(){},
+  videoWidth:1280,videoHeight:720,removeAttribute(){},setAttribute(k,v){this[k]=v},
   getBoundingClientRect(){return{left:0,top:0,width:1920,height:1080}},
   addEventListener(name,fn){events.set(id+':'+name,fn)},
   play(){return Promise.resolve()}

@@ -14,6 +14,12 @@ test('real-LG-proven HLS document is a single full viewport native click button 
  assert.match(css,/#surface\{[^}]*position:fixed;inset:0[^}]*z-index:10/);
  assert.match(html,/id="enable"/);assert.match(html,/id="pause"/);assert.match(html,/id="classic"/);
  assert.doesNotMatch(code,/\.(?:requestFullscreen|webkitEnterFullscreen)\(/);
+ assert.match(html,/id="control-toggle"[^>]*aria-expanded="false"/);
+ assert.match(html,/id="control-panel" hidden/);
+ assert.ok(html.indexOf('id="status"')>html.indexOf('id="control-panel"'),'Status moved into controls menu');
+ assert.match(css,/#controls\{[^}]*bottom:14px;top:auto/,'No permanent top toolbar');
+ assert.match(css,/#control-panel\[hidden\]\{display:none!important\}/);
+ 
  assert.match(code,/video\.muted&&audioRoute!=='laptop-only'/,'Muted LG reload must not prolong laptop suppression');
  assert.match(server,/route==='\/full\/'\+token/);
  assert.match(server,/route==='\/tv\/'\+token/);
@@ -21,10 +27,10 @@ test('real-LG-proven HLS document is a single full viewport native click button 
 });
 test('full-screen click maps letterboxed HLS to Windows only within an active owner mouse lease',()=>{
  const token='a'.repeat(64),events=new Map(),els=new Map(),requests=[];
- for(const id of ['desktop','surface','controls','enable','pause','play','sound','laptop','classic','stop','status','hint','marker']){
+ for(const id of ['desktop','surface','controls','control-toggle','control-panel','enable','pause','play','sound','laptop','classic','stop','status','hint','marker']){
   els.set(id,{id,disabled:false,hidden:false,textContent:'',style:{},
    videoWidth:1280,videoHeight:720,controls:true,
-   removeAttribute(){},
+   removeAttribute(){},setAttribute(k,v){this[k]=v},
    getBoundingClientRect(){return{left:0,top:0,width:1920,height:1080}},
    addEventListener(t,fn){events.set(id+':'+t,fn)},
    play(){return Promise.resolve()}
@@ -56,6 +62,15 @@ test('full-screen click maps letterboxed HLS to Windows only within an active ow
  };
  vm.runInNewContext(code,env,{timeout:3000});
  assert.equal(els.get('desktop').controls,false);
+ assert.equal(els.get('control-panel').hidden,true,'Menu starts hidden');
+ const countBeforeMenu=requests.filter(x=>x.route==='/api/mouse').length;
+ events.get('control-toggle:click')({preventDefault(){},stopPropagation(){}});
+ assert.equal(els.get('control-panel').hidden,false,'Menu opens on the LG button');
+ assert.equal(els.get('control-toggle')['aria-expanded'],'true');
+ events.get('control-toggle:click')({preventDefault(){},stopPropagation(){}});
+ assert.equal(els.get('control-panel').hidden,true,'Menu can be closed');
+ assert.equal(requests.filter(x=>x.route==='/api/mouse').length,countBeforeMenu,'Menu interaction cannot click Windows');
+ 
  assert.equal(els.get('desktop').muted,true,'Initial HLS autoplay must be muted');
  assert.equal(els.get('sound').disabled,false,'Sound is enabled only when the service exposes audio');
  events.get('sound:click')();
