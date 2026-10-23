@@ -6,7 +6,9 @@ const http=require('node:http');
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const cp=require('node:child_process');
 const {getFrame,metrics:previewMetrics}=require('./snapshot.cjs');
-const ROOT=__dirname,LAN='192.168.4.36',PORT=43198;
+const SETTINGS=process.env.IM_ACCESSIBILITY_CONFIG_PATH!==undefined
+ ?require('../release-config.cjs').readUserSettings():null;
+const ROOT=__dirname,LAN=SETTINGS?SETTINGS.network.ip:'192.168.4.36',PORT=43198;
 const ORIGIN='http://'+LAN+':'+PORT,UPSTREAM_DIR=path.resolve(ROOT,'../cast');
 const SOURCE_FILE=path.join(UPSTREAM_DIR,'runtime','private-access.json');
 const NATIVE=path.join(ROOT,'native','TvPointer.exe'),EVIDENCE=path.join(ROOT,'evidence');
@@ -15,10 +17,13 @@ const EXPIRES_MS=4*60*60*1000;
 const token=crypto.randomBytes(32).toString('hex'),began=Date.now(),expiresAt=began+EXPIRES_MS;
 let enabled=false,enabledUntil=0,lastActionAt=0,inputsThisMinute=0,minuteStart=Date.now(),actions=0;
 let revoked=false,lastReceipt=null,sourceUrl=null,sourceExpires=0;
+let primaryScreen=null;
 fs.mkdirSync(EVIDENCE,{recursive:true});
 function sameSubnet(address){
  if(typeof address!=='string')return false;
  if(address.startsWith('::ffff:'))address=address.slice(7);
+ if(SETTINGS)return address==='127.0.0.1'||address==='::1'||
+   require('../release-config.cjs').subnet(address,LAN,SETTINGS.network.mask);
  return address==='127.0.0.1'||address===LAN||address.startsWith('192.168.4.')||address.startsWith('192.168.5.')||address.startsWith('192.168.6.')||address.startsWith('192.168.7.');
 }
 function active(){return !revoked&&Date.now()<expiresAt;}
@@ -58,7 +63,10 @@ function receiptInput(cmd,x,y,delta) {
  const result=cp.spawnSync(NATIVE,args,{encoding:'utf8',windowsHide:true,timeout:4000,maxBuffer:5000});
  if(result.status!==0)throw Error('Native input unavailable: '+String(result.stderr||result.error?.message||'error').slice(0,110));
  const parsed=JSON.parse(result.stdout);
- if(!parsed.ok||parsed.width!==1920||parsed.height!==1080||parsed.action!==cmd)throw Error('Mouse input verification failed');
+ const exactDisplay=SETTINGS
+  ?primaryScreen&&parsed.width===primaryScreen.width&&parsed.height===primaryScreen.height
+  :parsed.width===1920&&parsed.height===1080;
+ if(!parsed.ok||!exactDisplay||parsed.action!==cmd)throw Error('Mouse input verification failed');
  return {action:cmd,x,y,delta,windowsX:parsed.cursorX,windowsY:parsed.cursorY,at:new Date().toISOString()};
 }
 function consume(input){
@@ -74,7 +82,9 @@ function consume(input){
  fs.appendFileSync(path.join(EVIDENCE,'mouse-actions.jsonl'),JSON.stringify(result)+'\n',{flag:'a'});
  return {ok:true,receipt:result};
 }
-function state(){return{receiver:'PC Bridge Interactive TV v0.1',screen:'1920x1080',stream:'1280x720 H.264',
+function state(){return{receiver:'PC Bridge Interactive TV v0.1',
+ screen:SETTINGS?(primaryScreen?primaryScreen.width+'x'+primaryScreen.height:'pending native verification'):'1920x1080',
+ stream:'1280x720 H.264',
  enabled:available(),canArm:active(),expiresAt:new Date(expiresAt).toISOString(),
  armedUntil:available()?new Date(enabledUntil).toISOString():null,actions,lastAction:lastReceipt,
  sourceReady:!!sourceUrl&&Date.now()<sourceExpires,preview:previewMetrics()}};
@@ -158,7 +168,12 @@ async function serve(){
  safelyReadUpstream();
  const native=cp.spawnSync(NATIVE,['status'],{encoding:'utf8',windowsHide:true,timeout:3500});
  if(native.status!==0)throw Error('Mouse driver unavailable');
- const details=JSON.parse(native.stdout);if(details.width!==1920||details.height!==1080)throw Error('Desktop resolution changed; no input allowed');
+ const details=JSON.parse(native.stdout);
+ const bounded=Number.isInteger(details.width)&&details.width>=640&&details.width<=8192&&
+  Number.isInteger(details.height)&&details.height>=480&&details.height<=4320;
+ if(SETTINGS?!bounded:(details.width!==1920||details.height!==1080))
+  throw Error('Desktop resolution unavailable or unsupported; no input allowed');
+ primaryScreen={width:details.width,height:details.height};
  const upstream=await fetch('http://'+LAN+':43196/health',{signal:AbortSignal.timeout(4000)});if(!upstream.ok)throw Error('Original desktop video receiver unavailable');
  const srv=createServer();
  await new Promise((resolve,reject)=>{srv.once('error',reject);srv.listen(PORT,LAN,resolve)});
@@ -170,5 +185,10 @@ async function serve(){
  console.log(JSON.stringify({ready:true,port:PORT,expiresAt:new Date(expiresAt).toISOString(),url}));
  const expire=setTimeout(()=>{revoked=true;enabled=false;srv.close();},EXPIRES_MS);expire.unref();
 }
-if(require.main===module)serve().catch(e=>{console.error('TV_POINTER_SERVICE_FAILED '+e.message);process.exitCode=1});
+if(require.main===module){
+ if(process.env.IM_ACCESSIBILITY_CONFIG_PATH===undefined){
+  console.error('IM_ACCESSIBILITY_CONFIG_REQUIRED: mouse viewer will not start without validated settings');
+  process.exitCode=1;
+ }else serve().catch(e=>{console.error('TV_POINTER_SERVICE_FAILED '+e.message);process.exitCode=1});
+}
 module.exports={createServer,consume,state,isValidCoord,tokenMatches,sameSubnet,receiptInput};

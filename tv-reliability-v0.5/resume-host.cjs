@@ -3,7 +3,10 @@
 // This owns ONLY its own cast/viewer children. It does not stop other PC Bridge services.
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto');
 const ROOT=__dirname,RUNTIME=path.join(ROOT,'runtime'),CAST=path.join(ROOT,'cast'),VIEWER=path.join(ROOT,'viewer');
-const NODE='C:/Program Files/nodejs/node.exe',LAN='192.168.4.36',MAX_MS=4*60*60*1000;
+const SETTINGS=process.env.IM_ACCESSIBILITY_CONFIG_PATH!==undefined
+ ?require('./release-config.cjs').readUserSettings():null;
+const NODE=SETTINGS?SETTINGS.executables.nodeExe:'C:/Program Files/nodejs/node.exe',
+ LAN=SETTINGS?SETTINGS.network.ip:'192.168.4.36',MAX_MS=4*60*60*1000;
 const STATE=path.join(RUNTIME,'state.json'),STOP=path.join(RUNTIME,'stop-request.json');
 const RUN=crypto.randomBytes(8).toString('hex'),START=Date.now();
 const logPath=path.join(RUNTIME,'host-'+RUN+'.log');
@@ -151,5 +154,10 @@ async function main(){
  }catch(e){reason='Start failure: '+String(e.message||e).slice(0,200);log(reason)}
  finally{await cleanup(reason)}
 }
-if(require.main===module)main().catch(e=>{log('Fatal host error '+e.message);process.exitCode=1});
+if(require.main===module){
+ if(process.env.IM_ACCESSIBILITY_CONFIG_PATH===undefined){
+  console.error('IM_ACCESSIBILITY_CONFIG_REQUIRED: refusing to start historical TV task defaults');
+  process.exitCode=1;
+ }else main().catch(e=>{log('Fatal host error '+e.message);process.exitCode=1});
+}
 module.exports={MAX_MS,archiveIfExists,reachable};
