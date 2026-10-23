@@ -5,12 +5,24 @@
  function el(id){return document.getElementById(id)}
  var video=el('desktop'),surface=el('surface'),status=el('status'),hint=el('hint');
  var armed=false,pending=false,pausePending=false,pauseEpoch=0,lastClickAt=0,expiresAt=0,confirmStopUntil=0;
- var audioAvailable=false,audioBusy=false,audioRoute='laptop-only';
+ var audioAvailable=false,audioBusy=false,audioRoute='laptop-only',controlsOpen=false;
  if(!key){status.textContent='Invalid private TV session';return}
  // webOS must keep an HTML hit target. Never enable the video control surface.
  video.controls=false;video.removeAttribute('controls');
  video.style.pointerEvents='none';video.src='/media/'+key+'/index.m3u8';
  video.defaultMuted=true;video.muted=true;video.autoplay=true;
+ function setMenu(open){
+  controlsOpen=!!open;
+  el('control-panel').hidden=!controlsOpen;
+  var toggle=el('control-toggle');
+  toggle.setAttribute('aria-expanded',controlsOpen?'true':'false');
+  toggle.textContent=controlsOpen?'Hide controls ▼':(armed?'Controls ▲ · Mouse ON':'Controls ▲');
+ }
+ el('control-toggle').addEventListener('click',function(e){
+  if(e.preventDefault)e.preventDefault();
+  if(e.stopPropagation)e.stopPropagation();
+  setMenu(!controlsOpen);
+ });
  function report(s){status.textContent=s}
  function info(s){hint.textContent=s}
  function request(route,method,data,cb){
@@ -36,7 +48,8 @@
   el('enable').disabled=armed||pausePending;el('pause').disabled=!armed||pausePending;
   info(armed?
    'Mouse ON for up to 10 minutes. Point at a Windows item and press OK. Pause when finished.':
-   'Mouse OFF. Enable mouse to click the full-screen desktop.');
+   'Mouse OFF. Open Controls to enable desktop clicks.');
+  setMenu(controlsOpen);
  }
  function setSound(allowed,mode){
   audioAvailable=!!allowed;
@@ -134,7 +147,7 @@
  surface.addEventListener('click',function(e){
   if(e.preventDefault)e.preventDefault();
   if(e.stopPropagation)e.stopPropagation();
-  if(!armed){info('Mouse OFF. Select Enable mouse at the top right.');return}
+  if(!armed){info('Mouse OFF. Open Controls at the bottom-right to enable mouse.');return}
   if(pending||Date.now()-lastClickAt<350)return;
   var p=fitPosition(e);
   if(!p){info('Select inside the desktop image, not the black border.');return}
@@ -170,7 +183,8 @@
     return;
    }
    if(err){mark(false);report('Enable rejected: '+err);return}
-   mark(s.enabled);report(s.enabled?'Windows mouse enabled for 10 minutes':'Mouse not enabled');
+   mark(s.enabled);if(s.enabled)setMenu(false);
+   report(s.enabled?'Windows mouse enabled for 10 minutes':'Mouse not enabled');
   });
  });
  el('pause').addEventListener('click',function(){
@@ -187,6 +201,7 @@
     el('enable').disabled=true;
     el('pause').disabled=false; // Allow retry even when local state is OFF.
    }
+   if(!err)setMenu(false);
    report(err?'Pause not confirmed: '+err:'Windows mouse paused');
   });
  });
@@ -210,5 +225,5 @@
    report(err?'Unable to stop: '+err:'TV session ending');
   });
  });
- mark(false);setSound(false,'laptop-only');healthy();setInterval(healthy,2800);play();
+ setMenu(false);mark(false);setSound(false,'laptop-only');healthy();setInterval(healthy,2800);play();
 })();

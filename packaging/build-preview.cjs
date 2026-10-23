@@ -4,7 +4,7 @@
 const fs=require('node:fs'),path=require('node:path');
 const core=require('./package-core.cjs');
 const repo=path.resolve(__dirname,'..');
-const version='v0.3.7-dual-audio-reconnect-preview';
+const version='v0.3.8-bottom-right-controls-preview';
 const tv=[
  'lg-pair.cjs','lg-active-view.cjs','release-config.cjs','resume.cjs','resume-host.cjs',
  'cast/lan.cjs','cast/lg-launch.cjs','cast/package.json','cast/package-lock.json',
@@ -112,6 +112,7 @@ function build(out){
    'Sound starts on TV only and temporarily mutes the selected laptop speaker output. Select Laptop sound ON to use both rooms.',
    'Laptop-only sound returns when TV playback is disabled. End, closing the TV or losing its heartbeat restores the original Windows speaker mute state.',
    'The TV Sound button is enabled only when the HLS source contains audio; video remains muted until the owner presses it.',
+   'Fullscreen TV buttons and status live in a small bottom-right expandable Controls menu.',
    'During an active four-hour viewing session, the optional LG activity guard sends only bounded one-pixel TV pointer movements while the TV browser and video are active.',
    'This does not disable OLED protection; Stop or switching away from the browser ends the signal.',
    'Stop.cmd requests shutdown; Uninstall.cmd removes only unchanged installed files.',
