@@ -4,7 +4,7 @@
 const fs=require('node:fs'),path=require('node:path');
 const core=require('./package-core.cjs');
 const repo=path.resolve(__dirname,'..');
-const version='v0.3.3-active-view-preview';
+const version='v0.3.4-minimal-hls-preview';
 const tv=[
  'lg-pair.cjs','lg-active-view.cjs','release-config.cjs','resume.cjs','resume-host.cjs',
  'cast/lan.cjs','cast/lg-launch.cjs','cast/package.json','cast/package-lock.json',
@@ -13,6 +13,7 @@ const tv=[
  'cast/web/tv.html','cast/web/tv.js',
  'viewer/server.cjs','viewer/snapshot.cjs','viewer/native/TvPointer.cs',
  'viewer/native/TvPointer.exe','viewer/web/style.css','viewer/web/viewer.html',
+ 'viewer/web/immersive.html','viewer/web/immersive.css','viewer/web/immersive.js',
  'viewer/web/viewer.js'
 ];
 function textFile(target,source){

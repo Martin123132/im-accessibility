@@ -118,6 +118,14 @@ function createServer(){
     if(!active())return json(res,410,{error:'Session expired'});
     return asset(res,'viewer.html','text/html; charset=utf-8');
    }
+   // Optional minimal full-viewport browser HTML page. Original /tv/ page is unchanged.
+   // The same time-limited viewer key protects both routes and their HLS/media APIs.
+   if(req.method==='GET'&&route==='/full/'+token){
+    if(!active())return json(res,410,{error:'Session expired'});
+    return asset(res,'immersive.html','text/html; charset=utf-8');
+   }
+   if(req.method==='GET'&&route==='/immersive.js')return asset(res,'immersive.js','text/javascript; charset=utf-8');
+   if(req.method==='GET'&&route==='/immersive.css')return asset(res,'immersive.css','text/css; charset=utf-8');
    if(req.method==='GET'&&route==='/viewer.js')return asset(res,'viewer.js','text/javascript; charset=utf-8');
    if(req.method==='GET'&&route==='/style.css')return asset(res,'style.css','text/css; charset=utf-8');
    // Static JPEG preview of the same HLS source, independently clickable by LG Magic Remote.

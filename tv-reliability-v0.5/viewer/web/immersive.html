@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1">
+ <title>I'm-accessibility — live desktop</title>
+ <link rel="stylesheet" href="/immersive.css">
+</head>
+<body>
+ <video id="desktop" muted autoplay playsinline preload="auto" aria-label="Live Windows desktop video"></video>
+ <button id="surface" type="button" aria-label="Click the full-screen Windows desktop using the LG Magic Remote"></button>
+ <div id="controls" aria-label="Desktop control options">
+  <button id="enable" type="button">Enable mouse</button>
+  <button id="pause" type="button" disabled>Pause mouse</button>
+  <button id="play" type="button">Play video</button>
+  <button id="classic" type="button">Original controls</button>
+  <button id="stop" type="button">End TV session</button>
+ </div>
+ <div id="status" role="status" aria-live="polite">Connecting to the live desktop…</div>
+ <div id="hint">Mouse is OFF. Select Enable mouse to click Windows.</div>
+ <div id="marker" hidden aria-hidden="true">+</div>
+ <script src="/immersive.js"></script>
+</body>
+</html>

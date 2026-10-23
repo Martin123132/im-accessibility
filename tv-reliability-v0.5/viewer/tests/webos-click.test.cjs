@@ -16,7 +16,7 @@ test('LG remote OK is reserved for overlay, not video play/pause',()=>{
 });
 test('armed Magic Remote overlay click forwards one bounded Windows click, fallback matches',()=>{
  const events=new Map(),els=new Map(),posts=[],removed=[],callbacks=[];
- for(const id of ['video','display','stage','clicklayer','clickflash','hint','status','result','arm','disarm','up','down','clicklast','play','full','showpad','remote-pad','target-readout','step','preset-chat','preset-center','preset-right','move-left','move-up','move-down','move-right','clickpc','picture-pad','showpicture','snapshot-target','snapshot','snapshot-frame','picture-size','aim-point','snapshot-hint','preview-age','picture-coords','video-lag','aimed-click','refresh-picture','end-viewing','session-remaining']){
+ for(const id of ['video','display','stage','clicklayer','clickflash','hint','status','result','arm','disarm','up','down','clicklast','play','full','showpad','remote-pad','target-readout','step','preset-chat','preset-center','preset-right','move-left','move-up','move-down','move-right','clickpc','newfull','picture-pad','showpicture','snapshot-target','snapshot','snapshot-frame','picture-size','aim-point','snapshot-hint','preview-age','picture-coords','video-lag','aimed-click','refresh-picture','end-viewing','session-remaining']){
   const el={id,textContent:'',hidden:false,disabled:false,style:{},className:'',controls:true,videoWidth:1280,videoHeight:720,
     getBoundingClientRect(){return{left:100,top:50,width:1280,height:720}},
     addEventListener(type,listener){events.set(id+':'+type,listener)},
@@ -62,6 +62,7 @@ test('armed Magic Remote overlay click forwards one bounded Windows click, fallb
  assert.equal(els.get('display').controls,false);
  assert.equal(els.get('display').style.pointerEvents,'none');
  assert.ok(removed.includes('controls'));
+ assert.ok(events.has('newfull:click'));
  const event={clientX:740,clientY:410,defaultPrevented:false,propagationStopped:false,
    preventDefault(){this.defaultPrevented=true},
    stopPropagation(){this.propagationStopped=true}};
