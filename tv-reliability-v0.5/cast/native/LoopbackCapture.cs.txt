@@ -7,6 +7,8 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Diagnostics;
+using System.Text;
+using System.Security.Cryptography;
 
 [ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 interface IMMDeviceEnumerator {
@@ -49,6 +51,18 @@ static class LoopbackCapture {
  const int CLSCTX_ALL=23;
  static void Check(int result) { if(result<0)Marshal.ThrowExceptionForHR(result); }
  static int U16(IntPtr ptr,int offset) { return (ushort)Marshal.ReadInt16(ptr,offset); }
+ static string EndpointHash(IMMDevice device){
+  IntPtr id=IntPtr.Zero;
+  try{
+   Check(device.GetId(out id));
+   string identity=Marshal.PtrToStringUni(id);
+   using(var sha=SHA256.Create()){
+    var output=new StringBuilder();
+    foreach(byte b in sha.ComputeHash(Encoding.Unicode.GetBytes(identity)))output.Append(b.ToString("x2"));
+    return output.ToString();
+   }
+  }finally{if(id!=IntPtr.Zero)Marshal.FreeCoTaskMem(id);}
+ }
  static string SampleFormat(IntPtr format) {
   int tag=U16(format,0), bits=U16(format,14);
   if(tag==65534) {
@@ -62,7 +76,9 @@ static class LoopbackCapture {
   return "unsupported";
  }
  public static int Main(string[] args) {
-  if(args.Length!=1||(args[0]!="--probe"&&args[0]!="--capture")) {
+  bool pinned=args.Length==3&&args[0]=="--capture"&&args[1]=="--device-hash"&&
+   System.Text.RegularExpressions.Regex.IsMatch(args[2],@"^[0-9a-f]{64}$");
+  if(!pinned&&(args.Length!=1||(args[0]!="--probe"&&args[0]!="--capture"))) {
    Console.Error.WriteLine("Usage: LoopbackCapture.exe --probe | --capture");
    return 2;
   }
@@ -77,6 +93,8 @@ static class LoopbackCapture {
    Type type=Type.GetTypeFromCLSID(new Guid("BCDE0395-E52F-467C-8E3D-C4579291692E"));
    enumerator=(IMMDeviceEnumerator)Activator.CreateInstance(type);
    Check(enumerator.GetDefaultAudioEndpoint(0,1,out device));
+   string playbackHash=EndpointHash(device);
+   if(pinned&&playbackHash!=args[2])throw new InvalidOperationException("Windows playback endpoint changed after HLS audio probe");
    Guid cid=typeof(IAudioClient).GUID;
    IntPtr p;Check(device.Activate(ref cid,CLSCTX_ALL,IntPtr.Zero,out p));
    client=(IAudioClient)Marshal.GetObjectForIUnknown(p);Marshal.Release(p);
@@ -90,6 +108,7 @@ static class LoopbackCapture {
     Console.WriteLine("{\"ok\":"+ (valid?"true":"false")+
       ",\"sampleFormat\":\""+sample+"\",\"sampleRate\":"+rate+
       ",\"channels\":"+channels+",\"bitsPerSample\":"+bits+",\"blockAlign\":"+align+
+      ",\"deviceIdHash\":\""+playbackHash+"\""+
       ",\"capture\":\"default-speaker-output-loopback\"}");
     return valid?0:4;
    }

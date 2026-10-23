@@ -20,7 +20,7 @@ test('real-LG-proven HLS document is a single full viewport native click button 
 });
 test('full-screen click maps letterboxed HLS to Windows only within an active owner mouse lease',()=>{
  const token='a'.repeat(64),events=new Map(),els=new Map(),requests=[];
- for(const id of ['desktop','surface','controls','enable','pause','play','sound','classic','stop','status','hint','marker']){
+ for(const id of ['desktop','surface','controls','enable','pause','play','sound','laptop','classic','stop','status','hint','marker']){
   els.set(id,{id,disabled:false,hidden:false,textContent:'',style:{},
    videoWidth:1280,videoHeight:720,controls:true,
    removeAttribute(){},
@@ -38,7 +38,7 @@ test('full-screen click maps letterboxed HLS to Windows only within an active ow
    const data=body===null?null:JSON.parse(body);
    requests.push({route:this.route,method:this.method,data});
    let result={};
-   if(this.route==='/api/status')result={canArm:true,enabled:armed,audioAvailable:true,expiresAt:new Date(now+3600000).toISOString()};
+   if(this.route==='/api/status')result={canArm:true,enabled:armed,audioAvailable:true,audioRoute:'laptop-only',expiresAt:new Date(now+3600000).toISOString()};
    if(this.route==='/api/arm'){armed=true;result={enabled:true}}
    if(this.route==='/api/disarm'){armed=false;result={enabled:false}}
    if(this.route==='/api/mouse'){result={receipt:{action:'click',windowsX:960,windowsY:540}}}
@@ -59,9 +59,14 @@ test('full-screen click maps letterboxed HLS to Windows only within an active ow
  assert.equal(els.get('sound').disabled,false,'Sound is enabled only when the service exposes audio');
  events.get('sound:click')();
  assert.equal(els.get('desktop').muted,false,'Owner can explicitly enable TV sound');
- assert.equal(els.get('sound').textContent,'Sound ON');
+ assert.equal(els.get('sound').textContent,'TV sound ON');
+ assert.equal(els.get('laptop').disabled,false);
+ events.get('laptop:click')();
+ assert.equal(els.get('laptop').textContent,'Laptop sound ON');
+ events.get('laptop:click')();
+ assert.equal(els.get('laptop').textContent,'Laptop sound OFF');
  events.get('sound:click')();
- assert.equal(els.get('desktop').muted,true,'Sound can be turned OFF again');
+ assert.equal(els.get('desktop').muted,true,'TV sound can be turned OFF again');
  assert.equal(els.get('desktop').style.pointerEvents,'none');
  assert.equal(els.get('enable').disabled,false);
  assert.equal(els.get('pause').disabled,true);

@@ -8,6 +8,7 @@ const SUPPORTED_SAMPLES=new Set(['f32le','s16le','s24le','s32le']);
 function isAudioOptIn(value){return value==='1'}
 function validFormat(f){
  return !!f&&f.ok===true&&f.capture==='default-speaker-output-loopback'&&
+ typeof f.deviceIdHash==='string'&&/^[0-9a-f]{64}$/.test(f.deviceIdHash)&&
  SUPPORTED_SAMPLES.has(f.sampleFormat)&&
  Number.isInteger(f.sampleRate)&&f.sampleRate>=8000&&f.sampleRate<=192000&&
  Number.isInteger(f.channels)&&f.channels>=1&&f.channels<=8&&
@@ -21,7 +22,8 @@ function probe(binary=BINARY,spawnSync=cp.spawnSync){
  let f;try{f=JSON.parse(p.stdout)}catch{throw Error('Invalid audio probe response')}
  if(!validFormat(f))throw Error('Unsupported Windows speaker-output format');
  return Object.freeze({
-  sampleFormat:f.sampleFormat,sampleRate:f.sampleRate,channels:f.channels
+  sampleFormat:f.sampleFormat,sampleRate:f.sampleRate,channels:f.channels,
+  deviceIdHash:f.deviceIdHash
  });
 }
 function argsFor(streamDir,format=null){

@@ -15,12 +15,12 @@ test('speaker output is exact opt-in with no microphone endpoint',()=>{
 });
 test('Windows speaker-loopback helper validates bounded raw format',()=>{
  const f={ok:true,sampleFormat:'f32le',sampleRate:48000,channels:2,
-  bitsPerSample:32,blockAlign:8,capture:'default-speaker-output-loopback'};
+  bitsPerSample:32,blockAlign:8,deviceIdHash:'a'.repeat(64),capture:'default-speaker-output-loopback'};
  assert.equal(sound.validFormat(f),true);
  for(const p of [{capture:'microphone'},{sampleFormat:'unknown'},{channels:0},{channels:10},{sampleRate:999999},{blockAlign:16},{ok:false}])
   assert.equal(sound.validFormat({...f,...p}),false);
  assert.deepEqual(sound.probe(sound.BINARY,()=>({status:0,stdout:JSON.stringify(f)})),
-  {sampleFormat:'f32le',sampleRate:48000,channels:2});
+  {sampleFormat:'f32le',sampleRate:48000,channels:2,deviceIdHash:'a'.repeat(64)});
  assert.throws(()=>sound.probe(sound.BINARY,()=>({status:1})),/unavailable/);
 });
 test('original HLS remains video-only; opt-in adds copied speaker audio',()=>{

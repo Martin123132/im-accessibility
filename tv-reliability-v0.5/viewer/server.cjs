@@ -6,6 +6,8 @@ const http=require('node:http');
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const cp=require('node:child_process');
 const {getFrame,metrics:previewMetrics}=require('./snapshot.cjs');
+const {SpeakerRouter}=require('./speaker-routing.cjs');
+const speakerRouter=new SpeakerRouter();
 const SETTINGS=process.env.IM_ACCESSIBILITY_CONFIG_PATH!==undefined
  ?require('../release-config.cjs').readUserSettings():null;
 const ROOT=__dirname,LAN=SETTINGS?SETTINGS.network.ip:'192.168.4.36',PORT=43198;
@@ -82,15 +84,19 @@ function consume(input){
  fs.appendFileSync(path.join(EVIDENCE,'mouse-actions.jsonl'),JSON.stringify(result)+'\n',{flag:'a'});
  return {ok:true,receipt:result};
 }
-async function sourceAudio(){
- if(!sourceUrl||Date.now()>=sourceExpires)return false;
+async function sourceAudioInfo(){
+ if(!sourceUrl||Date.now()>=sourceExpires)return {available:false,deviceIdHash:null};
  try{
   const r=await fetch('http://'+LAN+':43196/health',{signal:AbortSignal.timeout(950),redirect:'error'});
-  if(!r.ok)return false;
+  if(!r.ok)return {available:false,deviceIdHash:null};
   const result=await r.json();
-  return result.ok===true&&result.audioEnabled===true&&result.stream==='running';
- }catch{return false}
+  const hash=result.audioDeviceIdHash;
+  const available=result.ok===true&&result.audioEnabled===true&&result.stream==='running'&&
+   typeof hash==='string'&&/^[0-9a-f]{64}$/.test(hash);
+  return {available,deviceIdHash:available?hash:null};
+ }catch{return {available:false,deviceIdHash:null}}
 }
+async function sourceAudio(){return (await sourceAudioInfo()).available}
 function state(){return{receiver:'PC Bridge Interactive TV v0.1',
  screen:SETTINGS?(primaryScreen?primaryScreen.width+'x'+primaryScreen.height:'pending native verification'):'1920x1080',
  stream:'1280x720 H.264',
@@ -157,11 +163,28 @@ function createServer(){
    if(!route.startsWith('/api/'))return json(res,404,{error:'Not found'});
    const auth=(req.headers.authorization||'').replace(/^Bearer /,'');
    if(!tokenMatches(auth)||!active())return json(res,401,{error:'Viewer permission required'});
-   if(req.method==='GET'&&route==='/api/status')return json(res,200,{...state(),audioAvailable:await sourceAudio()});
+   if(req.method==='GET'&&route==='/api/status')return json(res,200,{...state(),audioAvailable:await sourceAudio(),...speakerRouter.snapshot()});
    if(req.method!=='POST')return json(res,405,{error:'Method denied'});
    if(req.headers.origin&&req.headers.origin!==ORIGIN)return json(res,403,{error:'Origin denied'});
    if(req.headers['sec-fetch-site']==='cross-site')return json(res,403,{error:'Cross-site request denied'});
    const input=await getBody(req);
+   if(route==='/api/audio-route'){
+    if(!input||Object.keys(input).length!==1||typeof input.mode!=='string')
+     throw Error('One explicit audio destination is required');
+    const audio=await sourceAudioInfo();
+    if(input.mode!=='laptop-only'&&!audio.available)
+     return json(res,409,{error:'Windows desktop audio is not available'});
+    const result=speakerRouter.setMode(input.mode,audio.deviceIdHash);
+    return json(res,200,{ok:true,...result});
+   }
+   if(route==='/api/audio-heartbeat'){
+    if(!input||Object.keys(input).length!==0)throw Error('No arguments');
+    if(!(await sourceAudio())){
+     speakerRouter.restore();
+     return json(res,409,{error:'TV audio source stopped; laptop playback restored'});
+    }
+    return json(res,200,{ok:true,...speakerRouter.pulse()});
+   }
    if(route==='/api/arm'){
     if(input?.confirm!==true||Object.keys(input).length!==1)throw Error('Explicit click to enable required');
     enabled=true;enabledUntil=Math.min(expiresAt,Date.now()+10*60*1000);
@@ -174,7 +197,7 @@ function createServer(){
    if(route==='/api/end'){
     if(!input||Object.keys(input).join(',')!=='confirm'||input.confirm!==true)throw Error('Explicit end-session confirmation required');
     fs.writeFileSync(STOP_SIGNAL,JSON.stringify({reason:'owner-pressed-stop',requestedAtUtc:new Date().toISOString()})+'\n',{flag:'wx'});
-    enabled=false;return json(res,200,{accepted:true,message:'PC Bridge TV session stopping'});
+    enabled=false;speakerRouter.restore();return json(res,200,{accepted:true,message:'PC Bridge TV session stopping'});
    }
    if(route==='/api/mouse')return json(res,200,consume(input));
    return json(res,404,{error:'Not found'});
@@ -183,6 +206,9 @@ function createServer(){
 }
 async function serve(){
  safelyReadUpstream();
+ // Recover a previous crashed session's speaker state before opening new control.
+ const old=speakerRouter.recover();
+ if(!old.recovered)console.error('SPEAKER_RESTORE_PENDING: '+old.reason);
  const native=cp.spawnSync(NATIVE,['status'],{encoding:'utf8',windowsHide:true,timeout:3500});
  if(native.status!==0)throw Error('Mouse driver unavailable');
  const details=JSON.parse(native.stdout);
@@ -200,7 +226,21 @@ async function serve(){
   url,port:PORT,sourcePort:43196,control:'mouse-only, opt-in on TV, 10-minute arm',sourceExpires:new Date(sourceExpires).toISOString()
  },null,2)+'\n',{flag:'wx'});
  console.log(JSON.stringify({ready:true,port:PORT,expiresAt:new Date(expiresAt).toISOString(),url}));
- const expire=setTimeout(()=>{revoked=true;enabled=false;srv.close();},EXPIRES_MS);expire.unref();
+ const maintenance=setInterval(async()=>{
+  try{
+   if(!active()||!(await sourceAudio()))speakerRouter.restore();
+   else speakerRouter.expire();
+  }catch(e){console.error('SPEAKER_ROUTING_CHECK '+String(e.message).slice(0,90))}
+ },3100);maintenance.unref();
+ function shutdown(){
+  revoked=true;enabled=false;clearInterval(maintenance);
+  speakerRouter.restore();
+  try{srv.close()}catch{}
+ }
+ process.once('SIGTERM',shutdown);
+ process.once('SIGINT',shutdown);
+ srv.once('close',()=>{clearInterval(maintenance);speakerRouter.restore()});
+ const expire=setTimeout(shutdown,EXPIRES_MS);expire.unref();
 }
 if(require.main===module){
  if(process.env.IM_ACCESSIBILITY_CONFIG_PATH===undefined){
