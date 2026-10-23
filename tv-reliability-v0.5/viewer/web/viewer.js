@@ -27,13 +27,14 @@
  function setArmed(value){
   armed=!!value;layer.className=armed?'clicklayer active':'clicklayer';
   $('arm').disabled=armed;$('disarm').disabled=!armed;
+  $('stage-arm').disabled=armed;$('stage-pause').disabled=!armed;
   $('up').disabled=!armed;$('down').disabled=!armed;$('clicklast').disabled=!armed||!hasPoint;
   padIds.forEach(function(id){$(id).disabled=!armed;});
   $('snapshot-target').disabled=!armed||!snapshotReady;
   $('aimed-click').disabled=!armed||!snapshotReady||!snapshotAim;
   $('hint').textContent=armed?
-    'PC CONTROLS ON · Click the desktop with your LG pointer (no typing or message sending).':
-    'PC CONTROLS OFF · Enable PC controls below before clicking Windows.';
+    'MOUSE ON · Click directly on this full-screen Windows desktop. Pause at top right.':
+    'MOUSE OFF · Use Enable mouse at top right before clicking Windows.';
  }
  function refresh(){
   if(pending)return;
@@ -103,14 +104,18 @@
  layer.addEventListener('mousewheel',scroll,false);
  $('up').addEventListener('click',function(){sendPointer('wheel',lastPoint,2)});
  $('down').addEventListener('click',function(){sendPointer('wheel',lastPoint,-2)});
- $('arm').addEventListener('click',function(){
+ function armControls(){
   if(pending)return;
   pending=true;result('Enabling mouse controls for this TV…');
   request('arm','POST',{confirm:true},function(err,d){
    pending=false;if(err){result('Enable rejected: '+err);return;}
-   setArmed(d.enabled);result('Enabled. Point at a Windows item inside the video and click it.');
+   setArmed(d.enabled);
+   result('Mouse ON. Click a Windows item directly in the large desktop picture.');
+   if(layer.focus)layer.focus();
   });
- });
+ }
+ $('arm').addEventListener('click',armControls);
+ $('stage-arm').addEventListener('click',armControls);
  $('end-viewing').addEventListener('click',function(){
   if(pending)return;
   if(Date.now()>confirmEndUntil){
@@ -128,17 +133,42 @@
    else result('Stop not sent: '+err);
   });
  });
- $('disarm').addEventListener('click',function(){
+ function pauseControls(){
   if(pending)return;
   pending=true;request('disarm','POST',{},function(err,d){
    pending=false;setArmed(false);result(err?'Pause failed: '+err:'Mouse controls paused.');
   });
- });
+ }
+ $('disarm').addEventListener('click',pauseControls);
+ $('stage-pause').addEventListener('click',pauseControls);
  $('play').addEventListener('click',function(){
   try{var p=video.play();if(p&&p.catch)p.catch(function(){show('Select Play again with your TV remote');});}catch(e){show('TV requires manual playback');}
  });
+ function exitImmersive(){
+  stage.className='stage';
+  $('stage-actions').hidden=true;
+  $('full').textContent='Full-screen click desktop';
+  try{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen();}catch(e){}
+ }
+ function enterImmersive(){
+  // Keep the video inside the HTML stage so LG click buttons stay above it.
+  // Never promote only the video into native fullscreen: that captures OK clicks.
+  stage.className='stage immersive';
+  $('stage-actions').hidden=false;
+  $('full').textContent='Exit full screen';
+  try{
+   if(stage.requestFullscreen){
+    var p=stage.requestFullscreen();
+    if(p&&p.catch)p.catch(function(){show('Immersive full-screen desktop active');});
+   }
+  }catch(e){show('Immersive full-screen desktop active');}
+ }
  $('full').addEventListener('click',function(){
-  try{if(stage.requestFullscreen)stage.requestFullscreen();else if(video.webkitEnterFullscreen)video.webkitEnterFullscreen();}catch(e){}
+  if(stage.className.indexOf('immersive')>=0)exitImmersive();else enterImmersive();
+ });
+ $('stage-exit').addEventListener('click',exitImmersive);
+ if(document.addEventListener)document.addEventListener('fullscreenchange',function(){
+  if(!document.fullscreenElement&&stage.className.indexOf('immersive')>=0)exitImmersive();
  });
  video.addEventListener('playing',function(){show(armed?'LIVE · Windows controls ON':'LIVE · video playing');});
  video.addEventListener('waiting',function(){show('Buffering video stream…');});

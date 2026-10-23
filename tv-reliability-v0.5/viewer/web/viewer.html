@@ -3,12 +3,17 @@
 <div class="header"><strong>PC BRIDGE / INTERACTIVE TV · LIVE DESKTOP RESUME v0.5 · VERIFIED REMOTE CLICK PAD</strong><span id="status" role="status">Loading desktop…</span></div>
 <div class="stage" id="stage">
 <video id="display" muted autoplay playsinline preload="auto" aria-label="Live Windows desktop"></video>
-<div id="clicklayer" class="clicklayer" role="button" tabindex="0" aria-label="Click this area to control the Windows desktop" title="Point and click the Windows desktop with your LG remote"></div>
+<button id="clicklayer" class="clicklayer" type="button" aria-label="Click the full-screen Windows desktop with your LG remote" title="Click Windows here with your LG Magic Remote"></button>
 <div class="hint" id="hint">Controls are OFF. Enable PC controls, then use the orange CLICK WINDOWS button in the remote click pad below.</div>
 <div class="clickflash" id="clickflash" hidden>●</div>
+<div class="stage-actions" id="stage-actions" hidden>
+ <button id="stage-arm" type="button" aria-label="Enable Windows mouse controls" class="on">Enable mouse</button>
+ <button id="stage-pause" type="button" aria-label="Pause Windows mouse controls" class="off" disabled>Pause mouse</button>
+ <button id="stage-exit" type="button" aria-label="Exit full-screen desktop">Exit full screen</button>
+</div>
 </div>
 <div class="toolbar">
-<button id="play">Play video</button><button id="full">Full screen</button>
+<button id="play">Play video</button><button id="full">Full-screen click desktop</button>
 <button id="arm" class="on">Enable PC controls</button><button id="disarm" class="off" disabled>Pause PC controls</button>
 <button id="clicklast" disabled>Click at pointer</button><button id="showpicture" class="picture-button">Click desktop picture</button><button id="showpad">Hide click pad</button><button id="end-viewing" class="off">End TV session</button><span id="session-remaining" class="small">Four-hour viewer</span><button id="up" disabled>Scroll ↑</button><button id="down" disabled>Scroll ↓</button>
 <span class="small" id="result" role="status">Waiting for TV remote.</span>
@@ -46,5 +51,5 @@
  <p class="pad-note">Use the buttons outside the video. First position the cursor with a preset and arrows, then choose CLICK WINDOWS. Watch the delayed TV picture before clicking again.</p>
 </section>
 </div>
-<p class="note">Four-hour TV video; you can re-enable PC controls for another ten minutes whenever needed. The click pad is visible by default because that was the physically verified LG remote control method. Only explicitly enabled mouse input is forwarded to Windows; the video remains view-only. No keyboard or Codex message submission is enabled.</p>
+<p class="note">Four-hour TV video; you can re-enable PC controls for another ten minutes whenever needed. The click pad is visible by default because that was the physically verified LG remote control method. Only explicitly enabled mouse input is forwarded to Windows. In full-screen mode use the actual TV picture directly; the separate click pad remains available as a fallback. No keyboard or Codex message submission is enabled.</p>
 </div><script src="/viewer.js"></script></body></html>

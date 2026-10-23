@@ -42,3 +42,15 @@ body.picture-open .remote-pad{display:none!important}
 body.picture-open .note{display:none}
 body.picture-open .toolbar{margin:0}
 @media(max-height:740px){.picture-pad{padding:6px;margin:4px auto}.picture-title{font-size:13px}.snapshot-hint{font-size:12px;padding:6px}.picture-actions{margin:4px 0}.picture-actions button{min-height:36px;font-size:14px}}
+/* Full-screen desktop must remain an HTML surface on LG webOS, not a native video-only mode. */
+.stage button.clicklayer{display:block;position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;min-height:0;border:0;border-radius:0;color:transparent;background:rgba(0,0,0,.002)!important;-webkit-appearance:none;appearance:none;box-shadow:none;cursor:crosshair;z-index:4;pointer-events:none}
+.stage button.clicklayer.active{pointer-events:auto;border:2px solid rgba(126,240,199,.35)}
+.stage button.clicklayer:focus{outline:3px solid rgba(255,255,255,.88);outline-offset:-7px}
+.stage.immersive,.stage:fullscreen,.stage:-webkit-full-screen{position:fixed!important;inset:0!important;z-index:1000!important;width:100vw!important;height:100vh!important;min-height:100vh!important;max-height:none!important;max-width:none!important;aspect-ratio:auto!important;margin:0!important;padding:0!important;border:0!important;background:#000!important}
+.stage.immersive video,.stage:fullscreen video,.stage:-webkit-full-screen video{width:100%!important;height:100%!important;object-fit:contain!important}
+.stage-actions[hidden]{display:none!important}
+.stage-actions{position:absolute;right:10px;top:10px;z-index:9;display:flex;gap:8px;align-items:center;pointer-events:auto}
+.stage-actions button{display:inline-block;min-height:42px;min-width:95px;padding:8px 11px;border:2px solid #7fe6c6;border-radius:7px;background:rgba(8,32,39,.86);color:#fff;font:bold 16px Arial,sans-serif;cursor:pointer}
+.stage-actions button.on{background:#217b58;color:#fff}.stage-actions button.off{background:#a34348;color:#fff}.stage-actions button:disabled{display:none!important}
+.stage-actions button:focus{outline:4px solid #fff;outline-offset:1px}
+.stage.immersive .hint,.stage:fullscreen .hint,.stage:-webkit-full-screen .hint{max-width:58%;font-size:14px}

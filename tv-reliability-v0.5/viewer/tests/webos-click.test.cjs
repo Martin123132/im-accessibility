@@ -9,14 +9,20 @@ test('LG remote OK is reserved for overlay, not video play/pause',()=>{
  assert.ok(tag,'Video tag exists');
  assert.doesNotMatch(tag,/\scontrols(?:\s|>|=)/,'Native video controls must be absent');
  assert.match(css,/\.stage video\{pointer-events:none!important/,'Ignore pointer interactions on video decoding surface');
- assert.match(html,/id="clicklayer"/);
+ assert.match(html,/<button id="clicklayer" class="clicklayer" type="button"/,'LG Magic Remote target must be a real clickable HTML button, not a DIV pretending to be a button');
+ assert.doesNotMatch(html,/<div id="clicklayer"/,'Unverified DIV overlay must not replace the native HTML target');
+ assert.match(css,/\.stage button\.clicklayer\{[^}]*pointer-events:none/,'Mouse remains disabled without owner opt-in');
+ assert.match(css,/\.stage button\.clicklayer\.active\{[^}]*pointer-events:auto/,'TV pointer reaches actual HTML button while armed');
+ assert.match(css,/\.stage\.immersive/,'Full screen uses full-viewport HTML stage');
+ assert.match(html,/id="stage-pause"/,'Owner Pause control stays available on the full-screen desktop');
+ assert.match(html,/id="stage-exit"/,'User can exit full-screen mode');
  assert.match(html,/id="clicklast" disabled/);
  assert.match(script,/video\.controls=false/);
  assert.match(script,/video\.removeAttribute\("controls"\)/);
 });
 test('armed Magic Remote overlay click forwards one bounded Windows click, fallback matches',()=>{
  const events=new Map(),els=new Map(),posts=[],removed=[],callbacks=[];
- for(const id of ['video','display','stage','clicklayer','clickflash','hint','status','result','arm','disarm','up','down','clicklast','play','full','showpad','remote-pad','target-readout','step','preset-chat','preset-center','preset-right','move-left','move-up','move-down','move-right','clickpc','picture-pad','showpicture','snapshot-target','snapshot','snapshot-frame','picture-size','aim-point','snapshot-hint','preview-age','picture-coords','video-lag','aimed-click','refresh-picture','end-viewing','session-remaining']){
+ for(const id of ['video','display','stage','clicklayer','clickflash','hint','status','result','arm','disarm','up','down','clicklast','play','full','showpad','remote-pad','target-readout','step','preset-chat','preset-center','preset-right','move-left','move-up','move-down','move-right','clickpc','stage-actions','stage-arm','stage-pause','stage-exit','picture-pad','showpicture','snapshot-target','snapshot','snapshot-frame','picture-size','aim-point','snapshot-hint','preview-age','picture-coords','video-lag','aimed-click','refresh-picture','end-viewing','session-remaining']){
   const el={id,textContent:'',hidden:false,disabled:false,style:{},className:'',controls:true,videoWidth:1280,videoHeight:720,
     getBoundingClientRect(){return{left:100,top:50,width:1280,height:720}},
     addEventListener(type,listener){events.set(id+':'+type,listener)},
@@ -59,6 +65,14 @@ test('armed Magic Remote overlay click forwards one bounded Windows click, fallb
  assert.equal(els.get('showpad').textContent,'Hide click pad');
  assert.equal(context.document.body.className,'nav-open');
  assert.equal(els.get('clickpc').disabled,true,'Click stays OFF until owner arms');
+ assert.equal(els.get('stage-arm').disabled,false,'Fullscreen Enable must be available while disarmed');
+ assert.equal(els.get('stage-pause').disabled,true,'Fullscreen Pause must be disabled until armed');
+ events.get('full:click')();
+ assert.equal(els.get('stage').className,'stage immersive','Fullscreen must cover TV with HTML stage');
+ assert.equal(els.get('stage-actions').hidden,false,'Fullscreen browser controls must be visible');
+ events.get('stage-exit:click')();
+ assert.equal(els.get('stage').className,'stage','Owner can leave browser fullscreen');
+ assert.equal(els.get('stage-actions').hidden,true,'Full screen action buttons hidden on exit');
  assert.equal(els.get('display').controls,false);
  assert.equal(els.get('display').style.pointerEvents,'none');
  assert.ok(removed.includes('controls'));
@@ -70,6 +84,8 @@ test('armed Magic Remote overlay click forwards one bounded Windows click, fallb
  assert.equal(event.defaultPrevented,true,'TV browser video default click must be cancelled');
  events.get('arm:click')();
  assert.equal(armed,true);
+ assert.equal(els.get('stage-arm').disabled,true);
+ assert.equal(els.get('stage-pause').disabled,false);
  assert.equal(els.get('clicklast').disabled,true,'Fallback is disabled until a desktop coordinate is selected');
  events.get('clicklayer:mousemove')({clientX:740,clientY:410});
  assert.equal(els.get('clicklast').disabled,false);
@@ -80,7 +96,8 @@ test('armed Magic Remote overlay click forwards one bounded Windows click, fallb
  events.get('clicklast:click')();
  assert.equal(posts.length,2);
  assert.deepEqual(JSON.parse(JSON.stringify(posts[1])),{cmd:'click',x:5000,y:5000});
- events.get('disarm:click')();
+ events.get('stage-pause:click')();
+ assert.equal(armed,false,'The fullscreen Pause button must revoke the lease');
  events.get('clicklayer:click')(event);
  assert.equal(posts.length,2,'Disarmed clicks must never reach native mouse driver');
  events.get('showpad:click')();
