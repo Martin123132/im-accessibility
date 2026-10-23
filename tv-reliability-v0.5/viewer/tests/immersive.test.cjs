@@ -14,6 +14,7 @@ test('real-LG-proven HLS document is a single full viewport native click button 
  assert.match(css,/#surface\{[^}]*position:fixed;inset:0[^}]*z-index:10/);
  assert.match(html,/id="enable"/);assert.match(html,/id="pause"/);assert.match(html,/id="classic"/);
  assert.doesNotMatch(code,/\.(?:requestFullscreen|webkitEnterFullscreen)\(/);
+ assert.match(code,/video\.muted&&audioRoute!=='laptop-only'/,'Muted LG reload must not prolong laptop suppression');
  assert.match(server,/route==='\/full\/'\+token/);
  assert.match(server,/route==='\/tv\/'\+token/);
  assert.match(server,/asset\(res,'immersive.html','text\/html/);

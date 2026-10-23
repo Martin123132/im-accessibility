@@ -4,7 +4,7 @@
 const fs=require('node:fs'),path=require('node:path');
 const core=require('./package-core.cjs');
 const repo=path.resolve(__dirname,'..');
-const version='v0.3.6-dual-audio-preview';
+const version='v0.3.7-dual-audio-reconnect-preview';
 const tv=[
  'lg-pair.cjs','lg-active-view.cjs','release-config.cjs','resume.cjs','resume-host.cjs',
  'cast/lan.cjs','cast/lg-launch.cjs','cast/package.json','cast/package-lock.json',

@@ -112,7 +112,8 @@
  // Heartbeat prevents a permanent Windows mute if this browser, TV or session stops.
  // Keep the laptop-only mode alive too if the owner explicitly switched sound back.
  setInterval(function(){
-  if(audioBusy||!audioAvailable||document.visibilityState==='hidden'||video.paused)return;
+  if(audioBusy||!audioAvailable||document.visibilityState==='hidden'||video.paused||
+     (video.muted&&audioRoute!=='laptop-only'))return;
   request('audio-heartbeat','POST',{},function(err){
    if(err&&audioRoute!=='laptop-only'){
     video.muted=true;video.defaultMuted=true;
