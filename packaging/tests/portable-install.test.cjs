@@ -17,6 +17,9 @@ test('portable preview: content hashes, bounded install, stop and reversible uni
   const man=JSON.parse(fs.readFileSync(path.join(bundle,'package-manifest.json'),'utf8'));
   assert.equal(core.verify(path.join(bundle,'payload'),man).files,man.files.length);
   assert.equal(man.product,'ImAccessibility');
+  assert.ok(man.files.some(x=>x.path==='Setup.cmd'));
+  assert.ok(man.files.some(x=>x.path==='first-run.cjs'));
+  assert.ok(man.files.some(x=>x.path==='launch-host.cjs'));
   assert.ok(man.files.some(x=>x.path.endsWith('cast/node_modules/lgtv2/LICENSE')));
   assert.ok(man.files.some(x=>x.path.endsWith('cast/node_modules/ws/LICENSE')));
   assert.ok(man.files.some(x=>x.path.endsWith('viewer/native/TvPointer.exe')));
@@ -36,6 +39,12 @@ test('portable preview: content hashes, bounded install, stop and reversible uni
 
   const install=run(process.execPath,[path.join(bundle,'install.cjs')],env);
   assert.equal(install.status,0,install.stdout+' '+install.stderr);
+  assert.ok(fs.existsSync(path.join(installed,'Setup.cmd')));
+  assert.ok(fs.existsSync(path.join(installed,'first-run.cjs')));
+  assert.ok(fs.existsSync(path.join(installed,'launch-host.cjs')));
+  const startCmd=fs.readFileSync(path.join(installed,'Start.cmd'),'utf8');
+  assert.match(startCmd,/launch-host\.cjs/);
+  assert.doesNotMatch(startCmd,/start.*resume-host\.cjs/i);
   assert.ok(fs.existsSync(path.join(installed,'Start.cmd')));
   assert.ok(fs.existsSync(path.join(installed,'Stop.cmd')));
   assert.ok(fs.existsSync(path.join(installed,'Uninstall.cmd')));

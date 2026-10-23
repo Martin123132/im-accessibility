@@ -15,7 +15,9 @@ The per-user settings are stored **outside the Git checkout**, under your Window
 
 `%LOCALAPPDATA%\ImAccessibility\settings.json`
 
-A forthcoming first-run setup will create this file after the owner chooses and confirms their Windows adapter and LG device. Until then you may prepare it manually for **validation only**, without operating the television.
+**The portable preview now includes guided first-run setup.** Once the bundle has been installed, double-click **Setup.cmd** in `%LOCALAPPDATA%\Programs\ImAccessibility` (or run `node first-run.cjs --wizard` from that folder). It lists eligible PC network adapters, asks you to choose one, accepts the LG TV IP or lets you defer selection, and asks for the local Node.js/FFmpeg paths. It shows a summary and saves the settings only after you type **YES**. Nothing connects to the TV during setup.
+
+**Setup refuses to overwrite existing settings**. To inspect the machine without changing anything, run `node first-run.cjs --doctor`. Run `node first-run.cjs --validate` to check an existing configuration. **Start.cmd** requires an actual owner-selected LG IP; if you defer TV selection, the app cannot start a session until settings are deliberately configured.
 
 An explicit path is supported through the session environment:
 
@@ -61,7 +63,7 @@ This example uses *illustrative* addresses and placeholder adapter/executable pa
 - Configured mouse controls accept the actual bounded primary display dimensions, rechecking the native helper's reported dimensions on subsequent input. Mouse control still starts OFF and is permission limited.
 - The release's Resume/Stop/Status `.cmd` wrappers use `%~dp0` rather than the original laptop's absolute project directory and refuse to run without an explicit environment configuration.
 
-**Installation is not complete:** the Windows task, shortcuts and LG pairing are not automatically created by this commit. The Day 3 packaging work will create only the new product's own reversible shortcuts/tasks.
+**Installation preview:** the portable bundle installs per-user Start, Stop, Status, Setup and Uninstall commands but does **not** register an automatic Windows task, create a service, alter firewall rules or perform pairing. Start runs the supervisor only on explicit owner action, after revalidating the exact config and checking for an existing/uncertain session. The Start Menu experience and second-machine acceptance remain separate release gates.
 
 ## Test coverage and future steps
 

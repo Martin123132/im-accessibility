@@ -4,7 +4,7 @@
 const fs=require('node:fs'),path=require('node:path');
 const core=require('./package-core.cjs');
 const repo=path.resolve(__dirname,'..');
-const version='v0.3.0-portable-preview';
+const version='v0.3.1-setup-preview';
 const tv=[
  'lg-pair.cjs','release-config.cjs','resume.cjs','resume-host.cjs',
  'cast/lan.cjs','cast/lg-launch.cjs','cast/package.json','cast/package-lock.json',
@@ -54,6 +54,8 @@ function build(out){
   copy(path.join(repo,'NOTICE.md'),'NOTICE.md');
   copy(path.join(repo,'docs','CONFIGURATION.md'),'CONFIGURATION.md');
   copy(path.join(__dirname,'package-core.cjs'),'package-core.cjs');
+  copy(path.join(__dirname,'first-run.cjs'),'first-run.cjs');
+  copy(path.join(__dirname,'launch-host.cjs'),'launch-host.cjs');
   copy(path.join(__dirname,'uninstall.cjs'),'Uninstall.cjs');
   copy(path.join(__dirname,'stop-session.cjs'),'stop-session.cjs');
   copy(path.join(__dirname,'status-session.cjs'),'status-session.cjs');
@@ -62,17 +64,16 @@ function build(out){
    fs.writeFileSync(path.join(payload,name),value,{flag:'wx'});
    copied.push({path:name,bytes:value.length,sha256:core.sha(value)});
   }
-  add('Start.cmd',[
-   '@echo off','setlocal',
-   'if not defined LOCALAPPDATA (echo Windows user profile unavailable & exit /b 2)',
-   'where node.exe >nul 2>&1',
-   'if errorlevel 1 (echo Node.js is required on PATH & exit /b 2)',
-   'set "IM_ACCESSIBILITY_CONFIG_PATH=%LOCALAPPDATA%\\ImAccessibility\\settings.json"',
-   'node.exe "%~dp0tv-reliability-v0.5\\release-config.cjs" >nul',
-   'if errorlevel 1 (echo TV settings invalid or missing. No session started. & exit /b 2)',
-   'start "ImAccessibility TV" /d "%~dp0tv-reliability-v0.5" node.exe "%~dp0tv-reliability-v0.5\\resume-host.cjs"',
-   'echo TV session start was requested. Use Status.cmd to inspect progress.'
-  ]);
+  add('Setup.cmd',['@echo off','setlocal','where node.exe >nul 2>&1',
+   'if errorlevel 1 (echo Node.js required & pause & exit /b 2)',
+   'node.exe "%~dp0first-run.cjs" --wizard',
+   'set "EXITCODE=%errorlevel%"','pause','exit /b %EXITCODE%']);
+  add('Start.cmd',['@echo off','setlocal','where node.exe >nul 2>&1',
+   'if errorlevel 1 (echo Node.js required & exit /b 2)',
+   'node.exe "%~dp0launch-host.cjs" --start',
+   'set "EXITCODE=%errorlevel%"',
+   'if not "%EXITCODE%"=="0" pause',
+   'exit /b %EXITCODE%']);
   add('Stop.cmd',['@echo off','setlocal','where node.exe >nul 2>&1',
    'if errorlevel 1 (echo Node.js required & exit /b 2)',
    'node.exe "%~dp0stop-session.cjs"','exit /b %errorlevel%']);
@@ -96,8 +97,8 @@ function build(out){
    'Double-click Install.cmd or run node install.cjs from this extracted folder.',
    'Requires Node.js 24; FFmpeg stays a separate local prerequisite.',
    'Installation does not launch TV, create Windows tasks or pair any device.',
-   'Configure %LOCALAPPDATA%\\ImAccessibility\\settings.json separately.',
-   'Run Start.cmd in the installed %LOCALAPPDATA%\\Programs\\ImAccessibility folder only after configuring.',
+   'Run Setup.cmd in the installed folder to select your PC adapter, LG TV and tool locations.',
+   'Run Start.cmd only after owner-confirmed setup; it checks TV identity and refuses active/uncertain sessions.',
    'Stop.cmd requests shutdown; Uninstall.cmd removes only unchanged installed files.',
    'PC Bridge and Codex are NOT bundled. Binary provenance and Windows 11 TV acceptance pending.',
    'SHA-256 checksums are recorded in package-manifest.json.'
