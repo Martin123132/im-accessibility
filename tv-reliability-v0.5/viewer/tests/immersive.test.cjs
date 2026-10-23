@@ -38,7 +38,7 @@ test('full-screen click maps letterboxed HLS to Windows only within an active ow
    const data=body===null?null:JSON.parse(body);
    requests.push({route:this.route,method:this.method,data});
    let result={};
-   if(this.route==='/api/status')result={canArm:true,enabled:armed,expiresAt:new Date(now+3600000).toISOString()};
+   if(this.route==='/api/status')result={canArm:true,enabled:armed,audioAvailable:true,expiresAt:new Date(now+3600000).toISOString()};
    if(this.route==='/api/arm'){armed=true;result={enabled:true}}
    if(this.route==='/api/disarm'){armed=false;result={enabled:false}}
    if(this.route==='/api/mouse'){result={receipt:{action:'click',windowsX:960,windowsY:540}}}
@@ -56,6 +56,7 @@ test('full-screen click maps letterboxed HLS to Windows only within an active ow
  vm.runInNewContext(code,env,{timeout:3000});
  assert.equal(els.get('desktop').controls,false);
  assert.equal(els.get('desktop').muted,true,'Initial HLS autoplay must be muted');
+ assert.equal(els.get('sound').disabled,false,'Sound is enabled only when the service exposes audio');
  events.get('sound:click')();
  assert.equal(els.get('desktop').muted,false,'Owner can explicitly enable TV sound');
  assert.equal(els.get('sound').textContent,'Sound ON');

@@ -82,6 +82,15 @@ function consume(input){
  fs.appendFileSync(path.join(EVIDENCE,'mouse-actions.jsonl'),JSON.stringify(result)+'\n',{flag:'a'});
  return {ok:true,receipt:result};
 }
+async function sourceAudio(){
+ if(!sourceUrl||Date.now()>=sourceExpires)return false;
+ try{
+  const r=await fetch('http://'+LAN+':43196/health',{signal:AbortSignal.timeout(950),redirect:'error'});
+  if(!r.ok)return false;
+  const result=await r.json();
+  return result.ok===true&&result.audioEnabled===true&&result.stream==='running';
+ }catch{return false}
+}
 function state(){return{receiver:'PC Bridge Interactive TV v0.1',
  screen:SETTINGS?(primaryScreen?primaryScreen.width+'x'+primaryScreen.height:'pending native verification'):'1920x1080',
  stream:'1280x720 H.264',
@@ -148,7 +157,7 @@ function createServer(){
    if(!route.startsWith('/api/'))return json(res,404,{error:'Not found'});
    const auth=(req.headers.authorization||'').replace(/^Bearer /,'');
    if(!tokenMatches(auth)||!active())return json(res,401,{error:'Viewer permission required'});
-   if(req.method==='GET'&&route==='/api/status')return json(res,200,state());
+   if(req.method==='GET'&&route==='/api/status')return json(res,200,{...state(),audioAvailable:await sourceAudio()});
    if(req.method!=='POST')return json(res,405,{error:'Method denied'});
    if(req.headers.origin&&req.headers.origin!==ORIGIN)return json(res,403,{error:'Origin denied'});
    if(req.headers['sec-fetch-site']==='cross-site')return json(res,403,{error:'Cross-site request denied'});
