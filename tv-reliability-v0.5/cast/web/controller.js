@@ -9,7 +9,8 @@
    for(const id of ['start','stop','cast','discover'])$(id).disabled=true;
    return;
  }
- let busy=false,lastStatus=null;
+ let busy=false,lastStatus=null,refreshPending=false,refreshAgain=false,statusRevision=0;
+ const timeFormatter=new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'numeric',second:'numeric'});
  async function api(route,{method='GET',body}={}){
   const h={'Authorization':'Bearer '+token};
   if(body!==undefined)h['Content-Type']='application/json';
@@ -19,20 +20,26 @@
  function writeError(e){$('app-error').textContent=String(e.message||e).slice(0,220)}
  async function refresh(){
   if(busy)return;
+  if(refreshPending){refreshAgain=true;return;}
+  refreshPending=true;
+  const revision=statusRevision;
   try{
-   const s=await api('status');lastStatus=s;
+   const s=await api('status');
+   if(revision!==statusRevision)return;
+   lastStatus=s;
    $('stream-status').textContent=s.streamReady?'Streaming desktop to TV receiver · ready':
      s.state==='running'?'Starting live video segments…':
      s.state==='failed'?'Encoder failed: '+(s.error||'unknown'): 'Desktop stream is stopped';
    $('frame').textContent=s.resolution+' · '+s.targetFps+' fps H.264 HLS';
-   $('viewers').textContent=s.lastWatchAt?'TV last requested video at '+new Date(s.lastWatchAt).toLocaleTimeString():'No TV receiver yet';
+   $('viewers').textContent=s.lastWatchAt?'TV last requested video at '+timeFormatter.format(new Date(s.lastWatchAt)):'No TV receiver yet';
    $('tv-link').textContent=s.receiverUrl||'Preparing receiver…';
    $('start').disabled=(s.state==='running');
    $('stop').disabled=s.state!=='running';
    $('cast').disabled=!s.streamReady;
-  }catch(e){writeError(e)}
+  }catch(e){if(revision===statusRevision)writeError(e)}
+  finally{refreshPending=false;if(refreshAgain){refreshAgain=false;void refresh();}}
  }
- async function operation(fn){if(busy)return;busy=true;$('app-error').textContent='';try{await fn()}catch(e){writeError(e)}finally{busy=false;await refresh()}}
+ async function operation(fn){if(busy)return;busy=true;statusRevision++;$('app-error').textContent='';try{await fn()}catch(e){writeError(e)}finally{busy=false;await refresh()}}
  $('start').onclick=()=>operation(async()=>{await api('start',{method:'POST',body:{}});$('stream-status').textContent='Starting PC video encoder…'});
  $('stop').onclick=()=>operation(async()=>{await api('stop',{method:'POST',body:{}});$('cast-status').textContent='Stream stopped on PC.'});
  $('discover').onclick=()=>operation(async()=>{

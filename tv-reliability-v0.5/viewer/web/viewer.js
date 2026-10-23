@@ -4,6 +4,7 @@
  var key=(location.pathname.match(/^\/tv\/([a-f0-9]{64})$/)||[])[1]||'';
  var video=$('display'),stage=$('stage'),layer=$('clicklayer'),flash=$('clickflash'),armed=false,pending=false,lastAt=0,lastWheel=0,lastPoint={x:5000,y:5000},hasPoint=false;
  var snapshotReady=false,snapshotBusy=false,snapshotSeq=0,snapshotAim=null,lastPictureAt=0,confirmEndUntil=0;
+ var statusPending=false,statusRevision=0;
  if(!key){$('status').textContent='Invalid PC Bridge viewing invitation';return;}
  var hls='/media/'+key+'/index.m3u8';
  video.controls=false;video.removeAttribute("controls");video.style.pointerEvents="none";
@@ -11,17 +12,19 @@
  function show(message){$('status').textContent=message;}
  function result(message){$('result').textContent=message;}
  function request(route,method,data,cb){
-  var req=new XMLHttpRequest();
+  var req=new XMLHttpRequest(),finished=false;
+  if(method&&method!=='GET')statusRevision++;
+  function finish(err,reply){if(finished)return;finished=true;cb(err,reply);}
   req.open(method||'GET','/api/'+route,true);
   req.timeout=5500;req.setRequestHeader('Authorization','Bearer '+key);
   if(data!==undefined)req.setRequestHeader('Content-Type','application/json');
   req.onreadystatechange=function(){if(req.readyState!==4)return;
    var reply={};
    try{reply=JSON.parse(req.responseText)}catch(e){}
-   if(req.status>=200&&req.status<300)cb(null,reply);else cb(reply.error||'PC Bridge did not respond',reply);
+   if(req.status>=200&&req.status<300)finish(null,reply);else finish(reply.error||'PC Bridge did not respond',reply);
   };
-  req.onerror=function(){cb('TV is not connected to the PC pointer receiver');};
-  req.ontimeout=function(){cb('Windows action timed out');};
+  req.onerror=function(){finish('TV is not connected to the PC pointer receiver');};
+  req.ontimeout=function(){finish('Windows action timed out');};
   req.send(data===undefined?null:JSON.stringify(data));
  }
  function setArmed(value){
@@ -36,8 +39,12 @@
     'PC CONTROLS OFF · Enable PC controls below before clicking Windows.';
  }
  function refresh(){
-  if(pending)return;
+  if(pending||statusPending)return;
+  statusPending=true;
+  var revision=statusRevision;
   request('status','GET',undefined,function(err,d){
+   statusPending=false;
+   if(revision!==statusRevision)return;
    if(err){setArmed(false);show('Control service unavailable');return;}
    setArmed(d.enabled);show(d.enabled?'LIVE · Windows controls ON':(d.canArm?'LIVE · Windows controls OFF':'Session expired'));
    var secs=Math.max(0,Math.floor((Date.parse(d.expiresAt)-Date.now())/1000));
