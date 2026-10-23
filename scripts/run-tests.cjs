@@ -22,7 +22,7 @@ const tv = [
   ...fs.readdirSync(viewerDir).filter(n=>n.endsWith('.test.cjs'))
     .sort().map(n=>'tv-reliability-v0.5/viewer/tests/'+n)
 ];
-const packageTests=['packaging/tests/portable-install.test.cjs'];
+const packageTests=['packaging/tests/portable-install.test.cjs','packaging/tests/first-run.test.cjs'];
 const selected=(mode==='codex'?codex:mode==='tv'?tv:mode==='package'?packageTests:[...codex,...tv,...packageTests]);
 for (const relative of selected) {
   if (!fs.statSync(absolute(relative)).isFile()) throw Error('Missing test file: '+relative);

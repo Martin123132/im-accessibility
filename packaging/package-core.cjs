@@ -54,8 +54,8 @@ function verify(payload,manifest){
  }
  const actual=files(payload);
  if(actual.length!==seen.size||actual.some(n=>!seen.has(n)))fail('Unlisted package files');
- for(const n of ['LICENSE','NOTICE.md','Start.cmd','Stop.cmd','Status.cmd','Uninstall.cmd',
-   'Uninstall.cjs','stop-session.cjs','package-core.cjs'])
+ for(const n of ['LICENSE','NOTICE.md','Setup.cmd','Start.cmd','Stop.cmd','Status.cmd','Uninstall.cmd',
+   'Uninstall.cjs','stop-session.cjs','package-core.cjs','first-run.cjs','launch-host.cjs'])
   if(!seen.has(n))fail('Missing required component: '+n);
  return {files:seen.size,totalBytes:total,manifestSha256:sha(Buffer.from(JSON.stringify(manifest)))};
 }

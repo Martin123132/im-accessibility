@@ -8,6 +8,7 @@ const required=[
   'tv-reliability-v0.5/release-config.cjs',
   'packaging/package-core.cjs','packaging/build-preview.cjs',
   'packaging/install.cjs','packaging/uninstall.cjs',
+  'packaging/first-run.cjs','packaging/launch-host.cjs',
   'codex-chat-control-pilot-20261012/desk.cjs',
   'codex-chat-control-pilot-20261012/draft-ledger.cjs'
 ];
