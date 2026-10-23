@@ -20,7 +20,7 @@ test('real-LG-proven HLS document is a single full viewport native click button 
 });
 test('full-screen click maps letterboxed HLS to Windows only within an active owner mouse lease',()=>{
  const token='a'.repeat(64),events=new Map(),els=new Map(),requests=[];
- for(const id of ['desktop','surface','controls','enable','pause','play','classic','stop','status','hint','marker']){
+ for(const id of ['desktop','surface','controls','enable','pause','play','sound','classic','stop','status','hint','marker']){
   els.set(id,{id,disabled:false,hidden:false,textContent:'',style:{},
    videoWidth:1280,videoHeight:720,controls:true,
    removeAttribute(){},
@@ -55,6 +55,12 @@ test('full-screen click maps letterboxed HLS to Windows only within an active ow
  };
  vm.runInNewContext(code,env,{timeout:3000});
  assert.equal(els.get('desktop').controls,false);
+ assert.equal(els.get('desktop').muted,true,'Initial HLS autoplay must be muted');
+ events.get('sound:click')();
+ assert.equal(els.get('desktop').muted,false,'Owner can explicitly enable TV sound');
+ assert.equal(els.get('sound').textContent,'Sound ON');
+ events.get('sound:click')();
+ assert.equal(els.get('desktop').muted,true,'Sound can be turned OFF again');
  assert.equal(els.get('desktop').style.pointerEvents,'none');
  assert.equal(els.get('enable').disabled,false);
  assert.equal(els.get('pause').disabled,true);
