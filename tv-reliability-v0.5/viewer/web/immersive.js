@@ -4,7 +4,7 @@
  var key=match&&match[1];
  function el(id){return document.getElementById(id)}
  var video=el('desktop'),surface=el('surface'),status=el('status'),hint=el('hint');
- var armed=false,pending=false,lastClickAt=0,expiresAt=0,confirmStopUntil=0;
+ var armed=false,pending=false,pausePending=false,pauseEpoch=0,lastClickAt=0,expiresAt=0,confirmStopUntil=0;
  if(!key){status.textContent='Invalid private TV session';return}
  // webOS must keep an HTML hit target. Never enable the video control surface.
  video.controls=false;video.removeAttribute('controls');
@@ -17,27 +17,31 @@
   xhr.open(method||'GET','/api/'+route,true);
   xhr.timeout=5500;xhr.setRequestHeader('Authorization','Bearer '+key);
   if(data!==undefined)xhr.setRequestHeader('Content-Type','application/json');
+  var done=false;
+  function settle(err,reply){if(done)return;done=true;cb(err,reply)}
   xhr.onreadystatechange=function(){
    if(xhr.readyState!==4)return;
    var obj={};
    try{obj=JSON.parse(xhr.responseText)}catch(e){}
-   if(xhr.status>=200&&xhr.status<300)cb(null,obj);
-   else cb(obj.error||'Control service unavailable',obj);
+   if(xhr.status>=200&&xhr.status<300)settle(null,obj);
+   else settle(obj.error||'Control service unavailable',obj);
   };
-  xhr.onerror=function(){cb('TV not connected to PC')};
-  xhr.ontimeout=function(){cb('Windows request timed out')};
+  xhr.onerror=function(){settle('TV not connected to PC')};
+  xhr.ontimeout=function(){settle('Windows request timed out')};
   xhr.send(data===undefined?null:JSON.stringify(data));
  }
  function mark(enabled){
-  armed=!!enabled;
-  el('enable').disabled=armed;el('pause').disabled=!armed;
+  armed=!!enabled&&!pausePending;
+  el('enable').disabled=armed||pausePending;el('pause').disabled=!armed||pausePending;
   info(armed?
    'Mouse ON for up to 10 minutes. Point at a Windows item and press OK. Pause when finished.':
    'Mouse OFF. Enable mouse to click the full-screen desktop.');
  }
  function healthy(){
-  if(pending)return;
+  if(pending||pausePending)return;
+  var epoch=pauseEpoch;
   request('status','GET',undefined,function(err,s){
+   if(pausePending||epoch!==pauseEpoch)return;
    if(err){mark(false);report('Viewing controls unavailable');return}
    mark(s.enabled);
    expiresAt=Date.parse(s.expiresAt);
@@ -54,6 +58,13 @@
  video.addEventListener('waiting',function(){report('Buffering live desktop…')});
  video.addEventListener('error',function(){report('Live video unavailable. Try Play video.')});
  el('play').addEventListener('click',play);
+ el('sound').addEventListener('click',function(){
+  // Audio is opt-in: autoplay remains muted, and only a deliberate LG click unmutes.
+  video.muted=!video.muted;
+  video.defaultMuted=video.muted;
+  el('sound').textContent=video.muted?'Sound OFF':'Sound ON';
+  play();
+ });
  function fitPosition(e){
   var box=video.getBoundingClientRect(),width=video.videoWidth||1280,height=video.videoHeight||720;
   if(!(box.width>0&&box.height>0&&width>0&&height>0))return null;
@@ -71,8 +82,10 @@
   var p=fitPosition(e);
   if(!p){info('Select inside the desktop image, not the black border.');return}
   pending=true;lastClickAt=Date.now();
+  var epoch=pauseEpoch;
   request('mouse','POST',{cmd:'click',x:p.x,y:p.y},function(err,res){
    pending=false;
+   if(epoch!==pauseEpoch)return; // An already-issued click cannot be undone by Pause.
    if(err){report('Click not sent: '+err);healthy();return}
    var receipt=res.receipt||{};
    report('Windows click accepted: '+receipt.windowsX+', '+receipt.windowsY);
@@ -81,17 +94,43 @@
   });
  });
  el('enable').addEventListener('click',function(){
-  if(pending)return;pending=true;
+  if(pending||pausePending)return;
+  pending=true;
+  var epoch=pauseEpoch;
+  el('enable').disabled=true;
+  el('pause').disabled=false; // Allow an immediate Pause even while arming is in flight.
   request('arm','POST',{confirm:true},function(err,s){
    pending=false;
+   if(epoch!==pauseEpoch){
+    // Pause happened during arming. Revoke again after the stale arm response:
+    // request arrival order is not guaranteed across separate XHR connections.
+    pausePending=true;mark(false);
+    request('disarm','POST',{},function(revokeError){
+     pausePending=false;mark(false);
+     if(revokeError){el('enable').disabled=true;el('pause').disabled=false}
+     report(revokeError?'Pause not confirmed: '+revokeError:'Windows mouse paused');
+    });
+    return;
+   }
    if(err){mark(false);report('Enable rejected: '+err);return}
    mark(s.enabled);report(s.enabled?'Windows mouse enabled for 10 minutes':'Mouse not enabled');
   });
  });
  el('pause').addEventListener('click',function(){
-  if(pending)return;pending=true;
+  if(pausePending)return;
+  pauseEpoch++;
+  pausePending=true;
+  armed=false; // Reject every new browser click before requesting server-side disarm.
+  el('enable').disabled=true;
+  el('pause').disabled=true;
+  info('Mouse OFF locally. Confirming Windows input pause…');
   request('disarm','POST',{},function(err){
-   pending=false;mark(false);report(err?'Could not pause: '+err:'Windows mouse paused');
+   pausePending=false;mark(false);
+   if(err){ // A network error is NOT evidence that the native service was disarmed.
+    el('enable').disabled=true;
+    el('pause').disabled=false; // Allow retry even when local state is OFF.
+   }
+   report(err?'Pause not confirmed: '+err:'Windows mouse paused');
   });
  });
  el('classic').addEventListener('click',function(){
