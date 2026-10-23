@@ -5,7 +5,7 @@
  function el(id){return document.getElementById(id)}
  var video=el('desktop'),surface=el('surface'),status=el('status'),hint=el('hint');
  var armed=false,pending=false,pausePending=false,pauseEpoch=0,lastClickAt=0,expiresAt=0,confirmStopUntil=0;
- var audioAvailable=false;
+ var audioAvailable=false,audioBusy=false,audioRoute='laptop-only';
  if(!key){status.textContent='Invalid private TV session';return}
  // webOS must keep an HTML hit target. Never enable the video control surface.
  video.controls=false;video.removeAttribute('controls');
@@ -38,11 +38,32 @@
    'Mouse ON for up to 10 minutes. Point at a Windows item and press OK. Pause when finished.':
    'Mouse OFF. Enable mouse to click the full-screen desktop.');
  }
- function setSound(allowed){
+ function setSound(allowed,mode){
   audioAvailable=!!allowed;
-  el('sound').disabled=!audioAvailable;
+  if(mode==='tv-only'||mode==='both'||mode==='laptop-only')audioRoute=mode;
   if(!audioAvailable){video.muted=true;video.defaultMuted=true}
-  el('sound').textContent=audioAvailable?(video.muted?'Sound OFF':'Sound ON'):'Sound unavailable';
+  var tvOn=audioAvailable&&!video.muted;
+  el('sound').disabled=!audioAvailable||audioBusy;
+  el('laptop').disabled=!tvOn||audioBusy;
+  el('sound').textContent=tvOn?'TV sound ON':(audioAvailable?'TV sound OFF':'TV sound unavailable');
+  el('laptop').textContent=audioRoute==='tv-only'?'Laptop sound OFF':'Laptop sound ON';
+ }
+ function audioChange(mode,done){
+  if(audioBusy)return;
+  audioBusy=true;setSound(audioAvailable,audioRoute);
+  request('audio-route','POST',{mode:mode},function(err,reply){
+   audioBusy=false;
+   if(err){setSound(audioAvailable,audioRoute);report('Sound routing not changed: '+err);return}
+   audioRoute=reply.audioRoute||mode;
+   setSound(audioAvailable,audioRoute);
+   if(done)done();
+  });
+ }
+ function tvSoundStop(){
+  video.muted=true;video.defaultMuted=true;
+  audioChange('laptop-only',function(){
+   setSound(audioAvailable,'laptop-only');report('TV sound OFF · Laptop sound restored');
+  });
  }
  function healthy(){
   if(pending||pausePending)return;
@@ -51,7 +72,7 @@
    if(pausePending||epoch!==pauseEpoch)return;
    if(err){mark(false);report('Viewing controls unavailable');return}
    mark(s.enabled);
-   setSound(s.audioAvailable===true);
+   if(!audioBusy)setSound(s.audioAvailable===true,s.audioRoute);
    expiresAt=Date.parse(s.expiresAt);
    if(!s.canArm){mark(false);el('enable').disabled=true;report('Session expired');return}
    var remain=Math.max(0,Math.floor((expiresAt-Date.now())/60e3));
@@ -67,13 +88,39 @@
  video.addEventListener('error',function(){report('Live video unavailable. Try Play video.')});
  el('play').addEventListener('click',play);
  el('sound').addEventListener('click',function(){
-  if(!audioAvailable){info('Audio is not active. Start a new session using StartSound.cmd.');return}
-  // Audio is opt-in: autoplay remains muted, and only a deliberate LG click unmutes.
-  video.muted=!video.muted;
-  video.defaultMuted=video.muted;
-  el('sound').textContent=video.muted?'Sound OFF':'Sound ON';
-  play();
+  if(!audioAvailable||audioBusy)return;
+  if(!video.muted){tvSoundStop();return}
+  // TV sound is intentionally paired with Windows laptop mute by default.
+  // Separate Laptop sound button lets the owner enable BOTH outputs.
+  audioChange('tv-only',function(){
+   video.muted=false;video.defaultMuted=false;
+   setSound(true,'tv-only');
+   try{
+    var p=video.play();
+    if(p&&p.catch)p.catch(function(){tvSoundStop();report('TV audio was not accepted; laptop restored')});
+   }catch(e){tvSoundStop();report('TV sound not playing; laptop restored')}
+  });
  });
+ el('laptop').addEventListener('click',function(){
+  if(!audioAvailable||audioBusy||video.muted)return;
+  var next=audioRoute==='tv-only'?'both':'tv-only';
+  audioChange(next,function(){
+   setSound(true,next);
+   report(next==='both'?'Sound on TV AND laptop':'Sound on TV only · Laptop muted');
+  });
+ });
+ // Heartbeat prevents a permanent Windows mute if this browser, TV or session stops.
+ // Keep the laptop-only mode alive too if the owner explicitly switched sound back.
+ setInterval(function(){
+  if(audioBusy||!audioAvailable||document.visibilityState==='hidden'||video.paused)return;
+  request('audio-heartbeat','POST',{},function(err){
+   if(err&&audioRoute!=='laptop-only'){
+    video.muted=true;video.defaultMuted=true;
+    setSound(false,'laptop-only');
+    report('Audio connection lost; laptop sound recovery requested');
+   }
+  });
+ },6500);
  function fitPosition(e){
   var box=video.getBoundingClientRect(),width=video.videoWidth||1280,height=video.videoHeight||720;
   if(!(box.width>0&&box.height>0&&width>0&&height>0))return null;
@@ -162,5 +209,5 @@
    report(err?'Unable to stop: '+err:'TV session ending');
   });
  });
- mark(false);setSound(false);healthy();setInterval(healthy,2800);play();
+ mark(false);setSound(false,'laptop-only');healthy();setInterval(healthy,2800);play();
 })();

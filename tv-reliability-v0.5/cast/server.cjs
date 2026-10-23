@@ -18,7 +18,7 @@ const controlKey=crypto.randomBytes(24).toString('hex'),watchKey=crypto.randomBy
 const ctrlOrigin='http://'+LAN_IP+':'+PORT;
 let capture=null,captureState='stopped',capturePid=null,captureError=null,
  captureStarted=null,watchHits=0,lastWatchAt=null,lgState='idle',lastDeviceIp=null;
-let audioChild=null,audioState=WANT_AUDIO?'pending':'off',audioError=null,
+let audioChild=null,audioDeviceIdHash=null,audioState=WANT_AUDIO?'pending':'off',audioError=null,
     ownerStopped=false,recoveryTried=false;
 fs.mkdirSync(SEGMENTS,{recursive:true});
 function atomic(file,obj){
@@ -35,7 +35,8 @@ function status(){
    captureStarted,streamReady:exists&&captureState==='running'&&Date.now()-fs.statSync(manifest).mtimeMs<8000,lastManifestModified:lastModified,
    segments:segmentCount,resolution:'1280 x 720',targetFps:15,watchHits,lastWatchAt,phoneIndependent:true,
    expiresAt:new Date(created+MAX_MS).toISOString(),lgState,lastDeviceIp,LAN_IP,port:PORT,receiverUrl:ctrlOrigin+'/tv/'+watchKey,
-   error:captureError,audioRequested:WANT_AUDIO,audioState,audioEnabled:audioState==='active'&&captureAlive(),audioError};
+   error:captureError,audioRequested:WANT_AUDIO,audioState,audioEnabled:audioState==='active'&&captureAlive(),
+   audioDeviceIdHash:audioState==='active'?audioDeviceIdHash:null,audioError};
 }
 function clearSegments(){
  for(const name of fs.readdirSync(SEGMENTS)){
@@ -55,6 +56,7 @@ function spawnCapture(format=null){
   stdio:format?['ignore','ignore','pipe','pipe']:['ignore','ignore','pipe']});
  capture=ff;capturePid=ff.pid||null;captureState='running';
  audioState=format?'active':WANT_AUDIO?(audioError?'fallback':'unavailable'):'off';
+ audioDeviceIdHash=format?format.deviceIdHash:null;
  let errors='',thisAudio=null;
  ff.stderr.on('data',b=>{errors=(errors+String(b)).slice(-1200)});
  function fallback(message){
@@ -70,7 +72,7 @@ function spawnCapture(format=null){
  });
  if(format){
   // Audio subprocess has only stdout PCM and stderr diagnostics.
-  thisAudio=cp.spawn(SOUND.BINARY,['--capture'],{cwd:ROOT,windowsHide:true,
+  thisAudio=cp.spawn(SOUND.BINARY,['--capture','--device-hash',format.deviceIdHash],{cwd:ROOT,windowsHide:true,
    stdio:['ignore','pipe','pipe']});
   audioChild=thisAudio;
   let err='';
@@ -119,7 +121,7 @@ function stopCapture(){
  ownerStopped=true;
  safeEndAudio(audioChild);audioChild=null;
  if(capture)try{capture.kill('SIGTERM')}catch{}
- captureState='stopped';audioState='off';
+ captureState='stopped';audioState='off';audioDeviceIdHash=null;
  return status();
 }
 function validMedia(p){
@@ -151,7 +153,8 @@ function makeServer(){
    const u=new URL(req.url,ctrlOrigin);
    if(u.search)return send(res,404,{error:'Not found'});
    const route=u.pathname;
-   if(req.method==='GET'&&route==='/health')return send(res,200,{ok:true,mode:'LAN TV receiver',build:'tv-resume-v0.5',stream:status().state,audioEnabled:status().audioEnabled,audioState:status().audioState});
+   if(req.method==='GET'&&route==='/health')return send(res,200,{ok:true,mode:'LAN TV receiver',build:'tv-resume-v0.5',stream:status().state,audioEnabled:status().audioEnabled,audioState:status().audioState,
+   audioDeviceIdHash:status().audioDeviceIdHash});
    if(req.method==='GET'&&route==='/controller')return send(res,200,fs.readFileSync(path.join(WEB,'controller.html')),'text/html; charset=utf-8');
    if(req.method==='GET'&&route==='/controller.js')return send(res,200,fs.readFileSync(path.join(WEB,'controller.js')),'application/javascript; charset=utf-8');
    if(req.method==='GET'&&route==='/tv.js')return send(res,200,fs.readFileSync(path.join(WEB,'tv.js')),'application/javascript; charset=utf-8');

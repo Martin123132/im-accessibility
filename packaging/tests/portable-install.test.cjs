@@ -20,6 +20,10 @@ test('portable preview: content hashes, bounded install, stop and reversible uni
   assert.ok(man.files.some(x=>x.path==='Setup.cmd'));
   assert.ok(man.files.some(x=>x.path==='StartSound.cmd'));
   assert.ok(man.files.some(x=>x.path.endsWith('cast/native/LoopbackCapture.exe')));
+  assert.ok(man.files.some(x=>x.path.endsWith('cast/native/SpeakerEndpoint.exe')));
+  assert.ok(man.files.some(x=>x.path.endsWith('viewer/speaker-routing.cjs')));
+  assert.ok(man.files.some(x=>x.path.endsWith('viewer/speaker-route-watch.cjs')));
+  assert.ok(man.files.some(x=>x.path.endsWith('cast/native/SpeakerEndpoint.cs.txt')));
   assert.ok(man.files.some(x=>x.path.endsWith('cast/sound.cjs')));
   assert.ok(man.files.some(x=>x.path==='first-run.cjs'));
   assert.ok(man.files.some(x=>x.path==='launch-host.cjs'));
