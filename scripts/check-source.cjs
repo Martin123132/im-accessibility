@@ -5,6 +5,7 @@ const root=path.resolve(__dirname,'..');
 const required=[
   'README.md','docs/SETUP.md','docs/V1_RELEASE_PLAN.md','docs/SECURITY.md',
   'tv-reliability-v0.5/cast/server.cjs','tv-reliability-v0.5/viewer/server.cjs',
+  'tv-reliability-v0.5/lg-active-view.cjs',
   'tv-reliability-v0.5/release-config.cjs',
   'packaging/package-core.cjs','packaging/build-preview.cjs',
   'packaging/install.cjs','packaging/uninstall.cjs',

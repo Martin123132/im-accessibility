@@ -60,6 +60,15 @@ test('owner-run resume path is restricted to the exact Windows task and existing
  assert.match(supervisor,/Stop requested|Owner selected End TV session/);
  assert.match(supervisor,/An older or unrelated TV service already occupies ports/);
 });
+test('LG activity signals never decide whether critical video services stay running',()=>{
+ const source=read('resume-host.cjs'),guard=read('lg-active-view.cjs');
+ assert.match(source,/childProcs\.push\(\{child,name:'lg-activity',optional:true\}\)/);
+ assert.match(source,/childProcs\.find\(x=>!x\.optional&&x\.child\.exitCode!==null\)/);
+ assert.match(source,/if\(pair\.opened\)/);
+ assert.match(guard,/PERIOD_MS=75000/);
+ assert.match(guard,/socket\.send\('move',\{dx:delta,dy:0\}\)/);
+ assert.doesNotMatch(guard,/socket\.send\('click'|sendButton\(|turnOffScreen|disableScreenSaver/);
+});
 test('original source is still a separately pinned, recoverable input',()=>{
  const lock=JSON.parse(read('PARENT_LOCK.json'));
  assert.equal(lock.originalFilesVerified,23);

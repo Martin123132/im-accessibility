@@ -51,6 +51,24 @@ function spawnService(dir,name){
  log('Spawned '+name+' PID '+child.pid);
  return child;
 }
+function spawnActivityGuard(){
+ // Optional LG-only activity signal; if unavailable the viewer MUST keep running.
+ // This subprocess is owned by this exact four-hour session and stopped with it.
+ if(!SETTINGS)return;
+ const program=path.join(ROOT,'lg-active-view.cjs');
+ if(!fs.existsSync(program)){log('Optional LG activity guard unavailable');return}
+ const stream=path.join(RUNTIME,'lg-activity-'+RUN+'.log');
+ const fd=fs.openSync(stream,'a');
+ let child;
+ try{child=cp.spawn(NODE,[program],{cwd:ROOT,windowsHide:true,
+   stdio:['ignore',fd,fd],env:process.env})}
+ finally{fs.closeSync(fd)}
+ if(!child||!child.pid){log('Optional LG activity guard failed to start');return}
+ childProcs.push({child,name:'lg-activity',optional:true});
+ child.on('error',e=>log('LG activity error '+String(e.message).slice(0,120)));
+ child.on('exit',(code,signal)=>log('LG activity exited '+String(code)+'/'+String(signal)));
+ log('Started optional LG activity guard, no clicks/keyboard or TV settings changes');
+}
 async function waitFile(file,child,limitMs=11000){
  const deadline=Date.now()+limitMs;
  while(Date.now()<deadline){
@@ -113,6 +131,9 @@ async function launch(){
   const pair=await open({onEvent:e=>log('LG '+e.stage+' '+(e.ip||''))});
   update({lg:pair.opened?'opened':'needs-tv',lgIp:pair.opened?pair.host:null});
   log(pair.opened?'LG browser requested to open':'LG not available; session remains live for manual connection');
+  if(pair.opened){
+   try{spawnActivityGuard()}catch(e){log('Optional LG activity setup failed: '+String(e.message).slice(0,120))}
+  }
  }catch(e){update({lg:'unavailable'});log('LG launch unavailable: '+String(e.message||e).slice(0,200))}
 }
 async function killChild({child,name}){
@@ -146,7 +167,7 @@ async function main(){
   await launch();
   while(!reason&&Date.now()<START+MAX_MS){
    if(fs.existsSync(STOP)){reason='Owner selected End TV session';break;}
-   const exited=childProcs.find(x=>x.child.exitCode!==null);
+   const exited=childProcs.find(x=>!x.optional&&x.child.exitCode!==null);
    if(exited){reason=exited.name+' exited unexpectedly';break;}
    await delay(800);
   }

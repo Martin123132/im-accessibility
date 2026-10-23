@@ -20,6 +20,8 @@ test('portable preview: content hashes, bounded install, stop and reversible uni
   assert.ok(man.files.some(x=>x.path==='Setup.cmd'));
   assert.ok(man.files.some(x=>x.path==='first-run.cjs'));
   assert.ok(man.files.some(x=>x.path==='launch-host.cjs'));
+  assert.ok(man.files.some(x=>x.path==='tv-reliability-v0.5/lg-active-view.cjs'));
+  assert.ok(man.files.some(x=>x.path==='tv-reliability-v0.5/resume-host.cjs'));
   assert.ok(man.files.some(x=>x.path.endsWith('cast/node_modules/lgtv2/LICENSE')));
   assert.ok(man.files.some(x=>x.path.endsWith('cast/node_modules/ws/LICENSE')));
   assert.ok(man.files.some(x=>x.path.endsWith('viewer/native/TvPointer.exe')));
@@ -42,6 +44,8 @@ test('portable preview: content hashes, bounded install, stop and reversible uni
   assert.ok(fs.existsSync(path.join(installed,'Setup.cmd')));
   assert.ok(fs.existsSync(path.join(installed,'first-run.cjs')));
   assert.ok(fs.existsSync(path.join(installed,'launch-host.cjs')));
+  assert.ok(fs.existsSync(path.join(installed,'tv-reliability-v0.5','lg-active-view.cjs')));
+  assert.match(fs.readFileSync(path.join(installed,'tv-reliability-v0.5','resume-host.cjs'),'utf8'),/spawnActivityGuard\(\)/);
   const startCmd=fs.readFileSync(path.join(installed,'Start.cmd'),'utf8');
   assert.match(startCmd,/launch-host\.cjs/);
   assert.doesNotMatch(startCmd,/start.*resume-host\.cjs/i);
