@@ -9,7 +9,7 @@ function harness(){
  const token='a'.repeat(64),elements=new Map(),handlers={},timers=[],requests=[];
  let now=100000,loads=0;
  const ids=['desktop','surface','controls','control-toggle','control-panel','enable','pause',
-  'play','catchup','sound','laptop','classic','stop','status','hint','marker'];
+  'play','catchup','fast','sound','laptop','classic','stop','status','hint','marker'];
  for(const id of ids)elements.set(id,{
   id,textContent:'',disabled:false,hidden:false,style:{},controls:false,muted:true,
   currentTime:10,paused:false,videoWidth:1280,videoHeight:720,

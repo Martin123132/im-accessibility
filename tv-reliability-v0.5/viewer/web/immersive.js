@@ -6,6 +6,7 @@
  var video=el('desktop'),surface=el('surface'),status=el('status'),hint=el('hint');
  var armed=false,pending=false,pausePending=false,pauseEpoch=0,lastClickAt=0,expiresAt=0,confirmStopUntil=0;
  var audioAvailable=false,audioBusy=false,audioRoute='laptop-only',controlsOpen=false;
+ var fastVideoActive=false,fastVideoAllowed=false;
  // TV playback can lag behind a healthy capture after network stalls.
  var streamFresh=false,lastRecoveryCount=-1,lastVideoClock=0,lastVideoProgressAt=Date.now(),
   lastVideoReloadAt=0,lastLiveSeekAt=0,reportedGapSeconds=null;
@@ -82,6 +83,7 @@
   });
  }
  function reconnectLiveVideo(reason,manual){
+  if(fastVideoActive)return;
   var now=Date.now();
   if(now-lastVideoReloadAt<(manual?4000:12000))return;
   lastVideoReloadAt=now;lastVideoProgressAt=now;lastVideoClock=0;
@@ -94,6 +96,7 @@
   }catch(e){report('Video reconnect failed; select Play video')}
  }
  function monitorLiveVideo(){
+  if(fastVideoActive)return;
   if(!streamFresh||video.paused||document.visibilityState==='hidden')return;
   var t=Number(video.currentTime),now=Date.now();
   if(isFinite(t)&&t>0){
@@ -126,6 +129,8 @@
    if(err){mark(false);streamFresh=false;report('Viewing controls unavailable');return}
    mark(s.enabled);
    if(!audioBusy)setSound(s.audioAvailable===true,s.audioRoute);
+   fastVideoAllowed=s.fastVideoAvailable===true;
+   el('fast').disabled=!fastVideoAllowed&&!fastVideoActive;
    streamFresh=s.sourceReady===true;
    var count=Number(s.recoveryCount);
    if(isFinite(count)&&count>=0){
@@ -140,8 +145,8 @@
    expiresAt=Date.parse(s.expiresAt);
    if(!s.canArm){mark(false);el('enable').disabled=true;report('Session expired');return}
    var remain=Math.max(0,Math.floor((expiresAt-Date.now())/60e3));
-   report('LIVE DESKTOP · '+remain+'m · Mouse '+(armed?'ON':'OFF')+
-   (reportedGapSeconds>0?' · Video '+Math.round(reportedGapSeconds)+'s behind':''));
+   report((fastVideoActive?'FAST DESKTOP':'LIVE DESKTOP')+' · '+remain+'m · Mouse '+(armed?'ON':'OFF')+
+   (!fastVideoActive&&reportedGapSeconds>0?' · Video '+Math.round(reportedGapSeconds)+'s behind':''));
   });
  }
  function play(){
@@ -152,7 +157,39 @@
  video.addEventListener('waiting',function(){report('Buffering live desktop…')});
  video.addEventListener('error',function(){report('Live video unavailable. Try Play video.')});
  el('play').addEventListener('click',play);
- el('catchup').addEventListener('click',function(){reconnectLiveVideo('manual catch up',true)});
+ el('catchup').addEventListener('click',function(){
+  if(fastVideoActive){
+   try{window.ImAccessibilityFastVideo.jumpLive(video)}catch(e){}
+   report('Catching up the fast desktop video');
+  }else reconnectLiveVideo('manual catch up',true);
+ });
+ el('fast').disabled=true;
+ el('fast').addEventListener('click',function(){
+  if(fastVideoActive){
+   fastVideoActive=false;
+   el('fast').textContent='Try faster video (experimental)';
+   reportedGapSeconds=null;lastVideoClock=0;lastVideoProgressAt=Date.now();
+   try{window.ImAccessibilityFastVideo.stop(video,true)}
+   catch(e){reconnectLiveVideo('return to HLS',true)}
+   report('Original HLS desktop restored');return
+  }
+  if(!fastVideoAllowed||!window.ImAccessibilityFastVideo||
+     !window.ImAccessibilityFastVideo.supported()){
+   report('Fast video is not supported by this TV; original HLS stays in use');return
+  }
+  var started=window.ImAccessibilityFastVideo.start(video,key,function(message){
+   report(message);
+   if(message.indexOf('Returning to HLS')>=0){
+    fastVideoActive=false;el('fast').textContent='Try faster video (experimental)';
+    reportedGapSeconds=null;lastVideoClock=0;lastVideoProgressAt=Date.now();
+   }
+  });
+  if(started){
+   fastVideoActive=true;
+   el('fast').textContent='Use original HLS video';
+   setMenu(false);
+  }
+ });
  el('sound').addEventListener('click',function(){
   if(!audioAvailable||audioBusy)return;
   if(!video.muted){tvSoundStop();return}
