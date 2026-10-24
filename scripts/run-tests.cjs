@@ -17,6 +17,7 @@ const codex = [
 const viewerDir = absolute('tv-reliability-v0.5/viewer/tests');
 const tv = [
   'tv-reliability-v0.5/cast/tests/sound.test.cjs',
+  'tv-reliability-v0.5/cast/tests/loopback-clockfix.test.cjs',
   'tv-reliability-v0.5/tests/session-policy.test.cjs',
   'tv-reliability-v0.5/tests/lg-active-view.test.cjs',
   'tv-reliability-v0.5/tests/release-config.test.cjs',
