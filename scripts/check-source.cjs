@@ -12,6 +12,8 @@ const required=[
   'tv-reliability-v0.5/viewer/speaker-routing.cjs',
   'tv-reliability-v0.5/viewer/speaker-route-watch.cjs',
   'tv-reliability-v0.5/viewer/server.cjs',
+  'tv-reliability-v0.5/viewer/fast-video.cjs',
+  'tv-reliability-v0.5/viewer/web/fast-video.js',
   'tv-reliability-v0.5/lg-active-view.cjs',
   'tv-reliability-v0.5/viewer/web/immersive.html',
   'tv-reliability-v0.5/viewer/web/immersive.js',

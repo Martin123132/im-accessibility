@@ -4,7 +4,7 @@
 const fs=require('node:fs'),path=require('node:path');
 const core=require('./package-core.cjs');
 const repo=path.resolve(__dirname,'..');
-const version='v0.3.10-half-second-hls-preview';
+const version='v0.3.11-optional-fast-mse-preview';
 const tv=[
  'lg-pair.cjs','lg-active-view.cjs','release-config.cjs','resume.cjs','resume-host.cjs',
  'cast/lan.cjs','cast/lg-launch.cjs','cast/package.json','cast/package-lock.json',
@@ -13,10 +13,11 @@ const tv=[
  'cast/native/SpeakerEndpoint.exe','cast/tv-discovery.cjs',
  'cast/web/controller.html','cast/web/controller.js','cast/web/style.css',
  'cast/web/tv.html','cast/web/tv.js',
- 'viewer/server.cjs','viewer/snapshot.cjs','viewer/speaker-routing.cjs',
+ 'viewer/server.cjs','viewer/snapshot.cjs','viewer/fast-video.cjs','viewer/speaker-routing.cjs',
  'viewer/speaker-route-watch.cjs','viewer/native/TvPointer.cs',
  'viewer/native/TvPointer.exe','viewer/web/style.css','viewer/web/viewer.html',
  'viewer/web/immersive.html','viewer/web/immersive.css','viewer/web/immersive.js',
+ 'viewer/web/fast-video.js',
  'viewer/web/viewer.js'
 ];
 function textFile(target,source){
@@ -115,6 +116,8 @@ function build(out){
    'An encoder-stall watchdog restarts only the video capture; if sound repeatedly stalls, video-only fallback preserves desktop control.',
    'The desktop viewer follows the HLS live edge and has a Catch up picture option in its bottom-right Controls menu.',
    'Fullscreen TV buttons and status live in a small bottom-right expandable Controls menu.',
+   'Try faster video inside the bottom-right Controls menu to use direct MSE/WebSocket fMP4; the original native HLS remains the default and immediate fallback.',
+   'Fast mode uses the same 720p H.264/AAC quality settings, does not grant Windows mouse permission and runs only while selected by the owner.',
    'During an active four-hour viewing session, the optional LG activity guard sends only bounded one-pixel TV pointer movements while the TV browser and video are active.',
    'This does not disable OLED protection; Stop or switching away from the browser ends the signal.',
    'Stop.cmd requests shutdown; Uninstall.cmd removes only unchanged installed files.',
