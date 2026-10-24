@@ -18,10 +18,21 @@ test('portable preview: content hashes, bounded install, stop and reversible uni
   assert.equal(core.verify(path.join(bundle,'payload'),man).files,man.files.length);
   assert.equal(man.product,'ImAccessibility');
   assert.ok(man.files.some(x=>x.path==='Setup.cmd'));
+  assert.ok(man.files.some(x=>x.path==='StartSound.cmd'));
+  assert.ok(man.files.some(x=>x.path.endsWith('cast/native/LoopbackCapture.exe')));
+  assert.ok(man.files.some(x=>x.path.endsWith('cast/native/SpeakerEndpoint.exe')));
+  assert.ok(man.files.some(x=>x.path.endsWith('viewer/speaker-routing.cjs')));
+  assert.ok(man.files.some(x=>x.path.endsWith('viewer/speaker-route-watch.cjs')));
+  assert.ok(man.files.some(x=>x.path.endsWith('viewer/fast-video.cjs')));
+  assert.ok(man.files.some(x=>x.path.endsWith('viewer/web/fast-video.js')));
+  assert.ok(man.files.some(x=>x.path.endsWith('cast/native/SpeakerEndpoint.cs.txt')));
+  assert.ok(man.files.some(x=>x.path.endsWith('cast/sound.cjs')));
   assert.ok(man.files.some(x=>x.path==='first-run.cjs'));
   assert.ok(man.files.some(x=>x.path==='launch-host.cjs'));
   assert.ok(man.files.some(x=>x.path==='tv-reliability-v0.5/lg-active-view.cjs'));
   assert.ok(man.files.some(x=>x.path==='tv-reliability-v0.5/resume-host.cjs'));
+  for(const file of ['immersive.html','immersive.js','immersive.css'])
+   assert.ok(man.files.some(x=>x.path==='tv-reliability-v0.5/viewer/web/'+file));
   assert.ok(man.files.some(x=>x.path.endsWith('cast/node_modules/lgtv2/LICENSE')));
   assert.ok(man.files.some(x=>x.path.endsWith('cast/node_modules/ws/LICENSE')));
   assert.ok(man.files.some(x=>x.path.endsWith('viewer/native/TvPointer.exe')));
@@ -45,6 +56,9 @@ test('portable preview: content hashes, bounded install, stop and reversible uni
   assert.ok(fs.existsSync(path.join(installed,'first-run.cjs')));
   assert.ok(fs.existsSync(path.join(installed,'launch-host.cjs')));
   assert.ok(fs.existsSync(path.join(installed,'tv-reliability-v0.5','lg-active-view.cjs')));
+  for(const file of ['immersive.html','immersive.js','immersive.css'])
+   assert.ok(fs.existsSync(path.join(installed,'tv-reliability-v0.5','viewer','web',file)));
+  assert.ok(fs.readFileSync(path.join(installed,'tv-reliability-v0.5','viewer','server.cjs'),'utf8').includes("route==='/full/'+token"));
   assert.match(fs.readFileSync(path.join(installed,'tv-reliability-v0.5','resume-host.cjs'),'utf8'),/spawnActivityGuard\(\)/);
   const startCmd=fs.readFileSync(path.join(installed,'Start.cmd'),'utf8');
   assert.match(startCmd,/launch-host\.cjs/);
@@ -57,6 +71,8 @@ test('portable preview: content hashes, bounded install, stop and reversible uni
   assert.match(viewerJs,/\$\('remote-pad'\)\.hidden=false/,'Proven pad must be shown on TV page load');
   assert.match(viewerJs,/setArmed\(false\)/,'Never auto-enable Windows mouse on install');
   assert.match(viewerHtml,/id="disarm"/,'Pause must remain accessible');
+  const audioStart=fs.readFileSync(path.join(installed,'StartSound.cmd'),'utf8');
+  assert.match(audioStart,/IM_ACCESSIBILITY_TV_AUDIO=1/);
   assert.ok(fs.existsSync(path.join(installed,'Start.cmd')));
   assert.ok(fs.existsSync(path.join(installed,'Stop.cmd')));
   assert.ok(fs.existsSync(path.join(installed,'Uninstall.cmd')));

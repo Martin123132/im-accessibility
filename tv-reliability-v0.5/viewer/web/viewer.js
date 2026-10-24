@@ -137,6 +137,7 @@
  $('play').addEventListener('click',function(){
   try{var p=video.play();if(p&&p.catch)p.catch(function(){show('Select Play again with your TV remote');});}catch(e){show('TV requires manual playback');}
  });
+ $('newfull').addEventListener('click',function(){location.href='/full/'+key;});
  $('full').addEventListener('click',function(){
   try{if(stage.requestFullscreen)stage.requestFullscreen();else if(video.webkitEnterFullscreen)video.webkitEnterFullscreen();}catch(e){}
  });

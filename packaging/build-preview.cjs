@@ -4,15 +4,20 @@
 const fs=require('node:fs'),path=require('node:path');
 const core=require('./package-core.cjs');
 const repo=path.resolve(__dirname,'..');
-const version='v0.3.3-active-view-preview';
+const version='v0.3.16-audio-clockfix-acceptance-preview';
 const tv=[
  'lg-pair.cjs','lg-active-view.cjs','release-config.cjs','resume.cjs','resume-host.cjs',
  'cast/lan.cjs','cast/lg-launch.cjs','cast/package.json','cast/package-lock.json',
- 'cast/server.cjs','cast/tv-discovery.cjs',
+ 'cast/server.cjs','cast/sound.cjs','cast/native/LoopbackCapture.cs.txt',
+ 'cast/native/LoopbackCapture.exe','cast/native/SpeakerEndpoint.cs.txt',
+ 'cast/native/SpeakerEndpoint.exe','cast/tv-discovery.cjs',
  'cast/web/controller.html','cast/web/controller.js','cast/web/style.css',
  'cast/web/tv.html','cast/web/tv.js',
- 'viewer/server.cjs','viewer/snapshot.cjs','viewer/native/TvPointer.cs',
+ 'viewer/server.cjs','viewer/snapshot.cjs','viewer/fast-video.cjs','viewer/speaker-routing.cjs',
+ 'viewer/speaker-route-watch.cjs','viewer/native/TvPointer.cs',
  'viewer/native/TvPointer.exe','viewer/web/style.css','viewer/web/viewer.html',
+ 'viewer/web/immersive.html','viewer/web/immersive.css','viewer/web/immersive.js',
+ 'viewer/web/fast-video.js',
  'viewer/web/viewer.js'
 ];
 function textFile(target,source){
@@ -53,6 +58,7 @@ function build(out){
   copy(path.join(repo,'LICENSE'),'LICENSE');
   copy(path.join(repo,'NOTICE.md'),'NOTICE.md');
   copy(path.join(repo,'docs','CONFIGURATION.md'),'CONFIGURATION.md');
+  copy(path.join(repo,'docs','LG_AUDIO_CLOCKFIX_2026-10-24.md'),'LG_AUDIO_CLOCKFIX_2026-10-24.md');
   copy(path.join(__dirname,'package-core.cjs'),'package-core.cjs');
   copy(path.join(__dirname,'first-run.cjs'),'first-run.cjs');
   copy(path.join(__dirname,'launch-host.cjs'),'launch-host.cjs');
@@ -73,6 +79,11 @@ function build(out){
    'node.exe "%~dp0launch-host.cjs" --start',
    'set "EXITCODE=%errorlevel%"',
    'if not "%EXITCODE%"=="0" pause',
+   'exit /b %EXITCODE%']);
+  add('StartSound.cmd',['@echo off','setlocal','where node.exe >nul 2>&1',
+   'if errorlevel 1 (echo Node.js required & exit /b 2)',
+   'set "IM_ACCESSIBILITY_TV_AUDIO=1"','node.exe "%~dp0launch-host.cjs" --start',
+   'set "EXITCODE=%errorlevel%"','if not "%EXITCODE%"=="0" pause',
    'exit /b %EXITCODE%']);
   add('Stop.cmd',['@echo off','setlocal','where node.exe >nul 2>&1',
    'if errorlevel 1 (echo Node.js required & exit /b 2)',
@@ -99,6 +110,20 @@ function build(out){
    'Installation does not launch TV, create Windows tasks or pair any device.',
    'Run Setup.cmd in the installed folder to select your PC adapter, LG TV and tool locations.',
    'Run Start.cmd only after owner-confirmed setup; it checks TV identity and refuses active/uncertain sessions.',
+   'Start.cmd keeps speaker audio OFF; StartSound.cmd explicitly opts into Windows speaker-output audio.',
+   'Experimental v0.3.16 rebuild of LoopbackCapture.exe fixes Windows silent-audio PCM pacing (48kHz output), provenance in LG_AUDIO_CLOCKFIX_2026-10-24.md.',
+   'Sound starts on TV only and temporarily mutes the selected laptop speaker output. Select Laptop sound ON to use both rooms.',
+   'Laptop-only sound returns when TV playback is disabled. End, closing the TV or losing its heartbeat restores the original Windows speaker mute state.',
+   'The TV Sound button is enabled only when the HLS source contains audio; video remains muted until the owner presses it.',
+   'An encoder-stall watchdog restarts only the video capture; if sound repeatedly stalls, video-only fallback preserves desktop control.',
+   'The desktop viewer follows the HLS live edge and has a Catch up picture option in its bottom-right Controls menu.',
+   'Fullscreen TV buttons and status live in a small bottom-right expandable Controls menu.',
+   'Try faster video opens a separate full-screen MSE-only viewer with the identical controls; original HLS is the default and Return to HLS reopens its own page.',
+   'Fast mode uses the same 720p H.264/AAC quality settings, does not grant Windows mouse permission and runs only while selected by the owner.',
+   'If LG fast-video decoder frames stop advancing, it seeks toward live, then reconnects a bounded number of times; repeated stalls restore original HLS.',
+   'Fast mode now limits hardware decoder seeks and MSE memory pruning, keeping at least eight seconds behind the playhead and twelve seconds near the live edge.',
+   'The same private fast-video WebSocket reports decoder frame counts for read-only diagnostics; no Windows control actions or screen data are sent.',
+   'Fast-video WebSocket disconnection also revokes Windows mouse access, protecting against clicks on a stale desktop picture.',
    'During an active four-hour viewing session, the optional LG activity guard sends only bounded one-pixel TV pointer movements while the TV browser and video are active.',
    'This does not disable OLED protection; Stop or switching away from the browser ends the signal.',
    'Stop.cmd requests shutdown; Uninstall.cmd removes only unchanged installed files.',

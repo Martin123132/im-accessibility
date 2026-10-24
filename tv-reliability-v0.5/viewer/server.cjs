@@ -6,6 +6,9 @@ const http=require('node:http');
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const cp=require('node:child_process');
 const {getFrame,metrics:previewMetrics}=require('./snapshot.cjs');
+const {SpeakerRouter}=require('./speaker-routing.cjs');
+const FastVideo=require('./fast-video.cjs');
+const speakerRouter=new SpeakerRouter();
 const SETTINGS=process.env.IM_ACCESSIBILITY_CONFIG_PATH!==undefined
  ?require('../release-config.cjs').readUserSettings():null;
 const ROOT=__dirname,LAN=SETTINGS?SETTINGS.network.ip:'192.168.4.36',PORT=43198;
@@ -17,7 +20,7 @@ const EXPIRES_MS=4*60*60*1000;
 const token=crypto.randomBytes(32).toString('hex'),began=Date.now(),expiresAt=began+EXPIRES_MS;
 let enabled=false,enabledUntil=0,lastActionAt=0,inputsThisMinute=0,minuteStart=Date.now(),actions=0;
 let revoked=false,lastReceipt=null,sourceUrl=null,sourceExpires=0;
-let primaryScreen=null;
+let primaryScreen=null,fastVideoController=null;
 fs.mkdirSync(EVIDENCE,{recursive:true});
 function sameSubnet(address){
  if(typeof address!=='string')return false;
@@ -46,7 +49,7 @@ function json(res,code,body){
 function asset(res,file,type){
  const p=path.join(ROOT,'web',file),b=fs.readFileSync(p);
  res.writeHead(200,{'Content-Type':type,'Cache-Control':'no-store',
-  'Content-Security-Policy':"default-src 'none'; script-src 'self'; style-src 'self'; media-src 'self' blob:; connect-src 'self'; img-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
+  'Content-Security-Policy':"default-src 'none'; script-src 'self'; style-src 'self'; media-src 'self' blob:; connect-src 'self' ws://"+LAN+":"+PORT+"; img-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
   'Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY'});
  res.end(b);
 }
@@ -82,6 +85,23 @@ function consume(input){
  fs.appendFileSync(path.join(EVIDENCE,'mouse-actions.jsonl'),JSON.stringify(result)+'\n',{flag:'a'});
  return {ok:true,receipt:result};
 }
+async function sourceAudioInfo(){
+ const offline={available:false,deviceIdHash:null,streamReady:false,streamAgeMs:null,recoveryCount:0};
+ if(!sourceUrl||Date.now()>=sourceExpires)return offline;
+ try{
+  const r=await fetch('http://'+LAN+':43196/health',{signal:AbortSignal.timeout(950),redirect:'error'});
+  if(!r.ok)return offline;
+  const result=await r.json();
+  const hash=result.audioDeviceIdHash;
+  const ready=result.ok===true&&result.streamReady===true&&result.stream==='running';
+  const available=ready&&result.audioEnabled===true&&
+   typeof hash==='string'&&/^[0-9a-f]{64}$/.test(hash);
+  return {available,deviceIdHash:available?hash:null,streamReady:ready,
+   streamAgeMs:Number.isFinite(result.streamAgeMs)?result.streamAgeMs:null,
+   recoveryCount:Number.isSafeInteger(result.recoveryCount)&&result.recoveryCount>=0?result.recoveryCount:0};
+ }catch{return offline}
+}
+async function sourceAudio(){return (await sourceAudioInfo()).available}
 function state(){return{receiver:'PC Bridge Interactive TV v0.1',
  screen:SETTINGS?(primaryScreen?primaryScreen.width+'x'+primaryScreen.height:'pending native verification'):'1920x1080',
  stream:'1280x720 H.264',
@@ -118,6 +138,15 @@ function createServer(){
     if(!active())return json(res,410,{error:'Session expired'});
     return asset(res,'viewer.html','text/html; charset=utf-8');
    }
+   // Optional minimal full-viewport browser HTML page. Original /tv/ page is unchanged.
+   // The same time-limited viewer key protects both routes and their HLS/media APIs.
+   if(req.method==='GET'&&(route==='/full/'+token||route==='/fastfull/'+token)){
+    if(!active())return json(res,410,{error:'Session expired'});
+    return asset(res,'immersive.html','text/html; charset=utf-8');
+   }
+   if(req.method==='GET'&&route==='/immersive.js')return asset(res,'immersive.js','text/javascript; charset=utf-8');
+   if(req.method==='GET'&&route==='/fast-video.js')return asset(res,'fast-video.js','text/javascript; charset=utf-8');
+   if(req.method==='GET'&&route==='/immersive.css')return asset(res,'immersive.css','text/css; charset=utf-8');
    if(req.method==='GET'&&route==='/viewer.js')return asset(res,'viewer.js','text/javascript; charset=utf-8');
    if(req.method==='GET'&&route==='/style.css')return asset(res,'style.css','text/css; charset=utf-8');
    // Static JPEG preview of the same HLS source, independently clickable by LG Magic Remote.
@@ -140,12 +169,41 @@ function createServer(){
    if(!route.startsWith('/api/'))return json(res,404,{error:'Not found'});
    const auth=(req.headers.authorization||'').replace(/^Bearer /,'');
    if(!tokenMatches(auth)||!active())return json(res,401,{error:'Viewer permission required'});
-   if(req.method==='GET'&&route==='/api/status')return json(res,200,state());
+   if(req.method==='GET'&&route==='/api/status'){
+    const upstream=await sourceAudioInfo();
+    // Never leave Windows click permission armed when the displayed desktop is stale.
+    if(!upstream.streamReady)enabled=false;
+    return json(res,200,{...state(),sourceReady:upstream.streamReady,
+     streamAgeMs:upstream.streamAgeMs,recoveryCount:upstream.recoveryCount,
+     audioAvailable:upstream.available,fastVideoAvailable:!!SETTINGS,
+     fastVideoStatus:fastVideoController?fastVideoController.snapshot():null,
+     ...speakerRouter.snapshot()});
+   }
    if(req.method!=='POST')return json(res,405,{error:'Method denied'});
    if(req.headers.origin&&req.headers.origin!==ORIGIN)return json(res,403,{error:'Origin denied'});
    if(req.headers['sec-fetch-site']==='cross-site')return json(res,403,{error:'Cross-site request denied'});
    const input=await getBody(req);
+   if(route==='/api/audio-route'){
+    if(!input||Object.keys(input).length!==1||typeof input.mode!=='string')
+     throw Error('One explicit audio destination is required');
+    const audio=await sourceAudioInfo();
+    if(input.mode!=='laptop-only'&&!audio.available)
+     return json(res,409,{error:'Windows desktop audio is not available'});
+    const result=speakerRouter.setMode(input.mode,audio.deviceIdHash);
+    return json(res,200,{ok:true,...result});
+   }
+   if(route==='/api/audio-heartbeat'){
+    if(!input||Object.keys(input).length!==0)throw Error('No arguments');
+    if(!(await sourceAudio())){
+     speakerRouter.restore();
+     return json(res,409,{error:'TV audio source stopped; laptop playback restored'});
+    }
+    return json(res,200,{ok:true,...speakerRouter.pulse()});
+   }
    if(route==='/api/arm'){
+    if(!(await sourceAudioInfo()).streamReady){
+     enabled=false;return json(res,503,{error:'Live desktop picture is not current; mouse remains disabled'});
+    }
     if(input?.confirm!==true||Object.keys(input).length!==1)throw Error('Explicit click to enable required');
     enabled=true;enabledUntil=Math.min(expiresAt,Date.now()+10*60*1000);
     return json(res,200,state());
@@ -157,15 +215,23 @@ function createServer(){
    if(route==='/api/end'){
     if(!input||Object.keys(input).join(',')!=='confirm'||input.confirm!==true)throw Error('Explicit end-session confirmation required');
     fs.writeFileSync(STOP_SIGNAL,JSON.stringify({reason:'owner-pressed-stop',requestedAtUtc:new Date().toISOString()})+'\n',{flag:'wx'});
-    enabled=false;return json(res,200,{accepted:true,message:'PC Bridge TV session stopping'});
+    enabled=false;speakerRouter.restore();return json(res,200,{accepted:true,message:'PC Bridge TV session stopping'});
    }
-   if(route==='/api/mouse')return json(res,200,consume(input));
+   if(route==='/api/mouse'){
+    if(!(await sourceAudioInfo()).streamReady){
+     enabled=false;return json(res,503,{error:'Desktop picture stalled; Windows mouse disabled'});
+    }
+    return json(res,200,consume(input));
+   }
    return json(res,404,{error:'Not found'});
   }catch(e){if(!res.headersSent)json(res,400,{error:String(e.message||e).slice(0,150)});else res.destroy()}
  });
 }
 async function serve(){
  safelyReadUpstream();
+ // Recover a previous crashed session's speaker state before opening new control.
+ const old=speakerRouter.recover();
+ if(!old.recovered)console.error('SPEAKER_RESTORE_PENDING: '+old.reason);
  const native=cp.spawnSync(NATIVE,['status'],{encoding:'utf8',windowsHide:true,timeout:3500});
  if(native.status!==0)throw Error('Mouse driver unavailable');
  const details=JSON.parse(native.stdout);
@@ -176,6 +242,16 @@ async function serve(){
  primaryScreen={width:details.width,height:details.height};
  const upstream=await fetch('http://'+LAN+':43196/health',{signal:AbortSignal.timeout(4000)});if(!upstream.ok)throw Error('Original desktop video receiver unavailable');
  const srv=createServer();
+ // Optional fast viewer is never started by default; only an authenticated TV
+ // WebSocket selecting Try fast video opens this extra temporary capture.
+ let fast=null;
+ if(SETTINGS){
+  try{fast=FastVideo.attach(srv,{lan:LAN,port:PORT,origin:ORIGIN,token,
+    expiresAt,ffmpegExe:SETTINGS.executables.ffmpegExe,sameSubnet,
+    onDisconnect:()=>{enabled=false;enabledUntil=0}});
+    fastVideoController=fast;}
+  catch(e){console.warn('FAST_VIDEO_OPTION_UNAVAILABLE '+String(e.message).slice(0,110))}
+ }
  await new Promise((resolve,reject)=>{srv.once('error',reject);srv.listen(PORT,LAN,resolve)});
  const url=ORIGIN+'/tv/'+token;
  fs.writeFileSync(path.join(ROOT,'runtime','session.json'),JSON.stringify({
@@ -183,7 +259,23 @@ async function serve(){
   url,port:PORT,sourcePort:43196,control:'mouse-only, opt-in on TV, 10-minute arm',sourceExpires:new Date(sourceExpires).toISOString()
  },null,2)+'\n',{flag:'wx'});
  console.log(JSON.stringify({ready:true,port:PORT,expiresAt:new Date(expiresAt).toISOString(),url}));
- const expire=setTimeout(()=>{revoked=true;enabled=false;srv.close();},EXPIRES_MS);expire.unref();
+ const maintenance=setInterval(async()=>{
+  try{
+   if(!active()||!(await sourceAudio()))speakerRouter.restore();
+   else speakerRouter.expire();
+  }catch(e){console.error('SPEAKER_ROUTING_CHECK '+String(e.message).slice(0,90))}
+ },3100);maintenance.unref();
+ function shutdown(){
+  revoked=true;enabled=false;clearInterval(maintenance);
+  speakerRouter.restore();
+  try{fast?.shutdown()}catch{}
+  fastVideoController=null;
+  try{srv.close()}catch{}
+ }
+ process.once('SIGTERM',shutdown);
+ process.once('SIGINT',shutdown);
+ srv.once('close',()=>{clearInterval(maintenance);speakerRouter.restore()});
+ const expire=setTimeout(shutdown,EXPIRES_MS);expire.unref();
 }
 if(require.main===module){
  if(process.env.IM_ACCESSIBILITY_CONFIG_PATH===undefined){
