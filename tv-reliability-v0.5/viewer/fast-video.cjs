@@ -7,6 +7,25 @@ const {WebSocketServer}=require('../cast/node_modules/ws');
 const SOUND=require('../cast/sound.cjs');
 const MAX_MP4_BOX=4*1024*1024,MAX_PARSE_BYTES=9*1024*1024,MAX_WS_BUFFER=3*1024*1024;
 const MIME='video/mp4; codecs="avc1.4d001f, mp4a.40.2"';
+// The authenticated LG WebSocket can send one strictly bounded, read-only
+// decoder-health record. It cannot control Windows, audio or the encoder.
+function decoderReport(data,isBinary){
+ if(isBinary||!Buffer.isBuffer(data)||data.length>220)return null;
+ try{
+  const v=JSON.parse(data.toString('utf8'));
+  const required=['kind','positionMs','frameCount','readyState','paused','visible','gapMs','queueLength'];
+  if(!v||Array.isArray(v)||typeof v!=='object'||Object.keys(v).length!==required.length||
+     required.some(k=>!Object.prototype.hasOwnProperty.call(v,k)))return null;
+  const int=(n,min,max)=>Number.isSafeInteger(n)&&n>=min&&n<=max;
+  if(v.kind!=='decoder'||!int(v.positionMs,0,20000000)||
+     !(v.frameCount===null||int(v.frameCount,0,2000000000))||
+     !int(v.readyState,0,4)||typeof v.paused!=='boolean'||
+     typeof v.visible!=='boolean'||!(v.gapMs===null||int(v.gapMs,0,60000))||
+     !int(v.queueLength,0,32))return null;
+  return {positionMs:v.positionMs,frameCount:v.frameCount,readyState:v.readyState,
+   paused:v.paused,visible:v.visible,gapMs:v.gapMs,queueLength:v.queueLength};
+ }catch{return null}
+}
 function encoderArgs(format){
  if(!format||!['f32le','s16le','s24le','s32le'].includes(format.sampleFormat)||
   !Number.isInteger(format.sampleRate)||format.sampleRate<8000||format.sampleRate>192000||
@@ -57,7 +76,7 @@ function attach(server,{lan,port,origin,token,expiresAt,ffmpegExe,sameSubnet,onD
  if(!fs.existsSync(ffmpegExe))throw Error('Pinned FFmpeg not available');
  if(!/^[a-f0-9]{64}$/.test(token))throw Error('Private viewer token required');
  const wss=new WebSocketServer({noServer:true,maxPayload:256,perMessageDeflate:false,clientTracking:true});
- let active=null,lastConnected=0,lastCloseReason=null,lastClosedAt=null;
+ let active=null,lastConnected=0,lastCloseReason=null,lastClosedAt=null,lastDecoder=null;
  function closeStream(item,reason){
   if(!item||item.closed)return;
   item.closed=true;clearInterval(item.checker);
@@ -68,11 +87,14 @@ function attach(server,{lan,port,origin,token,expiresAt,ffmpegExe,sameSubnet,onD
   if(active===item)active=null;
   lastCloseReason=String(reason||'Stream ended').slice(0,75);
   lastClosedAt=Date.now();
+  if(item.decoder)lastDecoder={...item.decoder,reportedAt:item.decoderReportedAt,
+   lastProgressAt:item.decoderProgressAt};
   // Revokes Windows input after fast-video disconnect, even if TV is unreachable.
   try{onDisconnect(lastCloseReason)}catch(e){}
  }
  function start(ws){
-  const item={ws,closed:false,audio:null,encoder:null,lastMediaAt:Date.now(),bytes:0,fragments:0,startedAt:Date.now()};
+  const item={ws,closed:false,audio:null,encoder:null,lastMediaAt:Date.now(),bytes:0,fragments:0,startedAt:Date.now(),
+   decoder:null,decoderReportedAt:0,decoderProgressAt:Date.now()};
   active=item;
   try{
    const f=SOUND.probe();
@@ -99,7 +121,18 @@ function attach(server,{lan,port,origin,token,expiresAt,ffmpegExe,sameSubnet,onD
    item.encoder.once('exit',()=>closeStream(item,'Encoder stopped'));
    item.audio.once('error',()=>closeStream(item,'Speaker output unavailable'));
    item.audio.once('exit',()=>closeStream(item,'Speaker output stopped'));
-   ws.on('message',()=>closeStream(item,'No input accepted'));
+   ws.on('message',(raw,isBinary)=>{
+    const now=Date.now();
+    const report=decoderReport(raw,isBinary);
+    if(!report||now-item.decoderReportedAt<500){
+     closeStream(item,'Unexpected receiver message');return;
+    }
+    const previous=item.decoder;
+    if(!previous||report.frameCount!==previous.frameCount||
+       (report.frameCount===null&&report.positionMs>previous.positionMs+110))
+      item.decoderProgressAt=now;
+    item.decoder=report;item.decoderReportedAt=now;
+   });
    ws.once('close',()=>closeStream(item,'TV disconnected'));
    ws.once('error',()=>closeStream(item,'TV socket error'));
    item.checker=setInterval(()=>{
@@ -137,10 +170,20 @@ function attach(server,{lan,port,origin,token,expiresAt,ffmpegExe,sameSubnet,onD
    mediaAgeMs:item?Math.max(0,now-item.lastMediaAt):null,
    connectedMs:item?Math.max(0,now-item.startedAt):null,
    bufferedBytes:item&&item.ws?item.ws.bufferedAmount:0,
+   decoder:(item&&item.decoder?{
+    ...item.decoder,reportedAgeMs:Math.max(0,now-item.decoderReportedAt),
+    progressAgeMs:Math.max(0,now-item.decoderProgressAt)
+   }:(lastDecoder?{
+    positionMs:lastDecoder.positionMs,frameCount:lastDecoder.frameCount,
+    readyState:lastDecoder.readyState,paused:lastDecoder.paused,visible:lastDecoder.visible,
+    gapMs:lastDecoder.gapMs,queueLength:lastDecoder.queueLength,
+    reportedAgeMs:Math.max(0,now-lastDecoder.reportedAt),
+    progressAgeMs:Math.max(0,now-lastDecoder.lastProgressAt)
+   }:null)),
    lastClosedAt:lastClosedAt?new Date(lastClosedAt).toISOString():null,
    lastCloseReason
   };
  }
  return {shutdown,active:()=>!!active,mime:MIME,snapshot};
 }
-module.exports={MIME,encoderArgs,createFragmentParser,attach};
+module.exports={MIME,encoderArgs,createFragmentParser,decoderReport,attach};

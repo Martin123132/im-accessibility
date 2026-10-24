@@ -89,7 +89,8 @@
   var c={video:video,key:key,cb:callback,ms:null,ws:null,sb:null,url:null,
    queue:[],queueBytes:0,closed:false,lastData:Date.now(),lastAppend:0,
    fragmentCount:0,monitor:null,openTimer:null,
-   lastProgressAt:Date.now(),lastTime:0,lastFrames:null,stallNudgeAt:0};
+   lastProgressAt:Date.now(),lastTime:0,lastFrames:null,stallNudgeAt:0,
+   lastSeekAt:0,lastTrimAt:0,lastDecoderReportAt:0};
   current=c;
   function fail(message){
    if(c.closed||current!==c)return;
@@ -104,8 +105,14 @@
    if(!c.sb||c.sb.updating||!video.buffered||!video.buffered.length)return false;
    try{
     var r=video.buffered,end=r.end(r.length-1),begin=r.start(r.length-1);
-    if(end-begin>6){
-     c.sb.remove(begin,Math.max(begin,end-3));return true
+    var now=Date.now();
+    // Older LG webOS decoders can stall when a SourceBuffer is repeatedly
+    // pruned close to the active playhead. Retain a larger safety window.
+    if(end-begin>24&&now-c.lastTrimAt>10000){
+     var safeEnd=Math.min(Number(video.currentTime)-8,end-12);
+     if(isFinite(safeEnd)&&safeEnd>begin+3){
+      c.sb.remove(begin,safeEnd);c.lastTrimAt=now;return true
+     }
     }
    }catch(e){}
    return false;
@@ -115,8 +122,13 @@
    try{
     var r=video.buffered,end=r.end(r.length-1),begin=r.start(r.length-1);
     if(!isFinite(end)||!isFinite(begin))return;
-    var lag=end-video.currentTime;
-    if(lag>1.7&&end-begin>1.0)video.currentTime=Math.max(begin+0.05,end-0.7);
+    var now=Date.now(),lag=end-video.currentTime;
+    // Seeking on every incoming media fragment can keep resetting LG's
+    // hardware decoder. Allow one meaningful correction per ~3.6 seconds.
+    if(lag>2.0&&end-begin>1.2&&now-c.lastSeekAt>3600){
+     var target=Math.max(begin+0.05,end-0.8);
+     if(target>video.currentTime+0.5){video.currentTime=target;c.lastSeekAt=now}
+    }
    }catch(e){}
   }
   function drain(){
@@ -166,6 +178,27 @@
     c.ws.onclose=function(){fail('encoder stopped')};
    });
    c.openTimer=setTimeout(function(){fail('startup timed out')},9000);
+   function publishDecodeHealth(now,time,frames,visible){
+    if(!c.ws||c.ws.readyState!==1||now-c.lastDecoderReportAt<2200)return;
+    var gap=null,range=video.buffered;
+    try{
+     if(range&&range.length){
+      var end=range.end(range.length-1);
+      if(isFinite(end)&&isFinite(time))gap=Math.max(0,Math.min(60000,Math.round((end-time)*1000)));
+     }
+    }catch(e){}
+    var position=isFinite(time)?Math.max(0,Math.min(20000000,Math.round(time*1000))):0;
+    var count=frames===null||!isFinite(frames)?null:
+     Math.max(0,Math.min(2000000000,Math.round(frames)));
+    var packet={kind:'decoder',positionMs:position,frameCount:count,
+     readyState:Math.max(0,Math.min(4,Math.round(Number(video.readyState)||0))),
+     paused:!!video.paused,visible:!!visible,gapMs:gap,
+     queueLength:Math.max(0,Math.min(32,c.queue.length))};
+    try{
+     c.ws.send(JSON.stringify(packet));
+     c.lastDecoderReportAt=now;
+    }catch(e){}
+   }
    c.monitor=setInterval(function(){
     if(c.closed||current!==c)return;
     var now=Date.now();
@@ -175,6 +208,7 @@
     // Track actually decoded frames where supported, otherwise the playhead.
     var visible=typeof document==='undefined'||document.visibilityState!=='hidden';
     var time=Number(video.currentTime),frames=decodedFrames(video);
+    publishDecodeHealth(now,time,frames,visible);
     if(!visible||video.paused){
      c.lastProgressAt=now;c.lastFrames=frames;c.lastTime=isFinite(time)?time:0;
      c.stallNudgeAt=0;return;
