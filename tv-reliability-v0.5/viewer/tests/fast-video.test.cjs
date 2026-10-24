@@ -39,6 +39,22 @@ test('fragment parser rejects malformed MP4 instead of unbounded buffering',()=>
  const bad=Buffer.alloc(8);bad.writeUInt32BE(5,0);bad.write('moov',4,'ascii');
  assert.throws(()=>fast.createFragmentParser(()=>{}).push(bad),/Invalid MP4 atom/);
 });
+test('receiver decoder telemetry accepts only bounded read-only diagnostics, not arbitrary commands',()=>{
+ const d={kind:'decoder',positionMs:45000,frameCount:670,readyState:4,
+  paused:false,visible:true,gapMs:810,queueLength:2};
+ const buf=Buffer.from(JSON.stringify(d));
+ assert.deepEqual(fast.decoderReport(buf,false),{
+  positionMs:45000,frameCount:670,readyState:4,
+  paused:false,visible:true,gapMs:810,queueLength:2});
+ assert.equal(fast.decoderReport(buf,true),null,'No binary client payloads');
+ assert.equal(fast.decoderReport(Buffer.from(JSON.stringify({...d,cmd:'mouse'})),false),null,'No extra fields');
+ assert.equal(fast.decoderReport(Buffer.from(JSON.stringify({...d,frameCount:-1})),false),null);
+ assert.equal(fast.decoderReport(Buffer.from(JSON.stringify({...d,positionMs:Infinity})),false),null);
+ assert.equal(fast.decoderReport(Buffer.from(JSON.stringify({...d,readyState:5})),false),null);
+ assert.equal(fast.decoderReport(Buffer.alloc(300),false),null);
+ assert.equal(fast.decoderReport(Buffer.from('{'),false),null);
+ assert.equal(fast.decoderReport(Buffer.from(JSON.stringify({...d,frameCount:null,gapMs:null})),false).frameCount,null);
+});
 test('fast mode preserves normal authenticated HLS and click controls',()=>{
  const server=fs.readFileSync(path.join(root,'server.cjs'),'utf8');
  const html=fs.readFileSync(path.join(root,'web','immersive.html'),'utf8');

@@ -5,7 +5,7 @@ const code=fs.readFileSync(path.resolve(__dirname,'../web/fast-video.js'),'utf8'
 const TOKEN='a'.repeat(64);
 function browser(storageData={},t=1000000){
  let now=t,timer=null,mse=null,socket=null,closed=0,loaded=0,disarm=0,reloaded=0,go=null;
- const statuses=[],store=storageData;
+ const statuses=[],store=storageData,removals=[],decoderMessages=[];
  const video={muted:true,defaultMuted:true,paused:false,readyState:4,currentTime:5,
   currentSrc:'',webkitDecodedFrameCount:12,
   buffered:{length:1,start(){return 0},end(){return 9}},
@@ -17,11 +17,12 @@ function browser(storageData={},t=1000000){
  MediaSource.prototype.addSourceBuffer=function(){
   return {updating:false,mode:'segments',listeners:{},appendBuffer(){},
    addEventListener(name,cb){this.listeners[name]=cb},
-   remove(){}};
+   remove(start,end){removals.push([start,end])}};
  };
  class WebSocket {
   constructor(u){socket=this;this.url=u;this.readyState=1;this.binaryType='arraybuffer'}
   close(){this.readyState=3;closed++}
+  send(msg){decoderMessages.push(JSON.parse(String(msg)))}
  }
  class XMLHttpRequest{
   open(method,url){this.method=method;this.url=url}
@@ -46,6 +47,8 @@ function browser(storageData={},t=1000000){
  mse.listeners.sourceopen();
  assert.ok(socket,'Expected authenticated WebSocket');
  return {video,socket,statuses,store,
+  get decoderMessages(){return decoderMessages},
+  get removals(){return removals},
   step(ms,sendPacket=true){
    now+=ms;
    if(sendPacket&&socket&&socket.readyState===1)
@@ -111,6 +114,56 @@ test('An LG decoder stuck at readyState zero and playback time zero also recover
  assert.equal(c.disarm,1,'Windows mouse must be revoked even before the first picture');
 });
 
+test('MSE pruning retains at least eight seconds behind playhead and avoids frequent remove()',()=>{
+ const c=browser();
+ c.video.currentTime=29;
+ c.video.buffered={length:1,start(){return 0},end(){return 34}};
+ c.step(1100);
+ assert.equal(c.removals.length,1,'Old MSE frames are eventually pruned');
+ const first=c.removals[0];
+ assert.ok(first[1]<=c.video.currentTime-8,'Never prune close to decoded playhead');
+ assert.ok(first[1]<=34-12,'Retain 12 seconds near live edge');
+ c.video.webkitDecodedFrameCount+=5;
+ c.step(1100);
+ c.video.webkitDecodedFrameCount+=5;
+ c.step(1100);
+ assert.equal(c.removals.length,1,'Repeated small trims must not churn LG decoder');
+});
+test('MSE seek throttling avoids repeated hardware decoder resets',()=>{
+ const c=browser();
+ c.video.buffered={length:1,start(){return 0},end(){return 12}};
+ c.video.currentTime=1;
+ c.video.webkitDecodedFrameCount+=1;
+ c.step(1100);
+ assert.ok(c.video.currentTime>10,'Large drift is corrected');
+ c.video.currentTime=1;
+ c.video.webkitDecodedFrameCount+=1;
+ c.step(1100);
+ assert.equal(c.video.currentTime,1,'A second seek inside cooldown is refused');
+ c.video.webkitDecodedFrameCount+=1;
+ c.step(3900);
+ assert.ok(c.video.currentTime>10,'Later real drift may be corrected');
+});
+test('Real LG decoder health is sampled over its existing authenticated media WebSocket',()=>{
+ const c=browser();
+ for(let i=0;i<10;i++){
+  c.video.webkitDecodedFrameCount+=15;
+  c.video.currentTime+=1;
+  c.step(1100);
+ }
+ assert.ok(c.decoderMessages.length>=3&&c.decoderMessages.length<=5,'Bounded 2.2s telemetry cadence');
+ const record=c.decoderMessages[c.decoderMessages.length-1];
+ assert.equal(record.kind,'decoder');
+ assert.ok(record.frameCount>15);
+ assert.equal(record.paused,false);
+ assert.equal(record.readyState,4);
+ assert.equal(record.visible,true);
+ assert.ok(record.positionMs>10000);
+ assert.ok(record.gapMs===null||Number.isInteger(record.gapMs));
+ assert.ok(record.queueLength>=0);
+ assert.equal(c.reloaded,0);
+ assert.equal(c.closed,0);
+});
 test('Fast video source defines authenticated same-LAN server-side disarm on disconnect',()=>{
  const backend=fs.readFileSync(path.resolve(__dirname,'../fast-video.cjs'),'utf8');
  const viewer=fs.readFileSync(path.resolve(__dirname,'../server.cjs'),'utf8');
