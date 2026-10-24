@@ -4,7 +4,7 @@
 const fs=require('node:fs'),path=require('node:path');
 const core=require('./package-core.cjs');
 const repo=path.resolve(__dirname,'..');
-const version='v0.3.15-mse-buffer-stability-preview';
+const version='v0.3.16-audio-clockfix-acceptance-preview';
 const tv=[
  'lg-pair.cjs','lg-active-view.cjs','release-config.cjs','resume.cjs','resume-host.cjs',
  'cast/lan.cjs','cast/lg-launch.cjs','cast/package.json','cast/package-lock.json',
@@ -58,6 +58,7 @@ function build(out){
   copy(path.join(repo,'LICENSE'),'LICENSE');
   copy(path.join(repo,'NOTICE.md'),'NOTICE.md');
   copy(path.join(repo,'docs','CONFIGURATION.md'),'CONFIGURATION.md');
+  copy(path.join(repo,'docs','LG_AUDIO_CLOCKFIX_2026-10-24.md'),'LG_AUDIO_CLOCKFIX_2026-10-24.md');
   copy(path.join(__dirname,'package-core.cjs'),'package-core.cjs');
   copy(path.join(__dirname,'first-run.cjs'),'first-run.cjs');
   copy(path.join(__dirname,'launch-host.cjs'),'launch-host.cjs');
@@ -110,6 +111,7 @@ function build(out){
    'Run Setup.cmd in the installed folder to select your PC adapter, LG TV and tool locations.',
    'Run Start.cmd only after owner-confirmed setup; it checks TV identity and refuses active/uncertain sessions.',
    'Start.cmd keeps speaker audio OFF; StartSound.cmd explicitly opts into Windows speaker-output audio.',
+   'Experimental v0.3.16 rebuild of LoopbackCapture.exe fixes Windows silent-audio PCM pacing (48kHz output), provenance in LG_AUDIO_CLOCKFIX_2026-10-24.md.',
    'Sound starts on TV only and temporarily mutes the selected laptop speaker output. Select Laptop sound ON to use both rooms.',
    'Laptop-only sound returns when TV playback is disabled. End, closing the TV or losing its heartbeat restores the original Windows speaker mute state.',
    'The TV Sound button is enabled only when the HLS source contains audio; video remains muted until the owner presses it.',

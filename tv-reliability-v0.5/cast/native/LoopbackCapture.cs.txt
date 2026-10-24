@@ -124,8 +124,13 @@ static class LoopbackCapture {
    using(Stream output=Console.OpenStandardOutput()) {
     Stopwatch clock=Stopwatch.StartNew();
     long framesWritten=0;
-    int silenceFrames=Math.Max(1,rate/100);
-    byte[] zero=new byte[silenceFrames*align];
+    // Windows timer resolution can round Thread.Sleep(8) to ~15.6 ms.
+    // A fixed 10 ms maximum silence chunk therefore caps the stream to
+    // roughly 30,720 frames/s instead of the advertised 48,000 frames/s.
+    // Size each silent fill by the measured audio-clock deficit, bounded
+    // to at most 125 ms so a stalled process never emits unbounded PCM.
+    int maxSilenceFrames=Math.Max(1,rate/8);
+    byte[] zero=new byte[checked(maxSilenceFrames*align)];
     while(true){
      uint pending;Check(capture.GetNextPacketSize(out pending));
      while(pending>0){
@@ -144,8 +149,10 @@ static class LoopbackCapture {
      // to preserve HLS audio timestamps, not a second desktop/microphone recording.
      long expected=(long)(clock.Elapsed.TotalSeconds*rate);
      long deficit=expected-framesWritten;
-     if(deficit>=rate/15){
-      int fill=(int)Math.Min(deficit-rate/40,silenceFrames);
+     if(deficit>=Math.Max(1,rate/30)){
+      // Leave ~12.5 ms of scheduling headroom before the next wake-up.
+      long wanted=deficit-Math.Max(1,rate/80);
+      int fill=(int)Math.Min(Math.Max(0,wanted),maxSilenceFrames);
       if(fill>0){output.Write(zero,0,fill*align);framesWritten+=fill;}
      }
      Thread.Sleep(8);
