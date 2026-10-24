@@ -4,7 +4,7 @@
 const fs=require('node:fs'),path=require('node:path');
 const core=require('./package-core.cjs');
 const repo=path.resolve(__dirname,'..');
-const version='v0.3.11-optional-fast-mse-preview';
+const version='v0.3.12-optional-fast-mse-hls-fallback-preview';
 const tv=[
  'lg-pair.cjs','lg-active-view.cjs','release-config.cjs','resume.cjs','resume-host.cjs',
  'cast/lan.cjs','cast/lg-launch.cjs','cast/package.json','cast/package-lock.json',
