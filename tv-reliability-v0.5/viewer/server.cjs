@@ -20,7 +20,7 @@ const EXPIRES_MS=4*60*60*1000;
 const token=crypto.randomBytes(32).toString('hex'),began=Date.now(),expiresAt=began+EXPIRES_MS;
 let enabled=false,enabledUntil=0,lastActionAt=0,inputsThisMinute=0,minuteStart=Date.now(),actions=0;
 let revoked=false,lastReceipt=null,sourceUrl=null,sourceExpires=0;
-let primaryScreen=null;
+let primaryScreen=null,fastVideoController=null;
 fs.mkdirSync(EVIDENCE,{recursive:true});
 function sameSubnet(address){
  if(typeof address!=='string')return false;
@@ -140,7 +140,7 @@ function createServer(){
    }
    // Optional minimal full-viewport browser HTML page. Original /tv/ page is unchanged.
    // The same time-limited viewer key protects both routes and their HLS/media APIs.
-   if(req.method==='GET'&&route==='/full/'+token){
+   if(req.method==='GET'&&(route==='/full/'+token||route==='/fastfull/'+token)){
     if(!active())return json(res,410,{error:'Session expired'});
     return asset(res,'immersive.html','text/html; charset=utf-8');
    }
@@ -175,7 +175,9 @@ function createServer(){
     if(!upstream.streamReady)enabled=false;
     return json(res,200,{...state(),sourceReady:upstream.streamReady,
      streamAgeMs:upstream.streamAgeMs,recoveryCount:upstream.recoveryCount,
-     audioAvailable:upstream.available,fastVideoAvailable:!!SETTINGS,...speakerRouter.snapshot()});
+     audioAvailable:upstream.available,fastVideoAvailable:!!SETTINGS,
+     fastVideoStatus:fastVideoController?fastVideoController.snapshot():null,
+     ...speakerRouter.snapshot()});
    }
    if(req.method!=='POST')return json(res,405,{error:'Method denied'});
    if(req.headers.origin&&req.headers.origin!==ORIGIN)return json(res,403,{error:'Origin denied'});
@@ -245,7 +247,9 @@ async function serve(){
  let fast=null;
  if(SETTINGS){
   try{fast=FastVideo.attach(srv,{lan:LAN,port:PORT,origin:ORIGIN,token,
-    expiresAt,ffmpegExe:SETTINGS.executables.ffmpegExe,sameSubnet})}
+    expiresAt,ffmpegExe:SETTINGS.executables.ffmpegExe,sameSubnet,
+    onDisconnect:()=>{enabled=false;enabledUntil=0}});
+    fastVideoController=fast;}
   catch(e){console.warn('FAST_VIDEO_OPTION_UNAVAILABLE '+String(e.message).slice(0,110))}
  }
  await new Promise((resolve,reject)=>{srv.once('error',reject);srv.listen(PORT,LAN,resolve)});
@@ -265,6 +269,7 @@ async function serve(){
   revoked=true;enabled=false;clearInterval(maintenance);
   speakerRouter.restore();
   try{fast?.shutdown()}catch{}
+  fastVideoController=null;
   try{srv.close()}catch{}
  }
  process.once('SIGTERM',shutdown);
