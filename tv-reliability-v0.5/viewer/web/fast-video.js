@@ -14,17 +14,27 @@
  }
  function stop(video,restore){
   var c=current;current=null;
+  var muted=video.muted;
   if(c){
    c.closed=true;
    try{clearInterval(c.monitor)}catch(e){}
    try{clearTimeout(c.openTimer)}catch(e){}
    try{if(c.ws)c.ws.close()}catch(e){}
+   // Release the MSE instance, queued fragments and hardware-backed video
+   // before navigating to HLS or reconnecting. Only for an owned fast stream;
+   // never call load() on an unrelated, already-playing HLS element.
+   try{
+    if(c.ms&&c.sb&&c.ms.readyState==='open'&&!c.sb.updating&&
+       typeof c.ms.removeSourceBuffer==='function')c.ms.removeSourceBuffer(c.sb);
+   }catch(e){}
+   if(c.queue){c.queue.length=0;c.queueBytes=0}
+   try{video.pause();video.removeAttribute('src');video.load()}catch(e){}
    try{if(c.url)URL.revokeObjectURL(c.url)}catch(e){}
+   c.ms=null;c.sb=null;c.ws=null;c.url=null;
   }
   if(restore!==false){
-   var muted=video.muted;
    try{
-    video.pause();video.removeAttribute('src');
+    if(!c){video.pause();video.removeAttribute('src')}
     video.src='/media/'+(c?c.key:'')+'/index.m3u8';
     video.defaultMuted=muted;video.muted=muted;
     video.load();
@@ -104,7 +114,10 @@
   function trim(){
    if(!c.sb||c.sb.updating||!video.buffered||!video.buffered.length)return false;
    try{
-    var r=video.buffered,end=r.end(r.length-1),begin=r.start(r.length-1);
+    // Always consider the oldest range: repeated live-edge seeks can split
+    // buffered media into disjoint ranges and hide old memory from last-range
+    // only pruning.
+    var r=video.buffered,end=r.end(r.length-1),begin=r.start(0);
     var now=Date.now();
     // Older LG webOS decoders can stall when a SourceBuffer is repeatedly
     // pruned close to the active playhead. Retain a larger safety window.
