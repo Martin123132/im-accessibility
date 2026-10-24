@@ -20,19 +20,33 @@ let capture=null,captureState='stopped',capturePid=null,captureError=null,
  captureStarted=null,watchHits=0,lastWatchAt=null,lgState='idle',lastDeviceIp=null;
 let audioChild=null,audioDeviceIdHash=null,audioState=WANT_AUDIO?'pending':'off',audioError=null,
     ownerStopped=false,recoveryTried=false;
+// Detect a blocked encoder even when FFmpeg's process is still alive.
+const MAX_MANIFEST_AGE_MS=8500,STARTUP_GRACE_MS=14000,RECOVERY_WINDOW_MS=120000;
+let nextSegment=0,pendingRestart=null,recoveries=[],recoveryCount=0,
+ lastRecoveryReason=null,lastRecoveryUtc=null,captureFormat=null;
 fs.mkdirSync(SEGMENTS,{recursive:true});
 function atomic(file,obj){
  const temp=file+'.'+process.pid+'.tmp';
  fs.writeFileSync(temp,JSON.stringify(obj,null,2)+'\n');
  fs.renameSync(temp,file);
 }
+function manifestAgeMs(dir=SEGMENTS,now=Date.now()){
+ try{return Math.max(0,now-fs.statSync(path.join(dir,'index.m3u8')).mtimeMs)}
+ catch{return null}
+}
+function shouldRecover({alive,ageMs,sinceStartMs,recovering=false}){
+ return !!alive&&!recovering&&Number.isFinite(ageMs)&&ageMs>MAX_MANIFEST_AGE_MS&&
+  Number.isFinite(sinceStartMs)&&sinceStartMs>STARTUP_GRACE_MS;
+}
 function status(){
  const manifest=path.join(SEGMENTS,'index.m3u8'),exists=fs.existsSync(manifest);
+ const streamAgeMs=manifestAgeMs();
  let lastModified=null,segmentCount=0;
  try{if(exists)lastModified=fs.statSync(manifest).mtime.toISOString();
   segmentCount=fs.readdirSync(SEGMENTS).filter(x=>/^segment\d{6}\.ts$/.test(x)).length;}catch{}
  return {mode:'LAN-direct-TV-receiver',source:'Windows desktop',state:captureState,pid:capturePid,
-   captureStarted,streamReady:exists&&captureState==='running'&&Date.now()-fs.statSync(manifest).mtimeMs<8000,lastManifestModified:lastModified,
+   captureStarted,streamReady:exists&&captureState==='running'&&streamAgeMs!==null&&streamAgeMs<8000,lastManifestModified:lastModified,
+   streamAgeMs:streamAgeMs===null?null:Math.round(streamAgeMs),recoveryCount,lastRecoveryUtc,lastRecoveryReason,
    segments:segmentCount,resolution:'1280 x 720',targetFps:15,watchHits,lastWatchAt,phoneIndependent:true,
    expiresAt:new Date(created+MAX_MS).toISOString(),lgState,lastDeviceIp,LAN_IP,port:PORT,receiverUrl:ctrlOrigin+'/tv/'+watchKey,
    error:captureError,audioRequested:WANT_AUDIO,audioState,audioEnabled:audioState==='active'&&captureAlive(),
@@ -40,6 +54,8 @@ function status(){
 }
 function clearSegments(){
  for(const name of fs.readdirSync(SEGMENTS)){
+  const segment=name.match(/^segment(\d{6})\.ts$/);
+  if(segment)nextSegment=Math.max(nextSegment,Number(segment[1])+1);
   if(/^(?:segment\d{6}\.ts|index\.m3u8|index\.m3u8\.tmp)$/.test(name))
    try{fs.unlinkSync(path.join(SEGMENTS,name))}catch{}
  }
@@ -51,7 +67,8 @@ function safeEndAudio(child){
 }
 function spawnCapture(format=null){
  captureState='starting';captureError=null;captureStarted=new Date().toISOString();
- const args=SOUND.argsFor(SEGMENTS,format);
+ captureFormat=format;
+ const args=SOUND.argsFor(SEGMENTS,format,nextSegment);
  const ff=cp.spawn(FFMPEG,args,{cwd:ROOT,windowsHide:true,
   stdio:format?['ignore','ignore','pipe','pipe']:['ignore','ignore','pipe']});
  capture=ff;capturePid=ff.pid||null;captureState='running';
@@ -60,7 +77,7 @@ function spawnCapture(format=null){
  let errors='',thisAudio=null;
  ff.stderr.on('data',b=>{errors=(errors+String(b)).slice(-1200)});
  function fallback(message){
-  if(ownerStopped||capture!==ff||!format||recoveryTried)return;
+  if(ownerStopped||pendingRestart||capture!==ff||!format||recoveryTried)return;
   recoveryTried=true;audioError=String(message||'speaker output stopped').slice(0,140);
   audioState='fallback';
   try{ff.kill('SIGTERM')}catch{}
@@ -89,18 +106,41 @@ function spawnCapture(format=null){
    if(audioChild===thisAudio)audioChild=null;
    safeEndAudio(thisAudio);
   }
-  if(!ownerStopped&&format&&!recoveryTried){
-   recoveryTried=true;audioState='fallback';
-   audioError='Audio/video encoder exited; using video-only fallback';
+  const watchRecovery=pendingRestart;
+  if(watchRecovery)pendingRestart=null;
+  if(watchRecovery&&!ownerStopped&&Date.now()<created+MAX_MS){
+   captureState='recovering';captureError=null;
+   setTimeout(()=>{
+    if(ownerStopped||capture||Date.now()>=created+MAX_MS)return;
+    try{clearSegments();spawnCapture(watchRecovery.format)}
+    catch(e){captureState='failed';captureError=String(e.message).slice(0,180)}
+   },350);
+   return;
   }
-  const resume=!ownerStopped&&!!format&&recoveryTried&&Date.now()<created+MAX_MS;
-  captureState=resume?'recovering':'stopped';
-  captureError=resume?null:(code===0?null:('FFmpeg stopped '+code+'/'+signal+' '+errors.slice(-120)).slice(0,200));
-  if(resume)setTimeout(()=>{
-   if(ownerStopped||capture||Date.now()>=created+MAX_MS)return;
-   try{clearSegments();spawnCapture(null)}
-   catch(e){captureState='failed';captureError=String(e.message).slice(0,180)}
-  },220);
+  // Unexpected FFmpeg exits should recover desktop video automatically as well.
+  // Bound consecutive attempts to avoid a rapid encoder crash/restart loop.
+  if(!ownerStopped&&Date.now()<created+MAX_MS){
+   const now=Date.now();
+   recoveries=recoveries.filter(t=>now-t<RECOVERY_WINDOW_MS);
+   if(recoveries.length<4){
+    recoveries.push(now);recoveryCount++;
+    lastRecoveryUtc=new Date(now).toISOString();
+    lastRecoveryReason='FFmpeg exited unexpectedly '+String(code)+'/'+String(signal);
+    const nextFormat=format?null:captureFormat;
+    if(format){recoveryTried=true;audioState='fallback';
+     audioError='Audio/video encoder exited; recovering desktop video without sound'}
+    captureState='recovering';captureError=null;
+    setTimeout(()=>{
+     if(ownerStopped||capture||Date.now()>=created+MAX_MS)return;
+     try{clearSegments();spawnCapture(nextFormat)}
+     catch(e){captureState='failed';captureError=String(e.message).slice(0,180)}
+    },450);
+    return;
+   }
+   captureError='Too many encoder exits; automatic recovery paused';
+  }
+  captureState='stopped';
+  if(!captureError)captureError=code===0?null:('FFmpeg stopped '+code+'/'+signal+' '+errors.slice(-120)).slice(0,200);
  });
  return status();
 }
@@ -118,11 +158,38 @@ function startCapture(){
  return spawnCapture(format);
 }
 function stopCapture(){
- ownerStopped=true;
+ ownerStopped=true;pendingRestart=null;
  safeEndAudio(audioChild);audioChild=null;
  if(capture)try{capture.kill('SIGTERM')}catch{}
  captureState='stopped';audioState='off';audioDeviceIdHash=null;
  return status();
+}
+function watchdogTick(now=Date.now()){
+ if(ownerStopped||captureState!=='running'||pendingRestart||!captureAlive())return false;
+ const ageMs=manifestAgeMs(SEGMENTS,now);
+ const sinceStartMs=now-Date.parse(captureStarted);
+ if(!shouldRecover({alive:true,ageMs,sinceStartMs}))return false;
+ recoveries=recoveries.filter(t=>now-t<RECOVERY_WINDOW_MS);
+ if(recoveries.length>=4){
+  // A repeatedly failing machine should not be restarted in an infinite tight loop.
+  captureError='Repeated video stalls; recovery paused for cooldown';
+  return false;
+ }
+ const audioTooUnstable=!!captureFormat&&recoveries.length>0;
+ if(audioTooUnstable){
+  audioError='Repeated A/V stalls; video-only fallback to maintain desktop control';
+  audioState='fallback';
+ }
+ const nextFormat=audioTooUnstable?null:captureFormat;
+ pendingRestart={format:nextFormat};
+ recoveries.push(now);recoveryCount++;lastRecoveryUtc=new Date(now).toISOString();
+ lastRecoveryReason='No fresh HLS video segments for '+Math.round(ageMs/1000)+' seconds';
+ captureState='recovering';
+ console.warn('HLS_CAPTURE_STALL_AUTO_RECOVER '+lastRecoveryReason+
+  ' recovery='+recoveryCount+' audio='+Boolean(nextFormat));
+ safeEndAudio(audioChild);
+ try{capture.kill('SIGTERM')}catch(e){captureError=String(e.message).slice(0,120)}
+ return true;
 }
 function validMedia(p){
  const m=p.match(/^\/media\/([a-f0-9]{48})\/(index\.m3u8|segment[0-9]{6}\.ts)$/);
@@ -153,8 +220,13 @@ function makeServer(){
    const u=new URL(req.url,ctrlOrigin);
    if(u.search)return send(res,404,{error:'Not found'});
    const route=u.pathname;
-   if(req.method==='GET'&&route==='/health')return send(res,200,{ok:true,mode:'LAN TV receiver',build:'tv-resume-v0.5',stream:status().state,audioEnabled:status().audioEnabled,audioState:status().audioState,
-   audioDeviceIdHash:status().audioDeviceIdHash});
+   if(req.method==='GET'&&route==='/health'){
+    const h=status();
+    return send(res,200,{ok:true,mode:'LAN TV receiver',build:'tv-resume-v0.5',
+     stream:h.state,streamReady:h.streamReady,streamAgeMs:h.streamAgeMs,
+     recoveryCount:h.recoveryCount,lastRecoveryUtc:h.lastRecoveryUtc,
+     audioEnabled:h.audioEnabled&&h.streamReady,audioState:h.audioState,audioDeviceIdHash:h.audioDeviceIdHash});
+   }
    if(req.method==='GET'&&route==='/controller')return send(res,200,fs.readFileSync(path.join(WEB,'controller.html')),'text/html; charset=utf-8');
    if(req.method==='GET'&&route==='/controller.js')return send(res,200,fs.readFileSync(path.join(WEB,'controller.js')),'application/javascript; charset=utf-8');
    if(req.method==='GET'&&route==='/tv.js')return send(res,200,fs.readFileSync(path.join(WEB,'tv.js')),'application/javascript; charset=utf-8');
@@ -222,6 +294,9 @@ async function serve(){
   try{fs.unlinkSync(file)}catch{}
  };
  process.once('SIGINT',exit);process.once('SIGTERM',exit);
+ const monitor=setInterval(()=>{try{watchdogTick()}catch(e){console.warn('HLS_WATCHDOG_ERROR '+String(e.message).slice(0,110))}},1500);
+ monitor.unref();
+ server.once('close',()=>clearInterval(monitor));
  const timer=setTimeout(()=>{exit();},MAX_MS);timer.unref();
 }
 if(require.main===module){
@@ -230,4 +305,5 @@ if(require.main===module){
   process.exitCode=1;
  }else serve().catch(e=>{console.error('TVCAST_FAILED '+e.message);process.exitCode=1});
 }
-module.exports={makeServer,status,startCapture,stopCapture,validMedia,equalToken,LAN_IP,PORT};
+module.exports={makeServer,status,startCapture,stopCapture,validMedia,equalToken,
+ manifestAgeMs,shouldRecover,watchdogTick,MAX_MANIFEST_AGE_MS,LAN_IP,PORT};

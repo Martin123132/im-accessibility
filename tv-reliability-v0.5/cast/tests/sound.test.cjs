@@ -27,8 +27,16 @@ test('original HLS remains video-only; opt-in adds copied speaker audio',()=>{
  const out=path.resolve(__dirname,'_not_created');
  const classic=sound.argsFor(out);
  assert.ok(classic.includes('-an'));
+ assert.equal(classic[classic.indexOf('-start_number')+1],'0');
+ const afterRestart=sound.argsFor(out,null,1266);
+ assert.equal(afterRestart[afterRestart.indexOf('-start_number')+1],'1266');
+ assert.throws(()=>sound.argsFor(out,null,-1),/start number/);
+ assert.throws(()=>sound.argsFor(out,null,1000000),/start number/);
  assert.ok(!classic.includes('pipe:3'));
- assert.equal(classic[classic.indexOf('-hls_time')+1],'1');
+ assert.equal(classic[classic.indexOf('-hls_time')+1],'0.5');
+ assert.equal(classic[classic.indexOf('-g')+1],'8');
+ assert.equal(classic[classic.indexOf('-keyint_min')+1],'8');
+ assert.equal(classic[classic.indexOf('-hls_list_size')+1],'4','Bound live playlist close to current video');
  const av=sound.argsFor(out,{sampleFormat:'f32le',sampleRate:48000,channels:2});
  assert.ok(av.includes('pipe:3')&&av.includes('aac'));
  assert.deepEqual(av.slice(av.indexOf('-map'),av.indexOf('-map')+4),

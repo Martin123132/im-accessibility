@@ -85,16 +85,20 @@ function consume(input){
  return {ok:true,receipt:result};
 }
 async function sourceAudioInfo(){
- if(!sourceUrl||Date.now()>=sourceExpires)return {available:false,deviceIdHash:null};
+ const offline={available:false,deviceIdHash:null,streamReady:false,streamAgeMs:null,recoveryCount:0};
+ if(!sourceUrl||Date.now()>=sourceExpires)return offline;
  try{
   const r=await fetch('http://'+LAN+':43196/health',{signal:AbortSignal.timeout(950),redirect:'error'});
-  if(!r.ok)return {available:false,deviceIdHash:null};
+  if(!r.ok)return offline;
   const result=await r.json();
   const hash=result.audioDeviceIdHash;
-  const available=result.ok===true&&result.audioEnabled===true&&result.stream==='running'&&
+  const ready=result.ok===true&&result.streamReady===true&&result.stream==='running';
+  const available=ready&&result.audioEnabled===true&&
    typeof hash==='string'&&/^[0-9a-f]{64}$/.test(hash);
-  return {available,deviceIdHash:available?hash:null};
- }catch{return {available:false,deviceIdHash:null}}
+  return {available,deviceIdHash:available?hash:null,streamReady:ready,
+   streamAgeMs:Number.isFinite(result.streamAgeMs)?result.streamAgeMs:null,
+   recoveryCount:Number.isSafeInteger(result.recoveryCount)&&result.recoveryCount>=0?result.recoveryCount:0};
+ }catch{return offline}
 }
 async function sourceAudio(){return (await sourceAudioInfo()).available}
 function state(){return{receiver:'PC Bridge Interactive TV v0.1',
@@ -163,7 +167,14 @@ function createServer(){
    if(!route.startsWith('/api/'))return json(res,404,{error:'Not found'});
    const auth=(req.headers.authorization||'').replace(/^Bearer /,'');
    if(!tokenMatches(auth)||!active())return json(res,401,{error:'Viewer permission required'});
-   if(req.method==='GET'&&route==='/api/status')return json(res,200,{...state(),audioAvailable:await sourceAudio(),...speakerRouter.snapshot()});
+   if(req.method==='GET'&&route==='/api/status'){
+    const upstream=await sourceAudioInfo();
+    // Never leave Windows click permission armed when the displayed desktop is stale.
+    if(!upstream.streamReady)enabled=false;
+    return json(res,200,{...state(),sourceReady:upstream.streamReady,
+     streamAgeMs:upstream.streamAgeMs,recoveryCount:upstream.recoveryCount,
+     audioAvailable:upstream.available,...speakerRouter.snapshot()});
+   }
    if(req.method!=='POST')return json(res,405,{error:'Method denied'});
    if(req.headers.origin&&req.headers.origin!==ORIGIN)return json(res,403,{error:'Origin denied'});
    if(req.headers['sec-fetch-site']==='cross-site')return json(res,403,{error:'Cross-site request denied'});
@@ -186,6 +197,9 @@ function createServer(){
     return json(res,200,{ok:true,...speakerRouter.pulse()});
    }
    if(route==='/api/arm'){
+    if(!(await sourceAudioInfo()).streamReady){
+     enabled=false;return json(res,503,{error:'Live desktop picture is not current; mouse remains disabled'});
+    }
     if(input?.confirm!==true||Object.keys(input).length!==1)throw Error('Explicit click to enable required');
     enabled=true;enabledUntil=Math.min(expiresAt,Date.now()+10*60*1000);
     return json(res,200,state());
@@ -199,7 +213,12 @@ function createServer(){
     fs.writeFileSync(STOP_SIGNAL,JSON.stringify({reason:'owner-pressed-stop',requestedAtUtc:new Date().toISOString()})+'\n',{flag:'wx'});
     enabled=false;speakerRouter.restore();return json(res,200,{accepted:true,message:'PC Bridge TV session stopping'});
    }
-   if(route==='/api/mouse')return json(res,200,consume(input));
+   if(route==='/api/mouse'){
+    if(!(await sourceAudioInfo()).streamReady){
+     enabled=false;return json(res,503,{error:'Desktop picture stalled; Windows mouse disabled'});
+    }
+    return json(res,200,consume(input));
+   }
    return json(res,404,{error:'Not found'});
   }catch(e){if(!res.headersSent)json(res,400,{error:String(e.message||e).slice(0,150)});else res.destroy()}
  });

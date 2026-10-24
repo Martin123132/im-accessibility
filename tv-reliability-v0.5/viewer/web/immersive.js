@@ -6,6 +6,9 @@
  var video=el('desktop'),surface=el('surface'),status=el('status'),hint=el('hint');
  var armed=false,pending=false,pausePending=false,pauseEpoch=0,lastClickAt=0,expiresAt=0,confirmStopUntil=0;
  var audioAvailable=false,audioBusy=false,audioRoute='laptop-only',controlsOpen=false;
+ // TV playback can lag behind a healthy capture after network stalls.
+ var streamFresh=false,lastRecoveryCount=-1,lastVideoClock=0,lastVideoProgressAt=Date.now(),
+  lastVideoReloadAt=0,lastLiveSeekAt=0,reportedGapSeconds=null;
  if(!key){status.textContent='Invalid private TV session';return}
  // webOS must keep an HTML hit target. Never enable the video control surface.
  video.controls=false;video.removeAttribute('controls');
@@ -78,18 +81,67 @@
    setSound(audioAvailable,'laptop-only');report('TV sound OFF · Laptop sound restored');
   });
  }
+ function reconnectLiveVideo(reason,manual){
+  var now=Date.now();
+  if(now-lastVideoReloadAt<(manual?4000:12000))return;
+  lastVideoReloadAt=now;lastVideoProgressAt=now;lastVideoClock=0;
+  report('Reconnecting live desktop: '+reason);
+  try{
+   // Preserve the existing high-quality HLS video element and native LG plane.
+   // load() re-reads the same authenticated no-store playlist after an encoder restart.
+   video.load();
+   play();
+  }catch(e){report('Video reconnect failed; select Play video')}
+ }
+ function monitorLiveVideo(){
+  if(!streamFresh||video.paused||document.visibilityState==='hidden')return;
+  var t=Number(video.currentTime),now=Date.now();
+  if(isFinite(t)&&t>0){
+   if(t>lastVideoClock+0.15){lastVideoClock=t;lastVideoProgressAt=now}
+   else if(now-lastVideoProgressAt>9000){
+    reconnectLiveVideo('picture stopped changing');return
+   }
+  }
+  var ranges=video.seekable;
+  if(!ranges||!ranges.length||!isFinite(t)||t<0||now-lastLiveSeekAt<7000)return;
+  try{
+   var end=ranges.end(ranges.length-1),begin=ranges.start(ranges.length-1);
+   if(!isFinite(end)||!isFinite(begin))return;
+   var lag=end-t;
+   reportedGapSeconds=lag;
+   // LG supports live seeking, but not faster-than-real-time HLS playback.
+   // Only jump after substantial drift and leave 1.5 s decode headroom.
+   if(lag>3&&end-begin>1.2){
+    var target=Math.max(begin+0.1,end-0.9);
+    if(target>t+1.2){video.currentTime=target;lastLiveSeekAt=now;
+     lastVideoClock=target;lastVideoProgressAt=now;info('Catching up to live Windows desktop…')}
+   }
+  }catch(e){}
+ }
  function healthy(){
   if(pending||pausePending)return;
   var epoch=pauseEpoch;
   request('status','GET',undefined,function(err,s){
    if(pausePending||epoch!==pauseEpoch)return;
-   if(err){mark(false);report('Viewing controls unavailable');return}
+   if(err){mark(false);streamFresh=false;report('Viewing controls unavailable');return}
    mark(s.enabled);
    if(!audioBusy)setSound(s.audioAvailable===true,s.audioRoute);
+   streamFresh=s.sourceReady===true;
+   var count=Number(s.recoveryCount);
+   if(isFinite(count)&&count>=0){
+    if(lastRecoveryCount>=0&&count>lastRecoveryCount&&streamFresh)
+     reconnectLiveVideo('encoder restarted');
+    lastRecoveryCount=count;
+   }
+   if(!streamFresh){
+    report('Desktop video stalled · capture recovery in progress');
+    return;
+   }
    expiresAt=Date.parse(s.expiresAt);
    if(!s.canArm){mark(false);el('enable').disabled=true;report('Session expired');return}
    var remain=Math.max(0,Math.floor((expiresAt-Date.now())/60e3));
-   report('LIVE DESKTOP · '+remain+'m · Mouse '+(armed?'ON':'OFF'));
+   report('LIVE DESKTOP · '+remain+'m · Mouse '+(armed?'ON':'OFF')+
+   (reportedGapSeconds>0?' · Video '+Math.round(reportedGapSeconds)+'s behind':''));
   });
  }
  function play(){
@@ -100,6 +152,7 @@
  video.addEventListener('waiting',function(){report('Buffering live desktop…')});
  video.addEventListener('error',function(){report('Live video unavailable. Try Play video.')});
  el('play').addEventListener('click',play);
+ el('catchup').addEventListener('click',function(){reconnectLiveVideo('manual catch up',true)});
  el('sound').addEventListener('click',function(){
   if(!audioAvailable||audioBusy)return;
   if(!video.muted){tvSoundStop();return}
@@ -225,5 +278,6 @@
    report(err?'Unable to stop: '+err:'TV session ending');
   });
  });
- setMenu(false);mark(false);setSound(false,'laptop-only');healthy();setInterval(healthy,2800);play();
+ setMenu(false);mark(false);setSound(false,'laptop-only');healthy();setInterval(healthy,2800);
+ setInterval(monitorLiveVideo,2000);play();
 })();
