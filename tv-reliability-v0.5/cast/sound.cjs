@@ -26,7 +26,8 @@ function probe(binary=BINARY,spawnSync=cp.spawnSync){
   deviceIdHash:f.deviceIdHash
  });
 }
-function argsFor(streamDir,format=null){
+function argsFor(streamDir,format=null,startNumber=0){
+ if(!Number.isSafeInteger(startNumber)||startNumber<0||startNumber>999999)throw Error('Invalid bounded HLS media start number');
  const args=['-hide_banner','-loglevel','warning','-nostdin','-f','gdigrab','-framerate','15','-draw_mouse','1','-i','desktop'];
  if(format){
   if(!SUPPORTED_SAMPLES.has(format.sampleFormat)||!Number.isInteger(format.sampleRate)||
@@ -40,10 +41,11 @@ function argsFor(streamDir,format=null){
  else args.push('-an');
  args.push('-c:v','libx264','-preset','veryfast','-tune','zerolatency',
    '-crf','28','-pix_fmt','yuv420p','-profile:v','main','-level','3.1',
-   '-g','15','-keyint_min','15','-sc_threshold','0');
+   '-g','8','-keyint_min','8','-sc_threshold','0');
  if(format)args.push('-c:a','aac','-ac','2','-ar','48000','-b:a','128k',
    '-af','aresample=async=1:first_pts=0');
- args.push('-f','hls','-hls_time','1','-hls_list_size','6','-hls_delete_threshold','3',
+ args.push('-f','hls','-hls_time','0.5','-hls_list_size','4','-hls_delete_threshold','3',
+   '-start_number',String(startNumber),
    '-hls_flags','delete_segments+temp_file+independent_segments',
    '-hls_segment_filename',path.join(streamDir,'segment%06d.ts'),
    path.join(streamDir,'index.m3u8'));

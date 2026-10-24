@@ -27,7 +27,7 @@ test('real-LG-proven HLS document is a single full viewport native click button 
 });
 test('full-screen click maps letterboxed HLS to Windows only within an active owner mouse lease',()=>{
  const token='a'.repeat(64),events=new Map(),els=new Map(),requests=[];
- for(const id of ['desktop','surface','controls','control-toggle','control-panel','enable','pause','play','sound','laptop','classic','stop','status','hint','marker']){
+ for(const id of ['desktop','surface','controls','control-toggle','control-panel','enable','pause','play','catchup','sound','laptop','classic','stop','status','hint','marker']){
   els.set(id,{id,disabled:false,hidden:false,textContent:'',style:{},
    videoWidth:1280,videoHeight:720,controls:true,
    removeAttribute(){},setAttribute(k,v){this[k]=v},
@@ -62,6 +62,8 @@ test('full-screen click maps letterboxed HLS to Windows only within an active ow
  };
  vm.runInNewContext(code,env,{timeout:3000});
  assert.equal(els.get('desktop').controls,false);
+ assert.match(html,/id="catchup"/);
+ assert.match(code,/reconnectLiveVideo\('manual catch up',true\)/);
  assert.equal(els.get('control-panel').hidden,true,'Menu starts hidden');
  const countBeforeMenu=requests.filter(x=>x.route==='/api/mouse').length;
  events.get('control-toggle:click')({preventDefault(){},stopPropagation(){}});

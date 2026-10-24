@@ -77,3 +77,21 @@ test('original source is still a separately pinned, recoverable input',()=>{
  assert.match(read('viewer/web/viewer.html'),/LIVE DESKTOP RESUME v0\.5/);
  assert.match(read('viewer/web/viewer.html'),/End TV session/);
 });
+
+test('HLS stall detection distinguishes a live encoder from one stuck with a running process',()=>{
+ assert.equal(cast.shouldRecover({alive:true,ageMs:13000,sinceStartMs:30000}),true);
+ assert.equal(cast.shouldRecover({alive:false,ageMs:13000,sinceStartMs:30000}),false);
+ assert.equal(cast.shouldRecover({alive:true,ageMs:4000,sinceStartMs:30000}),false);
+ assert.equal(cast.shouldRecover({alive:true,ageMs:13000,sinceStartMs:4000}),false);
+ assert.equal(cast.shouldRecover({alive:true,ageMs:13000,sinceStartMs:30000,recovering:true}),false);
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'imaccess-hls-staleness-'));
+ try{
+  assert.equal(cast.manifestAgeMs(dir,Date.now()),null);
+  const file=path.join(dir,'index.m3u8');
+  fs.writeFileSync(file,'#EXTM3U\n');
+  const now=Date.now(),old=new Date(now-12000);
+  fs.utimesSync(file,old,old);
+  const measured=cast.manifestAgeMs(dir,now);
+  assert.ok(measured>11000&&measured<13000,'Age determined from actual playlist time');
+ }finally{fs.rmSync(dir,{recursive:true,force:true})}
+});
