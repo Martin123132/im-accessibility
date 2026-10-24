@@ -1,19 +1,20 @@
 'use strict';
 (function(){
- var path=location.pathname,match=path.match(/^\/(?:full|tv)\/([a-f0-9]{64})$/);
+ var path=location.pathname,match=path.match(/^\/(?:full|fastfull|tv)\/([a-f0-9]{64})$/);
+ var fastPage=path.indexOf('/fastfull/')===0;
  var key=match&&match[1];
  function el(id){return document.getElementById(id)}
  var video=el('desktop'),surface=el('surface'),status=el('status'),hint=el('hint');
  var armed=false,pending=false,pausePending=false,pauseEpoch=0,lastClickAt=0,expiresAt=0,confirmStopUntil=0;
  var audioAvailable=false,audioBusy=false,audioRoute='laptop-only',controlsOpen=false;
- var fastVideoActive=false,fastVideoAllowed=false;
+ var fastVideoActive=fastPage,fastVideoAllowed=false;
  // TV playback can lag behind a healthy capture after network stalls.
  var streamFresh=false,lastRecoveryCount=-1,lastVideoClock=0,lastVideoProgressAt=Date.now(),
   lastVideoReloadAt=0,lastLiveSeekAt=0,reportedGapSeconds=null;
  if(!key){status.textContent='Invalid private TV session';return}
  // webOS must keep an HTML hit target. Never enable the video control surface.
  video.controls=false;video.removeAttribute('controls');
- video.style.pointerEvents='none';video.src='/media/'+key+'/index.m3u8';
+ video.style.pointerEvents='none';if(!fastPage)video.src='/media/'+key+'/index.m3u8';
  video.defaultMuted=true;video.muted=true;video.autoplay=true;
  function setMenu(open){
   controlsOpen=!!open;
@@ -165,30 +166,13 @@
  });
  el('fast').disabled=true;
  el('fast').addEventListener('click',function(){
-  if(fastVideoActive){
-   fastVideoActive=false;
-   el('fast').textContent='Try faster video (experimental)';
-   reportedGapSeconds=null;lastVideoClock=0;lastVideoProgressAt=Date.now();
-   try{window.ImAccessibilityFastVideo.stop(video,true)}
-   catch(e){reconnectLiveVideo('return to HLS',true)}
-   report('Original HLS desktop restored');return
-  }
+  if(fastPage){location.href='/full/'+key;return}
   if(!fastVideoAllowed||!window.ImAccessibilityFastVideo||
      !window.ImAccessibilityFastVideo.supported()){
-   report('Fast video is not supported by this TV; original HLS stays in use');return
+   report('Fast mode is not available; continuing original HLS');return
   }
-  var started=window.ImAccessibilityFastVideo.start(video,key,function(message){
-   report(message);
-   if(message.indexOf('Returning to HLS')>=0){
-    fastVideoActive=false;el('fast').textContent='Try faster video (experimental)';
-    reportedGapSeconds=null;lastVideoClock=0;lastVideoProgressAt=Date.now();
-   }
-  });
-  if(started){
-   fastVideoActive=true;
-   el('fast').textContent='Use original HLS video';
-   setMenu(false);
-  }
+  // The separate full-screen view starts with a blank <video>, not native HLS.
+  location.href='/fastfull/'+key;
  });
  el('sound').addEventListener('click',function(){
   if(!audioAvailable||audioBusy)return;
@@ -316,5 +300,19 @@
   });
  });
  setMenu(false);mark(false);setSound(false,'laptop-only');healthy();setInterval(healthy,2800);
- setInterval(monitorLiveVideo,2000);play();
+ if(fastPage){
+  el('fast').textContent='Use original HLS video';
+  if(!window.ImAccessibilityFastVideo||!window.ImAccessibilityFastVideo.supported()){
+   report('MSE unavailable; returning to original HLS');
+   location.replace('/full/'+key);
+  }else{
+   window.ImAccessibilityFastVideo.start(video,key,function(message){
+    report(message);
+    if(message.indexOf('Returning to HLS')>=0)
+     location.replace('/full/'+key);
+   });
+  }
+ }else{
+  setInterval(monitorLiveVideo,2000);play();
+ }
 })();

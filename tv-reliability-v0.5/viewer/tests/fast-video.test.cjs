@@ -45,12 +45,13 @@ test('fast mode preserves normal authenticated HLS and click controls',()=>{
  const client=fs.readFileSync(path.join(root,'web','fast-video.js'),'utf8');
  assert.match(server,/FastVideo\.attach\(srv/);
  assert.match(server,/req\.method==='GET'&&route==='\/fast-video\.js'/);
+ assert.match(server,/route==='\/fastfull\/'\+token/);
  assert.match(server,/const media=route\.match/);
  assert.match(server,/if\(!\(await sourceAudioInfo\(\)\)\.streamReady\)/);
  assert.match(html,/id="fast"/);
  assert.match(html,/src="\/fast-video\.js"/);
  assert.match(client,/ImAccessibilityFastVideo=/);
- assert.match(client,/stop\(video,true\)/,'Decoder failure restores the original HLS');
+ assert.match(client,/stop\(video,false\)/,'Decoder failure closes MSE; full page navigates back to original HLS');
  assert.match(client,/video\.buffered/,'Live follow-up does not require a new full-screen player');
  assert.doesNotMatch(client,/requestFullscreen|webkitEnterFullscreen|execSync|keybd_event/);
  new vm.Script(client,{filename:'fast-video.js'});
