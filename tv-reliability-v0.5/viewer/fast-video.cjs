@@ -53,11 +53,11 @@ function createFragmentParser(emit){
  }
  return {push,snapshot:()=>({initSent,fragments,pendingBytes:pending.length})};
 }
-function attach(server,{lan,port,origin,token,expiresAt,ffmpegExe,sameSubnet}){
+function attach(server,{lan,port,origin,token,expiresAt,ffmpegExe,sameSubnet,onDisconnect=()=>{}}){
  if(!fs.existsSync(ffmpegExe))throw Error('Pinned FFmpeg not available');
  if(!/^[a-f0-9]{64}$/.test(token))throw Error('Private viewer token required');
  const wss=new WebSocketServer({noServer:true,maxPayload:256,perMessageDeflate:false,clientTracking:true});
- let active=null,lastConnected=0;
+ let active=null,lastConnected=0,lastCloseReason=null,lastClosedAt=null;
  function closeStream(item,reason){
   if(!item||item.closed)return;
   item.closed=true;clearInterval(item.checker);
@@ -66,9 +66,13 @@ function attach(server,{lan,port,origin,token,expiresAt,ffmpegExe,sameSubnet}){
   try{item.encoder?.kill('SIGTERM')}catch{}
   try{if(item.ws.readyState<2)item.ws.close(1000,String(reason||'Stream ended').slice(0,95))}catch{}
   if(active===item)active=null;
+  lastCloseReason=String(reason||'Stream ended').slice(0,75);
+  lastClosedAt=Date.now();
+  // Revokes Windows input after fast-video disconnect, even if TV is unreachable.
+  try{onDisconnect(lastCloseReason)}catch(e){}
  }
  function start(ws){
-  const item={ws,closed:false,audio:null,encoder:null,lastMediaAt:Date.now(),bytes:0};
+  const item={ws,closed:false,audio:null,encoder:null,lastMediaAt:Date.now(),bytes:0,fragments:0,startedAt:Date.now()};
   active=item;
   try{
    const f=SOUND.probe();
@@ -85,7 +89,7 @@ function attach(server,{lan,port,origin,token,expiresAt,ffmpegExe,sameSubnet}){
     if(ws.bufferedAmount>MAX_WS_BUFFER)throw Error('TV decode fell behind; returning to HLS');
     ws.send(payload,{binary:true});
     item.bytes+=payload.length;
-    if(!initial)item.lastMediaAt=Date.now();
+    if(!initial){item.lastMediaAt=Date.now();item.fragments++;}
    };
    const parser=createFragmentParser(send);
    item.encoder.stdout.on('data',bytes=>{
@@ -125,6 +129,18 @@ function attach(server,{lan,port,origin,token,expiresAt,ffmpegExe,sameSubnet}){
   try{wss.close()}catch{}
  }
  server.once('close',shutdown);
- return {shutdown,active:()=>!!active,mime:MIME};
+ function snapshot(now=Date.now()){
+  const item=active;
+  return {
+   connected:!!item&&!item.closed,
+   fragments: item?item.fragments:0,
+   mediaAgeMs:item?Math.max(0,now-item.lastMediaAt):null,
+   connectedMs:item?Math.max(0,now-item.startedAt):null,
+   bufferedBytes:item&&item.ws?item.ws.bufferedAmount:0,
+   lastClosedAt:lastClosedAt?new Date(lastClosedAt).toISOString():null,
+   lastCloseReason
+  };
+ }
+ return {shutdown,active:()=>!!active,mime:MIME,snapshot};
 }
 module.exports={MIME,encoderArgs,createFragmentParser,attach};

@@ -66,6 +66,8 @@ test('full-screen click maps letterboxed HLS to Windows only within an active ow
  assert.match(html,/id="fast"/,'Direct low-latency experiment is accessible inside Controls');
  assert.match(html,/src="\/fast-video.js"/);
  assert.match(code,/ImAccessibilityFastVideo\.start\(video,key/);
+ assert.match(code,/location\.href='\/fastfull\/'\+key/);
+ assert.match(code,/if\(!fastPage\)video\.src=/,'Fast page cannot attach HLS before MSE');
  assert.match(code,/reconnectLiveVideo\('manual catch up',true\)/);
  assert.equal(els.get('control-panel').hidden,true,'Menu starts hidden');
  const countBeforeMenu=requests.filter(x=>x.route==='/api/mouse').length;

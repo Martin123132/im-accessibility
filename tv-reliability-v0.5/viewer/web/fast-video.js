@@ -41,17 +41,64 @@
    return true;
   }catch(e){return false}
  }
+ function decodedFrames(video){
+  try{
+   if(typeof video.getVideoPlaybackQuality==='function'){
+    var quality=video.getVideoPlaybackQuality();
+    if(quality&&isFinite(quality.totalVideoFrames))return Number(quality.totalVideoFrames);
+   }
+   if(isFinite(video.webkitDecodedFrameCount))return Number(video.webkitDecodedFrameCount);
+  }catch(e){}
+  return null;
+ }
+ function recoverFrozenPicture(c,reason){
+  if(!c||c.closed||current!==c)return;
+  var now=Date.now(),count=0,storage=null,canReload=false;
+  try{
+   storage=window.sessionStorage;
+   if(storage){
+    var old=JSON.parse(storage.getItem('imaccess-fast-restarts-v1')||'{}');
+    if(old&&isFinite(old.at)&&now-old.at>=0&&now-old.at<120000)
+     count=Number(old.count)||0;
+    if(count<2){
+     storage.setItem('imaccess-fast-restarts-v1',JSON.stringify({at:now,count:count+1}));
+     canReload=true;
+    }else storage.removeItem('imaccess-fast-restarts-v1');
+   }
+  }catch(e){canReload=false}
+  report(c,canReload?'Picture stalled; reconnecting fast video…':
+   'Fast video repeatedly stalled; returning to original HLS');
+  // A frozen picture must not retain Windows mouse permission.
+  // The WS close additionally revokes the mouse lease in the PC viewer service.
+  try{
+   var revoke=new XMLHttpRequest();
+   revoke.open('POST','/api/disarm',true);
+   revoke.setRequestHeader('Authorization','Bearer '+c.key);
+   revoke.setRequestHeader('Content-Type','application/json');
+   revoke.send('{}');
+  }catch(e){}
+  stop(c.video,false);
+  try{
+   if(canReload)location.reload();
+   else location.replace('/full/'+c.key);
+  }catch(e){location.href='/full/'+c.key}
+ }
  function start(video,key,callback){
   if(!supported()||!/^[0-9a-f]{64}$/.test(key))return false;
   stop(video,false);
   var c={video:video,key:key,cb:callback,ms:null,ws:null,sb:null,url:null,
    queue:[],queueBytes:0,closed:false,lastData:Date.now(),lastAppend:0,
-   fragmentCount:0,monitor:null,openTimer:null};
+   fragmentCount:0,monitor:null,openTimer:null,
+   lastProgressAt:Date.now(),lastTime:0,lastFrames:null,stallNudgeAt:0};
   current=c;
   function fail(message){
    if(c.closed||current!==c)return;
    report(c,'Fast video unavailable: '+message+'. Returning to HLS');
-   stop(video,true);
+   // Separate webOS HLS document is the fallback; do not switch decoders in-place.
+   stop(video,false);
+   if(typeof c.cb!=='function'){
+    try{location.replace('/full/'+c.key)}catch(e){}
+   }
   }
   function trim(){
    if(!c.sb||c.sb.updating||!video.buffered||!video.buffered.length)return false;
@@ -87,7 +134,9 @@
   }
   try{
    var keepMuted=video.muted;
-   video.pause();video.removeAttribute('src');video.load();
+   // A fresh dedicated MSE-only page has no HLS source. Never call load()
+   // on the LG's active HLS decoder; it can block the browser transition.
+   if(video.currentSrc){video.pause();video.removeAttribute('src');video.load()}
    c.ms=new MediaSource();
    c.url=URL.createObjectURL(c.ms);
    video.src=c.url;video.defaultMuted=keepMuted;video.muted=keepMuted;
@@ -119,8 +168,32 @@
    c.openTimer=setTimeout(function(){fail('startup timed out')},9000);
    c.monitor=setInterval(function(){
     if(c.closed||current!==c)return;
-    if(c.ws&&c.ws.readyState===1&&Date.now()-c.lastData>9500)fail('no fresh frames');
-    else if(c.sb){follow();drain()}
+    var now=Date.now();
+    if(c.ws&&c.ws.readyState===1&&now-c.lastData>9500){fail('no fresh frames');return}
+    if(c.sb){follow();drain()}
+    // Packets can still arrive while the LG's decoded picture is frozen.
+    // Track actually decoded frames where supported, otherwise the playhead.
+    var visible=typeof document==='undefined'||document.visibilityState!=='hidden';
+    var time=Number(video.currentTime),frames=decodedFrames(video);
+    if(!visible||video.paused){
+     c.lastProgressAt=now;c.lastFrames=frames;c.lastTime=isFinite(time)?time:0;
+     c.stallNudgeAt=0;return;
+    }
+    // Even a decoded video that drops to HAVE_NOTHING must not stay frozen forever.
+    // Allow normal startup grace, then recover if neither frames nor time advances.
+    var moved=frames!==null?(c.lastFrames===null||frames!==c.lastFrames):
+       (isFinite(time)&&time>c.lastTime+0.12);
+    if(moved){
+     c.lastProgressAt=now;c.stallNudgeAt=0;
+    }else if(now-c.lastProgressAt>7500){
+     if(!c.stallNudgeAt){
+      c.stallNudgeAt=now;
+      jumpLive(video);report(c,'Fast picture stalled; seeking to the live edge…');
+     }else if(now-c.stallNudgeAt>3500){
+      recoverFrozenPicture(c,'Decoder stopped');return;
+     }
+    }
+    c.lastTime=time;c.lastFrames=frames;
    },1100);
    report(c,'Starting fast desktop video…');
    return true;
