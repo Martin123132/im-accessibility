@@ -1,0 +1,103 @@
+// I’m-accessibility: exact Windows playback endpoint mute control, no microphones.
+// --status: read-only output device state { deviceIdHash, muted }
+// --cas <deviceIdHash> <expected:0|1> <next:0|1>: compare-and-set mute.
+// Never changes audio volume level or switches default device.
+// A device change is refused; the caller must restore only the original device.
+using System;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
+
+[ComImport,Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"),InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+interface IMMDeviceEnumerator {
+ [PreserveSig]int EnumAudioEndpoints(int flow,int mask,out IntPtr devices);
+ [PreserveSig]int GetDefaultAudioEndpoint(int flow,int role,out IMMDevice device);
+ [PreserveSig]int GetDevice([MarshalAs(UnmanagedType.LPWStr)]string id,out IMMDevice device);
+ [PreserveSig]int RegisterEndpointNotificationCallback(IntPtr callback);
+ [PreserveSig]int UnregisterEndpointNotificationCallback(IntPtr callback);
+}
+[ComImport,Guid("D666063F-1587-4E43-81F1-B948E807363F"),InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+interface IMMDevice {
+ [PreserveSig]int Activate(ref Guid iid,int context,IntPtr parameters,out IntPtr obj);
+ [PreserveSig]int OpenPropertyStore(int mode,out IntPtr ptr);
+ [PreserveSig]int GetId(out IntPtr id);
+ [PreserveSig]int GetState(out int state);
+}
+[ComImport,Guid("5CDF2C82-841E-4546-9722-0CF74078229A"),InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+interface IAudioEndpointVolume {
+ [PreserveSig]int RegisterControlChangeNotify(IntPtr pNotify);
+ [PreserveSig]int UnregisterControlChangeNotify(IntPtr pNotify);
+ [PreserveSig]int GetChannelCount(out uint count);
+ [PreserveSig]int SetMasterVolumeLevel(float fLevelDB,IntPtr eventContext);
+ [PreserveSig]int SetMasterVolumeLevelScalar(float fLevel,IntPtr eventContext);
+ [PreserveSig]int GetMasterVolumeLevel(out float volume);
+ [PreserveSig]int GetMasterVolumeLevelScalar(out float volume);
+ [PreserveSig]int SetChannelVolumeLevel(uint ch,float level,IntPtr eventContext);
+ [PreserveSig]int SetChannelVolumeLevelScalar(uint ch,float level,IntPtr eventContext);
+ [PreserveSig]int GetChannelVolumeLevel(uint ch,out float level);
+ [PreserveSig]int GetChannelVolumeLevelScalar(uint ch,out float level);
+ [PreserveSig]int SetMute([MarshalAs(UnmanagedType.Bool)]bool mute,IntPtr eventContext);
+ [PreserveSig]int GetMute([MarshalAs(UnmanagedType.Bool)]out bool mute);
+ [PreserveSig]int GetVolumeStepInfo(out uint step,out uint total);
+ [PreserveSig]int VolumeStepUp(IntPtr eventContext);
+ [PreserveSig]int VolumeStepDown(IntPtr eventContext);
+ [PreserveSig]int QueryHardwareSupport(out uint supportMask);
+ [PreserveSig]int GetVolumeRange(out float min,out float max,out float increment);
+}
+static class SpeakerEndpoint {
+ static void Check(int result){if(result<0)Marshal.ThrowExceptionForHR(result);}
+ static string Hash(string s){
+  using(var sha=SHA256.Create()){
+   byte[] digest=sha.ComputeHash(Encoding.Unicode.GetBytes(s));
+   var builder=new StringBuilder();
+   foreach(byte b in digest)builder.Append(b.ToString("x2"));
+   return builder.ToString();
+  }
+ }
+ static void Response(string hash,bool muted,bool changed){
+  Console.WriteLine("{\"deviceIdHash\":\""+hash+"\",\"muted\":"+(muted?"true":"false")+
+   ",\"changed\":"+(changed?"true":"false")+",\"endpoint\":\"default-speaker-output\"}");
+ }
+ static bool Bit(string s){if(s=="0")return false;if(s=="1")return true;throw new ArgumentException("Expected bit 0 or 1");}
+ public static int Main(string[] args){
+  if(args.Length!=1&&args.Length!=4){Console.Error.WriteLine("Use --status or --cas <hash> <old> <new>");return 2;}
+  if(args.Length==1&&args[0]!="--status"){Console.Error.WriteLine("Read-only status only");return 2;}
+  if(args.Length==4&&args[0]!="--cas"){Console.Error.WriteLine("Compare-and-set only");return 2;}
+  IMMDeviceEnumerator enumerator=null;
+  IMMDevice device=null;
+  IAudioEndpointVolume volume=null;
+  IntPtr idPtr=IntPtr.Zero;
+  try{
+   var type=Type.GetTypeFromCLSID(new Guid("BCDE0395-E52F-467C-8E3D-C4579291692E"));
+   enumerator=(IMMDeviceEnumerator)Activator.CreateInstance(type);
+   // Only playback renderer 0 / multimedia role 1; no recording endpoint.
+   Check(enumerator.GetDefaultAudioEndpoint(0,1,out device));
+   Check(device.GetId(out idPtr));
+   string hash=Hash(Marshal.PtrToStringUni(idPtr));
+   Guid volumeIid=typeof(IAudioEndpointVolume).GUID;
+   IntPtr objectPtr;Check(device.Activate(ref volumeIid,23,IntPtr.Zero,out objectPtr));
+   volume=(IAudioEndpointVolume)Marshal.GetObjectForIUnknown(objectPtr);
+   Marshal.Release(objectPtr);
+   bool previous;
+   Check(volume.GetMute(out previous));
+   if(args.Length==1){Response(hash,previous,false);return 0;}
+   if(args[1]!=hash||!System.Text.RegularExpressions.Regex.IsMatch(args[1],@"^[0-9a-f]{64}$")){
+    Console.Error.WriteLine("PLAYBACK_DEVICE_CHANGED: refusing to operate on another endpoint");return 7;
+   }
+   bool expected=Bit(args[2]),next=Bit(args[3]);
+   if(previous!=expected){Console.Error.WriteLine("PLAYBACK_STATE_CHANGED: refusing to overwrite a user change");return 8;}
+   if(previous!=next)Check(volume.SetMute(next,IntPtr.Zero));
+   bool actual;
+   Check(volume.GetMute(out actual));
+   if(actual!=next)throw new InvalidOperationException("Windows mute verification failed");
+   Response(hash,actual,previous!=actual);
+   return 0;
+  }catch(Exception e){Console.Error.WriteLine("SPEAKER_STATE_FAILED "+e.GetType().Name+": "+e.Message);return 5;}
+  finally{
+   if(idPtr!=IntPtr.Zero)Marshal.FreeCoTaskMem(idPtr);
+   if(volume!=null)Marshal.ReleaseComObject(volume);
+   if(device!=null)Marshal.ReleaseComObject(device);
+   if(enumerator!=null)Marshal.ReleaseComObject(enumerator);
+  }
+ }
+}

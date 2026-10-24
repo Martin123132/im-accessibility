@@ -60,6 +60,15 @@ test('owner-run resume path is restricted to the exact Windows task and existing
  assert.match(supervisor,/Stop requested|Owner selected End TV session/);
  assert.match(supervisor,/An older or unrelated TV service already occupies ports/);
 });
+test('LG activity signals never decide whether critical video services stay running',()=>{
+ const source=read('resume-host.cjs'),guard=read('lg-active-view.cjs');
+ assert.match(source,/childProcs\.push\(\{child,name:'lg-activity',optional:true\}\)/);
+ assert.match(source,/childProcs\.find\(x=>!x\.optional&&x\.child\.exitCode!==null\)/);
+ assert.match(source,/if\(pair\.opened\)/);
+ assert.match(guard,/PERIOD_MS=75000/);
+ assert.match(guard,/socket\.send\('move',\{dx:delta,dy:0\}\)/);
+ assert.doesNotMatch(guard,/socket\.send\('click'|sendButton\(|turnOffScreen|disableScreenSaver/);
+});
 test('original source is still a separately pinned, recoverable input',()=>{
  const lock=JSON.parse(read('PARENT_LOCK.json'));
  assert.equal(lock.originalFilesVerified,23);
@@ -67,4 +76,22 @@ test('original source is still a separately pinned, recoverable input',()=>{
  assert.equal(lock.liveSourceUnchanged,true);
  assert.match(read('viewer/web/viewer.html'),/LIVE DESKTOP RESUME v0\.5/);
  assert.match(read('viewer/web/viewer.html'),/End TV session/);
+});
+
+test('HLS stall detection distinguishes a live encoder from one stuck with a running process',()=>{
+ assert.equal(cast.shouldRecover({alive:true,ageMs:13000,sinceStartMs:30000}),true);
+ assert.equal(cast.shouldRecover({alive:false,ageMs:13000,sinceStartMs:30000}),false);
+ assert.equal(cast.shouldRecover({alive:true,ageMs:4000,sinceStartMs:30000}),false);
+ assert.equal(cast.shouldRecover({alive:true,ageMs:13000,sinceStartMs:4000}),false);
+ assert.equal(cast.shouldRecover({alive:true,ageMs:13000,sinceStartMs:30000,recovering:true}),false);
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'imaccess-hls-staleness-'));
+ try{
+  assert.equal(cast.manifestAgeMs(dir,Date.now()),null);
+  const file=path.join(dir,'index.m3u8');
+  fs.writeFileSync(file,'#EXTM3U\n');
+  const now=Date.now(),old=new Date(now-12000);
+  fs.utimesSync(file,old,old);
+  const measured=cast.manifestAgeMs(dir,now);
+  assert.ok(measured>11000&&measured<13000,'Age determined from actual playlist time');
+ }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });

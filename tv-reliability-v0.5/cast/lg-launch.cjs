@@ -1,6 +1,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),LGTV=require('lgtv2');
-const {isRemoteLan,LAN_IP,PORT}=require('./lan.cjs');
+const {isRemoteLan,LAN_IP,PORT,CONFIGURED}=require('./lan.cjs');
+const RELEASE_SETTINGS=CONFIGURED?require('../release-config.cjs').readUserSettings():null;
 const KEY_DIR=path.join(__dirname,'runtime','pairing');fs.mkdirSync(KEY_DIR,{recursive:true});
 const KEY_PREFIX=path.join(KEY_DIR,'webos-client-key-');
 const SAFE_TARGET='http://'+LAN_IP+':'+PORT+'/tv/';
@@ -28,6 +29,11 @@ async function launchTv(host,url,onEvent=()=>{}){
    tv.on('error',err=>finish(Error('LG connection failed: '+String(err?.message||err).slice(0,120))));
    tv.on('connect',async()=>{
     try{
+     if(RELEASE_SETTINGS){
+      const info=await tv.request('ssap://system/getSystemInfo',{});
+      if(info?.modelName!==RELEASE_SETTINGS.television.model)
+       throw Error('Device is not the owner-approved LG model');
+     }
      onEvent({state:'launching',message:'LG pairing accepted. Opening PC Bridge on the TV browser.'});
      const response=await tv.request('ssap://system.launcher/open',{target:url});
      if(response?.returnValue===false)throw Error('LG launcher rejected the URL');

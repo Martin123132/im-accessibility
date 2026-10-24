@@ -144,6 +144,7 @@
  $('play').addEventListener('click',function(){
   try{var p=video.play();if(p&&p.catch)p.catch(function(){show('Select Play again with your TV remote');});}catch(e){show('TV requires manual playback');}
  });
+ $('newfull').addEventListener('click',function(){location.href='/full/'+key;});
  $('full').addEventListener('click',function(){
   try{if(stage.requestFullscreen)stage.requestFullscreen();else if(video.webkitEnterFullscreen)video.webkitEnterFullscreen();}catch(e){}
  });
@@ -252,6 +253,11 @@
  }
  setInterval(function(){if(!$('picture-pad').hidden)refreshPicture()},2400);
  setInterval(reportBuffer,1800);
+ // The separate ordinary HTML buttons are the LG control path physically verified
+ // by the owner on 11 Oct 2026. Never make them a hidden fallback by default.
+ $('remote-pad').hidden=false;
+ $('showpad').textContent='Hide click pad';
+ document.body.className='nav-open';
  setArmed(false);redrawNav();refresh();setInterval(refresh,2600);
  try{var p=video.play();if(p&&p.catch)p.catch(function(){show('Select Play video on this TV');});}catch(e){}
 })();

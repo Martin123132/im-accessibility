@@ -3,7 +3,10 @@
 const fs=require('node:fs'),path=require('node:path');
 const LGTV=require('./cast/node_modules/lgtv2');
 const {discover}=require('./cast/tv-discovery.cjs');
-const ROOT=__dirname,MODEL='OLED55CX6LA',LAN='192.168.4.36',PORT=43198;
+const SETTINGS=process.env.IM_ACCESSIBILITY_CONFIG_PATH!==undefined
+ ?require('./release-config.cjs').readUserSettings():null;
+const ROOT=__dirname,MODEL=SETTINGS?SETTINGS.television.model:'OLED55CX6LA',
+ LAN=SETTINGS?SETTINGS.network.ip:'192.168.4.36',PORT=43198;
 const keyFile=path.join(ROOT,'viewer','runtime','lg-client-key');
 const savedIP=path.join(ROOT,'runtime','last-verified-lg.json');
 const SESSION=path.join(ROOT,'viewer','runtime','session.json');
@@ -14,8 +17,14 @@ function privateReceiver(){
     Date.now()>=Date.parse(s.expiresAt))throw Error('Local TV viewing session unavailable/expired');
  return{url:s.url,expiresAt:s.expiresAt};
 }
-function localCandidate(ip){return /^192\.168\.(?:4|5|6|7)\.\d{1,3}$/.test(ip)&&ip!=='192.168.4.36';}
+function localCandidate(ip){
+ if(SETTINGS)return ip===SETTINGS.television.ip&&ip!==LAN&&
+  require('./release-config.cjs').subnet(ip,LAN,SETTINGS.network.mask);
+ return /^192\.168\.(?:4|5|6|7)\.\d{1,3}$/.test(ip)&&ip!=='192.168.4.36';
+}
 async function candidates(){
+ // Release mode never automatically selects a discovered or remembered LG.
+ if(SETTINGS)return SETTINGS.television.ip?[SETTINGS.television.ip]:[];
  const ips=[];
  const add=ip=>{if(localCandidate(ip)&&!ips.includes(ip))ips.push(ip)};
  try{if(fs.existsSync(savedIP)){const s=JSON.parse(fs.readFileSync(savedIP,'utf8'));if(s.model===MODEL)add(s.ip)}}catch{}
@@ -68,7 +77,10 @@ async function open({onEvent=()=>{},hosts}={}){
  return{opened:false,model:MODEL,attempted:ids.length,errors};
 }
 if(require.main===module){
- open().then(r=>{console.log(JSON.stringify(r));if(!r.opened)process.exitCode=2})
+ if(process.env.IM_ACCESSIBILITY_CONFIG_PATH===undefined){
+  console.error('IM_ACCESSIBILITY_CONFIG_REQUIRED: refusing to auto-open the historical owner TV');
+  process.exitCode=1;
+ }else open().then(r=>{console.log(JSON.stringify(r));if(!r.opened)process.exitCode=2})
  .catch(e=>{console.error('LG_OPEN_FAILED '+String(e.message||e));process.exitCode=1});
 }
 module.exports={open,privateReceiver,candidates,connectOne,MODEL};
