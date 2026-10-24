@@ -5,8 +5,8 @@ const path = require('node:path');
 const {spawnSync} = require('node:child_process');
 const root = path.resolve(__dirname, '..');
 const mode = process.argv[2] || 'all';
-if (!['all','tv','codex'].includes(mode)) {
-  console.error('Usage: node scripts/run-tests.cjs [all|tv|codex]');
+if (!['all','tv','codex','package'].includes(mode)) {
+  console.error('Usage: node scripts/run-tests.cjs [all|tv|codex|package]');
   process.exit(2);
 }
 const absolute = rel => path.join(root, ...rel.split('/'));
@@ -16,11 +16,17 @@ const codex = [
 ];
 const viewerDir = absolute('tv-reliability-v0.5/viewer/tests');
 const tv = [
+  'tv-reliability-v0.5/cast/tests/sound.test.cjs',
+  'tv-reliability-v0.5/cast/tests/loopback-clockfix.test.cjs',
   'tv-reliability-v0.5/tests/session-policy.test.cjs',
+  'tv-reliability-v0.5/tests/lg-active-view.test.cjs',
+  'tv-reliability-v0.5/tests/release-config.test.cjs',
+  'tv-reliability-v0.5/tests/release-runtime-config.test.cjs',
   ...fs.readdirSync(viewerDir).filter(n=>n.endsWith('.test.cjs'))
     .sort().map(n=>'tv-reliability-v0.5/viewer/tests/'+n)
 ];
-const selected = (mode==='codex' ? codex : mode==='tv' ? tv : [...codex,...tv]);
+const packageTests=['packaging/tests/portable-install.test.cjs','packaging/tests/first-run.test.cjs'];
+const selected=(mode==='codex'?codex:mode==='tv'?tv:mode==='package'?packageTests:[...codex,...tv,...packageTests]);
 for (const relative of selected) {
   if (!fs.statSync(absolute(relative)).isFile()) throw Error('Missing test file: '+relative);
 }

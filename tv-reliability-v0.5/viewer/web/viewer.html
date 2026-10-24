@@ -1,16 +1,16 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PC Bridge Interactive TV</title><link rel="stylesheet" href="/style.css"></head>
 <body><div class="app">
-<div class="header"><strong>PC BRIDGE / INTERACTIVE TV · LIVE DESKTOP RESUME v0.5</strong><span id="status" role="status">Loading desktop…</span></div>
+<div class="header"><strong>PC BRIDGE / INTERACTIVE TV · LIVE DESKTOP RESUME v0.5 · VERIFIED REMOTE CLICK PAD</strong><span id="status" role="status">Loading desktop…</span></div>
 <div class="stage" id="stage">
 <video id="display" muted autoplay playsinline preload="auto" aria-label="Live Windows desktop"></video>
 <div id="clicklayer" class="clicklayer" role="button" tabindex="0" aria-label="Click this area to control the Windows desktop" title="Point and click the Windows desktop with your LG remote"></div>
-<div class="hint" id="hint">Controls are OFF. Enable them below to click Windows.</div>
+<div class="hint" id="hint">Controls are OFF. Enable PC controls, then use the orange CLICK WINDOWS button in the remote click pad below.</div>
 <div class="clickflash" id="clickflash" hidden>●</div>
 </div>
 <div class="toolbar">
-<button id="play">Play video</button><button id="full">Full screen</button>
+<button id="play">Play video</button><button id="full">Full screen</button><button id="newfull" type="button">Interactive full screen</button>
 <button id="arm" class="on">Enable PC controls</button><button id="disarm" class="off" disabled>Pause PC controls</button>
-<button id="clicklast" disabled>Click at pointer</button><button id="showpicture" class="picture-button">Click desktop picture</button><button id="showpad">Arrow fallback</button><button id="end-viewing" class="off">End TV session</button><span id="session-remaining" class="small">Four-hour viewer</span><button id="up" disabled>Scroll ↑</button><button id="down" disabled>Scroll ↓</button>
+<button id="clicklast" disabled>Click at pointer</button><button id="showpicture" class="picture-button">Click desktop picture</button><button id="showpad">Hide click pad</button><button id="end-viewing" class="off">End TV session</button><span id="session-remaining" class="small">Four-hour viewer</span><button id="up" disabled>Scroll ↑</button><button id="down" disabled>Scroll ↓</button>
 <span class="small" id="result" role="status">Waiting for TV remote.</span>
 
 <section id="picture-pad" class="picture-pad" hidden aria-label="Click directly on a desktop picture">
@@ -30,7 +30,7 @@
  </div>
  <p class="pad-note">This is a refreshed screenshot, not the LG video player. Click any position in the screenshot to send ONE Windows click, then watch the live video above update. The arrow fallback remains available.</p>
 </section>
-<section class="remote-pad" id="remote-pad" hidden aria-label="Windows remote navigation">
+<section class="remote-pad" id="remote-pad" aria-label="Windows remote navigation">
  <div class="pad-title"><strong>WINDOWS CLICK PAD · separate from video</strong><span id="target-readout" aria-live="polite">Cursor target: centre (50%, 50%)</span></div>
  <div class="pad-row">
   <button id="preset-chat" disabled>Chats column</button>
@@ -46,5 +46,5 @@
  <p class="pad-note">Use the buttons outside the video. First position the cursor with a preset and arrows, then choose CLICK WINDOWS. Watch the delayed TV picture before clicking again.</p>
 </section>
 </div>
-<p class="note">Four-hour TV video; you can re-enable PC controls for another ten minutes whenever needed. Use the separate clickable desktop picture for direct positioning. The video remains view-only; only explicitly enabled mouse input is forwarded to Windows. No keyboard or Codex message submission is enabled.</p>
+<p class="note">Four-hour TV video; you can re-enable PC controls for another ten minutes whenever needed. The click pad is visible by default because that was the physically verified LG remote control method. Only explicitly enabled mouse input is forwarded to Windows; the video remains view-only. No keyboard or Codex message submission is enabled.</p>
 </div><script src="/viewer.js"></script></body></html>

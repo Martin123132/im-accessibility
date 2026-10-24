@@ -3,7 +3,9 @@
 // Produces at most one bounded FFmpeg decode job at a time. Never writes frames to disk.
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process');
 const SEGMENT_DIR=path.resolve(__dirname,'../cast/runtime/stream');
-const FFMPEG=process.env.PC_BRIDGE_FFMPEG_EXE||'ffmpeg';
+const FFMPEG=process.env.IM_ACCESSIBILITY_CONFIG_PATH!==undefined
+ ?require('../release-config.cjs').readUserSettings().executables.ffmpegExe
+ :(process.env.PC_BRIDGE_FFMPEG_EXE||'ffmpeg');
 const MIN_INTERVAL_MS=1450,MAX_JPEG=700000,MAX_SEGMENT_AGE_MS=6000,ENCODE_TIMEOUT_MS=2700;
 let cache=null,busy=null,successes=0,failures=0,lastError='',lastDecodeMs=0;
 function isJpeg(b){return Buffer.isBuffer(b)&&b.length>1000&&b.length<MAX_JPEG&&b[0]===0xff&&b[1]===0xd8&&b[b.length-2]===0xff&&b[b.length-1]===0xd9;}
