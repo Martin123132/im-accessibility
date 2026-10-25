@@ -18,6 +18,7 @@ const SOURCE_FILE=path.join(UPSTREAM_DIR,'runtime','private-access.json');
 const NATIVE=path.join(ROOT,'native','TvPointer.exe'),EVIDENCE=path.join(ROOT,'evidence');
 const STOP_SIGNAL=path.resolve(ROOT,'../runtime/stop-request.json');
 const EXPIRES_MS=VIEWING.maxMs();
+const MAX_MEDIA_BYTES=8*1024*1024;
 const token=crypto.randomBytes(32).toString('hex'),began=Date.now(),expiresAt=VIEWING.deadline(began);
 let enabled=false,enabledUntil=0,lastActionAt=0,inputsThisMinute=0,minuteStart=Date.now(),actions=0;
 let revoked=false,lastReceipt=null,sourceUrl=null,sourceExpires=0;
@@ -87,7 +88,8 @@ function consume(input){
  return {ok:true,receipt:result};
 }
 async function sourceAudioInfo(){
- const offline={available:false,deviceIdHash:null,streamReady:false,streamAgeMs:null,recoveryCount:0};
+ const offline={available:false,deviceIdHash:null,streamReady:false,streamAgeMs:null,recoveryCount:0,
+  qualityMode:null,qualityVersion:0};
  if(!sourceUrl||!VIEWING.active(sourceExpires))return offline;
  try{
   const r=await fetch('http://'+LAN+':43196/health',{signal:AbortSignal.timeout(950),redirect:'error'});
@@ -99,7 +101,9 @@ async function sourceAudioInfo(){
    typeof hash==='string'&&/^[0-9a-f]{64}$/.test(hash);
   return {available,deviceIdHash:available?hash:null,streamReady:ready,
    streamAgeMs:Number.isFinite(result.streamAgeMs)?result.streamAgeMs:null,
-   recoveryCount:Number.isSafeInteger(result.recoveryCount)&&result.recoveryCount>=0?result.recoveryCount:0};
+   recoveryCount:Number.isSafeInteger(result.recoveryCount)&&result.recoveryCount>=0?result.recoveryCount:0,
+   qualityMode:result.qualityMode==='cinema'?'cinema':'interactive',
+   qualityVersion:Number.isSafeInteger(result.qualityVersion)&&result.qualityVersion>=0?result.qualityVersion:0};
  }catch{return offline}
 }
 async function sourceAudio(){return (await sourceAudioInfo()).available}
@@ -109,6 +113,26 @@ function state(){return{receiver:'PC Bridge Interactive TV v0.1',
  enabled:available(),canArm:active(),expiresAt:VIEWING.iso(expiresAt),viewingMode:VIEWING.MODE,
  armedUntil:available()?new Date(enabledUntil).toISOString():null,actions,lastAction:lastReceipt,
  sourceReady:!!sourceUrl&&VIEWING.active(sourceExpires),preview:previewMetrics()}};
+async function setSourceQuality(mode){
+ if(mode!=='interactive'&&mode!=='cinema')throw Error('Unsupported quality selection');
+ if(!sourceUrl||!VIEWING.active(sourceExpires))throw Error('TV video session is not active');
+ // The controller key is local-only; never send it or its URL to the TV browser.
+ const record=JSON.parse(fs.readFileSync(SOURCE_FILE,'utf8'));
+ const controller=new URL(record.controllerUrl);
+ if(controller.protocol!=='http:'||controller.hostname!==LAN||controller.port!=='43196'||
+    controller.pathname!=='/controller'||controller.search)throw Error('Unrecognised local cast controller');
+ const found=/^#key=([a-f0-9]{48})$/.exec(controller.hash);
+ if(!found)throw Error('Missing local cast controller permission');
+ const r=await fetch('http://'+LAN+':43196/api/quality',{
+  method:'POST',headers:{'Authorization':'Bearer '+found[1],
+   'Content-Type':'application/json','Origin':'http://'+LAN+':43196',
+   'Sec-Fetch-Site':'same-origin'},body:JSON.stringify({mode}),
+  redirect:'error',signal:AbortSignal.timeout(5000)});
+ const reply=await r.json();
+ if(!r.ok)throw Error(reply.error||'Video encoder did not accept quality change');
+ if(reply.qualityMode!==mode)throw Error('Quality change not acknowledged');
+ return {qualityMode:reply.qualityMode,qualityVersion:reply.qualityVersion};
+}
 async function getBody(req){
  if(!/^application\/json(?:;|$)/i.test(req.headers['content-type']||''))throw Error('JSON content type required');
  let s='',size=0;for await(const c of req){size+=c.length;if(size>512)throw Error('JSON too large');s+=c}
@@ -120,7 +144,7 @@ async function proxy(res,name){
   const r=await fetch(sourceUrl+name,{cache:'no-store',signal:AbortSignal.timeout(3500),redirect:'error'});
   if(!r.ok)return json(res,503,{error:'Upstream video not ready'});
   const buf=Buffer.from(await r.arrayBuffer());
-  if(buf.length>1024*1024)return json(res,503,{error:'Oversized media response'});
+  if(buf.length>(name.endsWith('.m3u8')?128*1024:MAX_MEDIA_BYTES))return json(res,503,{error:'Oversized media response'});
   res.writeHead(200,{'Content-Type':name.endsWith('.m3u8')?'application/vnd.apple.mpegurl':'video/mp2t',
    'Cache-Control':'no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff','Accept-Ranges':'bytes'});
   res.end(buf);
@@ -174,8 +198,11 @@ function createServer(){
     const upstream=await sourceAudioInfo();
     // Never leave Windows click permission armed when the displayed desktop is stale.
     if(!upstream.streamReady)enabled=false;
+    if(upstream.qualityMode==='cinema'){enabled=false;enabledUntil=0;}
     return json(res,200,{...state(),sourceReady:upstream.streamReady,
      streamAgeMs:upstream.streamAgeMs,recoveryCount:upstream.recoveryCount,
+     qualityMode:upstream.qualityMode,qualityVersion:upstream.qualityVersion,
+     stream:upstream.qualityMode==='cinema'?'1920x1080 H.264 Cinema':'1280x720 H.264',
      audioAvailable:upstream.available,fastVideoAvailable:!!SETTINGS,
      fastVideoStatus:fastVideoController?fastVideoController.snapshot():null,
      ...speakerRouter.snapshot()});
@@ -201,9 +228,20 @@ function createServer(){
     }
     return json(res,200,{ok:true,...speakerRouter.pulse()});
    }
+   if(route==='/api/quality'){
+    if(!input||Object.keys(input).length!==1||
+      (input.mode!=='interactive'&&input.mode!=='cinema'))throw Error('Only one quality mode is accepted');
+    // Switching quality never grants Windows mouse permission.
+    enabled=false;enabledUntil=0;
+    try{return json(res,200,{ok:true,...await setSourceQuality(input.mode)})}
+    catch(e){return json(res,409,{error:String(e.message||e).slice(0,140)})}
+   }
    if(route==='/api/arm'){
     if(!(await sourceAudioInfo()).streamReady){
      enabled=false;return json(res,503,{error:'Live desktop picture is not current; mouse remains disabled'});
+    }
+    if((await sourceAudioInfo()).qualityMode==='cinema'){
+     enabled=false;return json(res,409,{error:'Cinema mode is view-only; return to interactive mode'});
     }
     if(input?.confirm!==true||Object.keys(input).length!==1)throw Error('Explicit click to enable required');
     enabled=true;enabledUntil=expiresAt===null?Date.now()+VIEWING.MOUSE_LEASE_MS:
@@ -222,6 +260,9 @@ function createServer(){
    if(route==='/api/mouse'){
     if(!(await sourceAudioInfo()).streamReady){
      enabled=false;return json(res,503,{error:'Desktop picture stalled; Windows mouse disabled'});
+    }
+    if((await sourceAudioInfo()).qualityMode==='cinema'){
+     enabled=false;return json(res,409,{error:'Cinema mode does not permit Windows mouse input'});
     }
     return json(res,200,consume(input));
    }

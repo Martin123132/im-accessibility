@@ -8,6 +8,7 @@
  var armed=false,pending=false,pausePending=false,pauseEpoch=0,lastClickAt=0,expiresAt=0,confirmStopUntil=0;
  var audioAvailable=false,audioBusy=false,audioRoute='laptop-only',controlsOpen=false;
  var fastVideoActive=fastPage,fastVideoAllowed=false;
+ var qualityMode='interactive',qualitySwitching=false,qualityAwaitingReload=false;
  // TV playback can lag behind a healthy capture after network stalls.
  var streamFresh=false,lastRecoveryCount=-1,lastVideoClock=0,lastVideoProgressAt=Date.now(),
   lastVideoReloadAt=0,lastLiveSeekAt=0,reportedGapSeconds=null;
@@ -21,7 +22,8 @@
   el('control-panel').hidden=!controlsOpen;
   var toggle=el('control-toggle');
   toggle.setAttribute('aria-expanded',controlsOpen?'true':'false');
-  toggle.textContent=controlsOpen?'Hide controls ▼':(armed?'Controls ▲ · Mouse ON':'Controls ▲');
+  toggle.textContent='☰';
+  toggle.setAttribute('aria-label',controlsOpen?'Close TV controls menu':'Open TV controls menu');
  }
  el('control-toggle').addEventListener('click',function(e){
   if(e.preventDefault)e.preventDefault();
@@ -49,12 +51,18 @@
   xhr.send(data===undefined?null:JSON.stringify(data));
  }
  function mark(enabled){
-  armed=!!enabled&&!pausePending;
-  el('enable').disabled=armed||pausePending;el('pause').disabled=!armed||pausePending;
-  info(armed?
-   'Mouse ON for up to 10 minutes. Point at a Windows item and press OK. Pause when finished.':
+  armed=!!enabled&&!pausePending&&!qualitySwitching&&qualityMode!=='cinema';
+  el('enable').disabled=armed||pausePending||qualitySwitching||qualityMode==='cinema';
+  el('pause').disabled=!armed||pausePending;
+  info(qualityMode==='cinema'?'CINEMA VIEW ONLY · Windows mouse is disabled. Select Interactive mode to control your PC.':
+   armed?'Mouse ON for up to 10 minutes. Point at a Windows item and press OK. Pause when finished.':
    'Mouse OFF. Open Controls to enable desktop clicks.');
   setMenu(controlsOpen);
+ }
+ function renderQuality(){
+  el('quality').textContent=qualityMode==='cinema'?'Return to interactive mode':'Cinema mode · better picture';
+  el('quality').disabled=qualitySwitching||fastPage;
+  el('fast').disabled=qualitySwitching||qualityMode==='cinema'||(!fastVideoAllowed&&!fastVideoActive);
  }
  function setSound(allowed,mode){
   audioAvailable=!!allowed;
@@ -106,6 +114,8 @@
     reconnectLiveVideo('picture stopped changing');return
    }
   }
+  // Cinema accepts buffered playback delay; do not chase the low-latency HLS edge.
+  if(qualityMode==='cinema')return;
   var ranges=video.seekable;
   if(!ranges||!ranges.length||!isFinite(t)||t<0||now-lastLiveSeekAt<7000)return;
   try{
@@ -128,11 +138,17 @@
   request('status','GET',undefined,function(err,s){
    if(pausePending||epoch!==pauseEpoch)return;
    if(err){mark(false);streamFresh=false;report('Viewing controls unavailable');return}
+   if(!qualitySwitching)qualityMode=s.qualityMode==='cinema'?'cinema':'interactive';
    mark(s.enabled);
    if(!audioBusy)setSound(s.audioAvailable===true,s.audioRoute);
    fastVideoAllowed=s.fastVideoAvailable===true;
-   el('fast').disabled=!fastVideoAllowed&&!fastVideoActive;
+   renderQuality();
    streamFresh=s.sourceReady===true;
+   if(qualityAwaitingReload&&streamFresh&&s.qualityMode===qualityMode){
+    qualityAwaitingReload=false;
+    lastVideoReloadAt=0;
+    reconnectLiveVideo('quality profile changed',true);
+   }
    var count=Number(s.recoveryCount);
    if(isFinite(count)&&count>=0){
     if(lastRecoveryCount>=0&&count>lastRecoveryCount&&streamFresh)
@@ -140,14 +156,15 @@
     lastRecoveryCount=count;
    }
    if(!streamFresh){
-    report('Desktop video stalled · capture recovery in progress');
+    report(qualityAwaitingReload?'Preparing '+(qualityMode==='cinema'?'Cinema':'Interactive')+' video…':
+     'Desktop video stalled · capture recovery in progress');
     return;
    }
    expiresAt=s.expiresAt===null?null:Date.parse(s.expiresAt);
    if(!s.canArm){mark(false);el('enable').disabled=true;report('Session expired');return}
    var remaining=expiresAt===null?'Until Stop':Math.max(0,Math.floor((expiresAt-Date.now())/60e3))+'m';
-   report((fastVideoActive?'FAST DESKTOP':'LIVE DESKTOP')+' · '+remaining+' · Mouse '+(armed?'ON':'OFF')+
-   (!fastVideoActive&&reportedGapSeconds>0?' · Video '+Math.round(reportedGapSeconds)+'s behind':''));
+   report((fastVideoActive?'FAST DESKTOP':qualityMode==='cinema'?'CINEMA · HIGH QUALITY':'LIVE DESKTOP')+' · '+remaining+' · Mouse '+(armed?'ON':'OFF')+
+   (!fastVideoActive&&qualityMode!=='cinema'&&reportedGapSeconds>0?' · Video '+Math.round(reportedGapSeconds)+'s behind':''));
   });
  }
  function play(){
@@ -165,6 +182,20 @@
   }else reconnectLiveVideo('manual catch up',true);
  });
  el('fast').disabled=true;
+ el('quality').addEventListener('click',function(){
+  if(pending||pausePending||qualitySwitching||fastPage)return;
+  var next=qualityMode==='cinema'?'interactive':'cinema';
+  // Revoke the browser mouse immediately; the broker also clears its 10-minute lease.
+  pauseEpoch++;armed=false;qualitySwitching=true;mark(false);renderQuality();
+  report('Preparing '+(next==='cinema'?'high-quality Cinema':'interactive')+' video…');
+  request('quality','POST',{mode:next},function(err,reply){
+   qualitySwitching=false;
+   if(err){report('Quality selection not changed: '+err);renderQuality();healthy();return}
+   qualityMode=reply.qualityMode===next?next:qualityMode;
+   qualityAwaitingReload=true;mark(false);renderQuality();
+   report('Switching encoder to '+(next==='cinema'?'Cinema 1080p':'Interactive 720p')+'…');
+  });
+ });
  el('fast').addEventListener('click',function(){
   if(fastPage){location.href='/full/'+key;return}
   if(!fastVideoAllowed||!window.ImAccessibilityFastVideo||
@@ -221,7 +252,7 @@
  surface.addEventListener('click',function(e){
   if(e.preventDefault)e.preventDefault();
   if(e.stopPropagation)e.stopPropagation();
-  if(!armed){info('Mouse OFF. Open Controls at the bottom-right to enable mouse.');return}
+  if(!armed){info(qualityMode==='cinema'?'Cinema mode · Windows controls disabled':'Mouse OFF. Open the top-left menu to enable mouse.');return}
   if(pending||Date.now()-lastClickAt<350)return;
   var p=fitPosition(e);
   if(!p){info('Select inside the desktop image, not the black border.');return}
@@ -238,7 +269,7 @@
   });
  });
  el('enable').addEventListener('click',function(){
-  if(pending||pausePending)return;
+  if(pending||pausePending||qualitySwitching||qualityMode==='cinema')return;
   pending=true;
   var epoch=pauseEpoch;
   el('enable').disabled=true;
@@ -299,7 +330,7 @@
    report(err?'Unable to stop: '+err:'TV session ending');
   });
  });
- setMenu(false);mark(false);setSound(false,'laptop-only');healthy();setInterval(healthy,2800);
+ setMenu(false);mark(false);setSound(false,'laptop-only');renderQuality();healthy();setInterval(healthy,2800);
  if(fastPage){
   el('fast').textContent='Use original HLS video';
   if(!window.ImAccessibilityFastVideo||!window.ImAccessibilityFastVideo.supported()){

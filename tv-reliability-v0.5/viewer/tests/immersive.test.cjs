@@ -17,7 +17,10 @@ test('real-LG-proven HLS document is a single full viewport native click button 
  assert.match(html,/id="control-toggle"[^>]*aria-expanded="false"/);
  assert.match(html,/id="control-panel" hidden/);
  assert.ok(html.indexOf('id="status"')>html.indexOf('id="control-panel"'),'Status moved into controls menu');
- assert.match(css,/#controls\{[^}]*bottom:14px;top:auto/,'No permanent top toolbar');
+ assert.match(css,/#controls\{[^}]*left:12px;top:12px;right:auto;bottom:auto/,'Compact top-left menu');
+ assert.match(css,/#control-toggle\{[^}]*min-width:44px;max-width:44px;width:44px;height:44px/);
+ assert.match(html,/id="control-toggle"[^>]*aria-label="Open TV controls menu"/);
+ assert.match(html,/id="quality"/);
  assert.match(css,/#control-panel\[hidden\]\{display:none!important\}/);
 
  assert.match(code,/video\.muted&&audioRoute!=='laptop-only'/,'Muted LG reload must not prolong laptop suppression');
@@ -27,7 +30,7 @@ test('real-LG-proven HLS document is a single full viewport native click button 
 });
 test('full-screen click maps letterboxed HLS to Windows only within an active owner mouse lease',()=>{
  const token='a'.repeat(64),events=new Map(),els=new Map(),requests=[];
- for(const id of ['desktop','surface','controls','control-toggle','control-panel','enable','pause','play','catchup','fast','sound','laptop','classic','stop','status','hint','marker']){
+ for(const id of ['desktop','surface','controls','control-toggle','control-panel','enable','pause','play','catchup','quality','fast','sound','laptop','classic','stop','status','hint','marker']){
   els.set(id,{id,disabled:false,hidden:false,textContent:'',style:{},
    videoWidth:1280,videoHeight:720,controls:true,
    removeAttribute(){},setAttribute(k,v){this[k]=v},
@@ -48,6 +51,7 @@ test('full-screen click maps letterboxed HLS to Windows only within an active ow
    if(this.route==='/api/status')result={canArm:true,enabled:armed,audioAvailable:true,audioRoute:'laptop-only',expiresAt:new Date(now+3600000).toISOString()};
    if(this.route==='/api/arm'){armed=true;result={enabled:true}}
    if(this.route==='/api/disarm'){armed=false;result={enabled:false}}
+   if(this.route==='/api/quality'){armed=false;result={qualityMode:data.mode}}
    if(this.route==='/api/mouse'){result={receipt:{action:'click',windowsX:960,windowsY:540}}}
    this.readyState=4;this.status=200;this.responseText=JSON.stringify(result);
    this.onreadystatechange?.();
@@ -107,6 +111,15 @@ test('full-screen click maps letterboxed HLS to Windows only within an active ow
  events.get('pause:click')();
  events.get('surface:click')(click);
  assert.equal(mouse().length,1,'Pause revokes all Windows input');
+ events.get('quality:click')();
+ assert.equal(requests.filter(x=>x.route==='/api/quality').at(-1).data.mode,'cinema');
+ assert.match(els.get('quality').textContent,/Return to interactive mode/);
+ now+=1000;events.get('surface:click')(click);
+ assert.equal(mouse().length,1,'Cinema mode must never forward Windows mouse input');
+ assert.equal(els.get('enable').disabled,true,'Cinema prevents new mouse leases');
+ events.get('quality:click')();
+ assert.equal(requests.filter(x=>x.route==='/api/quality').at(-1).data.mode,'interactive');
+ assert.match(els.get('quality').textContent,/Cinema mode/);
  events.get('classic:click')();
  assert.equal(env.location.href,'/tv/'+token,'Known-good original controls remain available');
 });

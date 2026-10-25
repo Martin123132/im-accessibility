@@ -4,7 +4,7 @@
 const fs=require('node:fs'),path=require('node:path');
 const core=require('./package-core.cjs');
 const repo=path.resolve(__dirname,'..');
-const version='v0.3.18-owner-controlled-private-preview';
+const version='v0.3.19-cinema-compact-private-preview';
 const tv=[
  'lg-pair.cjs','lg-active-view.cjs','release-config.cjs','viewing-policy.cjs','resume.cjs','resume-host.cjs',
  'cast/lan.cjs','cast/lg-launch.cjs','cast/package.json','cast/package-lock.json',
@@ -116,8 +116,9 @@ function build(out){
    'Laptop-only sound returns when TV playback is disabled. End, closing the TV or losing its heartbeat restores the original Windows speaker mute state.',
    'The TV Sound button is enabled only when the HLS source contains audio; video remains muted until the owner presses it.',
    'An encoder-stall watchdog restarts only the video capture; if sound repeatedly stalls, video-only fallback preserves desktop control.',
-   'The desktop viewer follows the HLS live edge and has a Catch up picture option in its bottom-right Controls menu.',
-   'Fullscreen TV buttons and status live in a small bottom-right expandable Controls menu.',
+   'Interactive mode follows the HLS live edge; Cinema mode retains buffer for higher quality and smooth film viewing.',
+   'Fullscreen TV controls open under the small top-left menu icon; the bottom-right of Windows is unobstructed.',
+   'Cinema 1080p/30fps uses H.264 CRF18, two-second HLS segments and a 36-second playlist window. Switch back to Interactive 720p/15fps from the TV controls; Cinema disarms Windows mouse.',
    'Try faster video opens a separate full-screen MSE-only viewer with the identical controls; original HLS is the default and Return to HLS reopens its own page.',
    'Fast mode uses the same 720p H.264/AAC quality settings, does not grant Windows mouse permission and runs only while selected by the owner.',
    'If LG fast-video decoder frames stop advancing, it seeks toward live, then reconnects a bounded number of times; repeated stalls restore original HLS.',

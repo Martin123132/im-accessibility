@@ -20,6 +20,7 @@ const tv = [
   'tv-reliability-v0.5/cast/tests/loopback-clockfix.test.cjs',
   'tv-reliability-v0.5/tests/session-policy.test.cjs',
   'tv-reliability-v0.5/tests/owner-controlled-viewing.test.cjs',
+  'tv-reliability-v0.5/tests/cinema-quality.test.cjs',
   'tv-reliability-v0.5/tests/lg-active-view.test.cjs',
   'tv-reliability-v0.5/tests/release-config.test.cjs',
   'tv-reliability-v0.5/tests/release-runtime-config.test.cjs',

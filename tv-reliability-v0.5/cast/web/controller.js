@@ -30,7 +30,7 @@
    $('stream-status').textContent=s.streamReady?'Streaming desktop to TV receiver · ready':
      s.state==='running'?'Starting live video segments…':
      s.state==='failed'?'Encoder failed: '+(s.error||'unknown'): 'Desktop stream is stopped';
-   $('frame').textContent=s.resolution+' · '+s.targetFps+' fps H.264 HLS';
+   $('frame').textContent=(s.qualityMode==='cinema'?'Cinema':'Interactive')+' · '+s.resolution+' · '+s.targetFps+' fps H.264 HLS';
    $('viewers').textContent=s.lastWatchAt?'TV last requested video at '+timeFormatter.format(new Date(s.lastWatchAt)):'No TV receiver yet';
    $('tv-link').textContent=s.receiverUrl||'Preparing receiver…';
    $('start').disabled=(s.state==='running');

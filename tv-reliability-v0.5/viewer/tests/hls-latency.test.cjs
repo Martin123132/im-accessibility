@@ -9,7 +9,7 @@ function harness(){
  const token='a'.repeat(64),elements=new Map(),handlers={},timers=[],requests=[];
  let now=100000,loads=0;
  const ids=['desktop','surface','controls','control-toggle','control-panel','enable','pause',
-  'play','catchup','fast','sound','laptop','classic','stop','status','hint','marker'];
+  'play','catchup','quality','fast','sound','laptop','classic','stop','status','hint','marker'];
  for(const id of ids)elements.set(id,{
   id,textContent:'',disabled:false,hidden:false,style:{},controls:false,muted:true,
   currentTime:10,paused:false,videoWidth:1280,videoHeight:720,
@@ -78,6 +78,14 @@ test('stalled decoder reloads boundedly and follows explicit server encoder-reco
   expiresAt:'2031-01-01T00:00:00Z'});
  assert.equal(h.loads,2,'A short repeat after manual reload is rate limited');
  assert.equal(h.requests.filter(p=>p.route==='/api/mouse').length,0);
+});
+test('Cinema mode leaves intentional HLS buffering alone and never seeks near live edge',()=>{
+ const h=harness();
+ h.complete('status',{canArm:true,enabled:false,sourceReady:true,
+  qualityMode:'cinema',recoveryCount:0,expiresAt:'2031-01-01T00:00:00Z'});
+ h.tick(2000);
+ assert.equal(h.video.currentTime,10,'Cinema keeps the 12-second buffer instead of skipping forward');
+ assert.equal(h.loads,0);
 });
 test('mouse broker refuses clicks and arming when HLS capture is stale',()=>{
  assert.match(broker,/if\(!upstream\.streamReady\)enabled=false/);

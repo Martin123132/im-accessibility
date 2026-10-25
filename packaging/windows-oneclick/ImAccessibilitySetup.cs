@@ -17,7 +17,7 @@ using Microsoft.Win32;
 namespace ImAccessibilityInstaller {
  static class InstallCore {
   const string PayloadResource="ImAccessibilityInstallerPayload";
-  public const string Version="v0.3.18-owner-controlled-private-preview";
+  public const string Version="v0.3.19-cinema-compact-private-preview";
   public static string LocalData {
    get {string e=Environment.GetEnvironmentVariable("LOCALAPPDATA");
     return String.IsNullOrWhiteSpace(e)?Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData):e;}

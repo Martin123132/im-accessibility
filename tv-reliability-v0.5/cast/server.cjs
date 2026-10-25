@@ -25,6 +25,7 @@ let audioChild=null,audioDeviceIdHash=null,audioState=WANT_AUDIO?'pending':'off'
 const MAX_MANIFEST_AGE_MS=8500,STARTUP_GRACE_MS=14000,RECOVERY_WINDOW_MS=120000;
 let nextSegment=0,pendingRestart=null,recoveries=[],recoveryCount=0,
  lastRecoveryReason=null,lastRecoveryUtc=null,captureFormat=null;
+let qualityMode='interactive',qualityVersion=0,lastQualityAt=0;
 fs.mkdirSync(SEGMENTS,{recursive:true});
 function atomic(file,obj){
  const temp=file+'.'+process.pid+'.tmp';
@@ -48,7 +49,8 @@ function status(){
  return {mode:'LAN-direct-TV-receiver',source:'Windows desktop',state:captureState,pid:capturePid,
    captureStarted,streamReady:exists&&captureState==='running'&&streamAgeMs!==null&&streamAgeMs<8000,lastManifestModified:lastModified,
    streamAgeMs:streamAgeMs===null?null:Math.round(streamAgeMs),recoveryCount,lastRecoveryUtc,lastRecoveryReason,
-   segments:segmentCount,resolution:'1280 x 720',targetFps:15,watchHits,lastWatchAt,phoneIndependent:true,
+   segments:segmentCount,resolution:qualityMode==='cinema'?'1920 x 1080':'1280 x 720',
+    targetFps:qualityMode==='cinema'?30:15,qualityMode,qualityVersion,watchHits,lastWatchAt,phoneIndependent:true,
    expiresAt:VIEWING.iso(expiresAt),viewingMode:VIEWING.MODE,lgState,lastDeviceIp,LAN_IP,port:PORT,receiverUrl:ctrlOrigin+'/tv/'+watchKey,
    error:captureError,audioRequested:WANT_AUDIO,audioState,audioEnabled:audioState==='active'&&captureAlive(),
    audioDeviceIdHash:audioState==='active'?audioDeviceIdHash:null,audioError};
@@ -69,7 +71,7 @@ function safeEndAudio(child){
 function spawnCapture(format=null){
  captureState='starting';captureError=null;captureStarted=new Date().toISOString();
  captureFormat=format;
- const args=SOUND.argsFor(SEGMENTS,format,nextSegment);
+ const args=SOUND.argsFor(SEGMENTS,format,nextSegment,qualityMode);
  const ff=cp.spawn(FFMPEG,args,{cwd:ROOT,windowsHide:true,
   stdio:format?['ignore','ignore','pipe','pipe']:['ignore','ignore','pipe']});
  capture=ff;capturePid=ff.pid||null;captureState='running';
@@ -158,6 +160,23 @@ function startCapture(){
  clearSegments();
  return spawnCapture(format);
 }
+function switchQuality(mode){
+ SOUND.qualityProfile(mode); // Reject unknown or untrusted mode strings before touching capture.
+ if(!VIEWING.active(expiresAt)||ownerStopped)throw Error('Viewing session is not active');
+ if(mode===qualityMode)return status();
+ if(!captureAlive()||captureState!=='running'||pendingRestart)throw Error('Video is not ready to change quality');
+ const now=Date.now();
+ if(lastQualityAt&&now-lastQualityAt<5000)throw Error('Quality changes must be at least five seconds apart');
+ const previous=qualityMode;
+ qualityMode=mode;qualityVersion++;
+ pendingRestart={format:captureFormat};captureState='recovering';captureError=null;
+ // The old encoder exits before the new one starts. Never run two full captures.
+ try{
+  if(!capture.kill('SIGTERM'))throw Error('Video encoder could not be restarted');
+ }catch(e){qualityMode=previous;qualityVersion--;pendingRestart=null;captureState='running';throw e}
+ lastQualityAt=now;
+ return status();
+}
 function stopCapture(){
  ownerStopped=true;pendingRestart=null;
  safeEndAudio(audioChild);audioChild=null;
@@ -225,7 +244,7 @@ function makeServer(){
     const h=status();
     return send(res,200,{ok:true,mode:'LAN TV receiver',build:'tv-resume-v0.5',
      stream:h.state,streamReady:h.streamReady,streamAgeMs:h.streamAgeMs,
-     recoveryCount:h.recoveryCount,lastRecoveryUtc:h.lastRecoveryUtc,
+     recoveryCount:h.recoveryCount,qualityMode:h.qualityMode,qualityVersion:h.qualityVersion,lastRecoveryUtc:h.lastRecoveryUtc,
      audioEnabled:h.audioEnabled&&h.streamReady,audioState:h.audioState,audioDeviceIdHash:h.audioDeviceIdHash});
    }
    if(req.method==='GET'&&route==='/controller')return send(res,200,fs.readFileSync(path.join(WEB,'controller.html')),'text/html; charset=utf-8');
@@ -262,6 +281,15 @@ function makeServer(){
    if(route==='/api/stop'){
     if(Object.keys(input).length)throw Error('No arguments accepted');
     return send(res,200,stopCapture());
+   }
+   if(route==='/api/quality'){
+    // Quality changes originate only from this machine's authenticated viewer broker.
+    const peer=req.socket.remoteAddress;
+    if(peer!==LAN_IP&&peer!=='::ffff:'+LAN_IP)
+     return send(res,403,{error:'Local quality control only'});
+    if(!input||Object.keys(input).length!==1||typeof input.mode!=='string')
+     throw Error('One explicit quality mode required');
+    return send(res,200,switchQuality(input.mode));
    }
    if(route==='/api/launch-lg'){
     if(!input||Object.keys(input).join(',')!=='ip'||typeof input.ip!=='string')
@@ -306,5 +334,5 @@ if(require.main===module){
   process.exitCode=1;
  }else serve().catch(e=>{console.error('TVCAST_FAILED '+e.message);process.exitCode=1});
 }
-module.exports={makeServer,status,startCapture,stopCapture,validMedia,equalToken,
+module.exports={makeServer,status,startCapture,stopCapture,switchQuality,validMedia,equalToken,
  manifestAgeMs,shouldRecover,watchdogTick,MAX_MANIFEST_AGE_MS,LAN_IP,PORT};
