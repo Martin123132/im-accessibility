@@ -44,6 +44,32 @@ test('uninstaller keeps settings, checks every installed file hash and refuses a
  assert.match(src,/Directory\.Delete\(root,true\)/);
 });
 
+test('accessibility annotations provide named roles, keyboard tab sequence and explicit selftests',()=>{
+ const ui=read('ImAccessibilityApp.cs'),setup=read('ImAccessibilitySetup.cs');
+ for(const name of ['PC network connection','LG television IPv4 address',
+  'Start Windows desktop streaming to LG TV','Stop this application',
+  'TV application activity and status messages']){
+  assert.ok(ui.includes(name),'Missing screen-reader name: '+name);
+ }
+ for(let i=0;i<=9;i++)assert.match(ui,new RegExp('\\.TabIndex='+i+';'));
+ assert.match(ui,/AccessibilityReport\(\)/);
+ assert.match(ui,/--accessibility-selftest/);
+ assert.match(ui,/KeyCode==Keys\.F5/);
+ assert.match(setup,/install\.AccessibleName=/);
+ assert.match(setup,/open\.AccessibleName=/);
+ assert.match(setup,/output\.AccessibleName=/);
+ assert.match(setup,/--accessibility-selftest/);
+});
+
+test('uninstall confirmation defaults No, remains keyboard accessible and has non-destructive GUI test',()=>{
+ const code=read('ImAccessibilityUninstall.cs');
+ assert.match(code,/MessageBoxDefaultButton\.Button2/);
+ assert.match(code,/if\(ConfirmUninstall\(\)!=DialogResult\.Yes\)return;/);
+ assert.match(code,/--dialog-selftest/);
+ assert.match(code,/UseShellExecute=false/);
+ assert.match(code,/GUI test is limited to the disposable test area/);
+});
+
 test('offline Windows builder takes explicit third-party licences and creates no public release',()=>{
  const script=read('build-oneclick.ps1');
  assert.match(script,/\$NodeLicense/);

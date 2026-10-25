@@ -95,7 +95,27 @@ namespace ImAccessibilityDesktop {
     }
    }catch{}
   }
+  static DialogResult ConfirmUninstall(){
+   // No is the default keyboard action. The exact same Windows confirmation
+   // is used in normal uninstall and non-destructive GUI acceptance tests.
+   return MessageBox.Show(
+    "Uninstall I'm-accessibility from this Windows user account?\r\n\r\nYour saved LG settings are kept. Active TV sessions must be stopped first.",
+    "Uninstall I'm-accessibility",MessageBoxButtons.YesNo,
+    MessageBoxIcon.Question,MessageBoxDefaultButton.Button2);
+  }
   [STAThread] static void Main(string[] args){
+   if(args.Length==2&&args[0]=="--dialog-selftest"){
+    try{
+     string profile=Path.GetFullPath(Local()).TrimEnd(Path.DirectorySeparatorChar)+Path.DirectorySeparatorChar;
+     if(!profile.StartsWith(@"D:\ImAccessibility-ClickInstaller-20261024\tests\",StringComparison.OrdinalIgnoreCase))
+      throw new Exception("GUI test is limited to the disposable test area.");
+     var reply=ConfirmUninstall();
+     File.WriteAllText(args[1],reply.ToString()+"\r\n",Encoding.UTF8);
+    }catch(Exception ex){
+     File.WriteAllText(args[1],"FAILED "+ex.Message+"\r\n",Encoding.UTF8);
+    }
+    return;
+   }
    if(args.Length==2&&args[0]=="--test-uninstall"){
     try{
      string profile=Path.GetFullPath(Local()).TrimEnd(Path.DirectorySeparatorChar)+Path.DirectorySeparatorChar;
@@ -118,21 +138,20 @@ namespace ImAccessibilityDesktop {
     string temp=Path.Combine(Path.GetTempPath(),"ImAccessibility-Uninstall-"+Guid.NewGuid().ToString("N")+".exe");
     try{
      File.Copy(Assembly.GetExecutingAssembly().Location,temp,false);
-     var p=new ProcessStartInfo(temp,"--execute"){UseShellExecute=true};
+     var p=new ProcessStartInfo(temp,"--execute"){
+      UseShellExecute=false,CreateNoWindow=false,WorkingDirectory=Path.GetTempPath()
+     };
      Process.Start(p);
     }catch(Exception ex){MessageBox.Show(ex.Message,"Uninstaller unavailable",MessageBoxButtons.OK,MessageBoxIcon.Error);}
     return;
    }
    if(args.Length!=1||args[0]!="--execute")return;
-   if(MessageBox.Show("Uninstall I'm-accessibility from this Windows user account?\r\n\r\nYour saved LG settings are kept. Active TV sessions must be stopped first.",
-    "Uninstall I'm-accessibility",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
+   if(ConfirmUninstall()!=DialogResult.Yes)return;
    try{
     DoUninstall(root);
     MessageBox.Show("I'm-accessibility was uninstalled. Your personal TV setup settings were preserved.",
      "Uninstall completed",MessageBoxButtons.OK,MessageBoxIcon.Information);
    }catch(Exception ex){MessageBox.Show(ex.Message,"Uninstall stopped without deleting application files",MessageBoxButtons.OK,MessageBoxIcon.Error);}
-   finally{}
-
   }
  }
 }

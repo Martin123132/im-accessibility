@@ -208,18 +208,45 @@ namespace ImAccessibilityInstaller {
    Controls.Add(new Label{Left=30,Top=85,Width=638,Height=58,
     Text="Install the Windows desktop-to-LG-TV app with bundled Node.js and FFmpeg.\r\nNo administrator access needed. TV streaming will NOT start during installation."});
    Controls.Add(new Label{Left=30,Top=157,Width=625,Height=23,Text="Install location:",Font=new Font("Segoe UI",10,FontStyle.Bold)});
-   destination.SetBounds(30,186,633,48);destination.Text=InstallCore.Destination;Controls.Add(destination);
+   destination.SetBounds(30,186,633,48);destination.Text=InstallCore.Destination;
+   destination.AccessibleName="Windows user installation folder";
+   destination.AccessibleDescription="The per-user location where I'm-accessibility will be installed.";
+   Controls.Add(destination);
    open.Text="Open the app after installation (TV remains off until you select Start)";
-   open.SetBounds(30,242,635,35);open.Checked=true;Controls.Add(open);
+   open.SetBounds(30,242,635,35);open.Checked=true;
+   open.TabIndex=0;open.AccessibleName="Open I'm-accessibility after installation";
+   open.AccessibleDescription="Opens the application UI only; it will not start the TV stream.";
+   Controls.Add(open);
    install.Text="Install I'm-accessibility";install.SetBounds(30,288,289,49);
    install.BackColor=Color.FromArgb(14,91,133);install.ForeColor=Color.White;
    install.Font=new Font("Segoe UI",11,FontStyle.Bold);install.FlatStyle=FlatStyle.Flat;
-   install.FlatAppearance.BorderSize=0;Controls.Add(install);
+   install.FlatAppearance.BorderSize=0;install.TabIndex=1;
+   install.AccessibleName="Install I'm-accessibility for this Windows user";
+   install.AccessibleDescription="Verify bundled files and install the app without starting TV streaming.";
+   Controls.Add(install);
    install.Click+=(s,e)=>BeginInstall();
-   var close=new Button{Text="Close",Left=332,Top=288,Width=126,Height=49};close.Click+=(s,e)=>Close();Controls.Add(close);
+   var close=new Button{Text="Close",Left=332,Top=288,Width=126,Height=49};
+   close.TabIndex=2;close.AccessibleName="Close installation without changes";
+   close.AccessibleDescription="Dismiss the installer. Does not start TV streaming.";
+   close.Click+=(s,e)=>Close();Controls.Add(close);
    output.SetBounds(30,355,633,53);output.Multiline=true;output.ReadOnly=true;
    output.ScrollBars=ScrollBars.Vertical;output.Text="Private installer preview. No files have been changed.";
+   output.TabIndex=3;output.TabStop=true;
+   output.AccessibleName="Installation progress and verification messages";
+   output.AccessibleDescription="Read-only log of installed files and any errors.";
    Controls.Add(output);
+   KeyPreview=true;KeyDown+=(sender,e)=>{if(e.KeyCode==Keys.Escape){Close();e.Handled=true;}};
+
+  }
+  public object AccessibilityReport(){
+   Control[] order={open,install};
+   bool allNamed=true,validOrder=true;
+   for(int i=0;i<order.Length;i++){if(String.IsNullOrWhiteSpace(order[i].AccessibleName))allNamed=false;
+    if(order[i].TabIndex!=i||!order[i].TabStop)validOrder=false;}
+   return new {window=Text,named=allNamed,firstTabOrderValid=validOrder,
+    openRole=open.AccessibilityObject.Role.ToString(),installRole=install.AccessibilityObject.Role.ToString(),
+    openName=open.AccessibleName,installName=install.AccessibleName,
+    progressName=output.AccessibleName,progressFocusable=output.TabStop};
   }
   void Log(string s){if(IsHandleCreated)BeginInvoke(new Action(()=>output.AppendText("\r\n"+s)));}
   async void BeginInstall(){
@@ -237,6 +264,16 @@ namespace ImAccessibilityInstaller {
  }
  static class Program {
   [STAThread] static void Main(string[] args){
+   if(args.Length==2&&args[0]=="--accessibility-selftest"){
+    try{
+     using(var window=new InstallerWindow()){
+      File.WriteAllText(args[1],new JavaScriptSerializer().Serialize(window.AccessibilityReport()),Encoding.UTF8);
+     }
+    }catch(Exception ex){
+     File.WriteAllText(args[1],"{\"error\":"+new JavaScriptSerializer().Serialize(ex.Message)+"}",Encoding.UTF8);
+    }
+    return;
+   }
    if(args.Length==2&&(args[0]=="--verify"||args[0]=="--test-install")){
     try{
      string result=args[0]=="--verify"?InstallCore.VerifyArchive():InstallCore.Install(true,s=>{});

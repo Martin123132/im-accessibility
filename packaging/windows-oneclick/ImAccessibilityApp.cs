@@ -83,7 +83,51 @@ namespace ImAccessibilityDesktop {
    log.Anchor=AnchorStyles.Left|AnchorStyles.Right|AnchorStyles.Bottom|AnchorStyles.Top;
    log.Text="Ready. Nothing starts streaming until you press Start.";
    Controls.Add(log);
+   // Intentional tab sequence: network, address, confirmation, save, sound,
+   // start/stop/status, uninstall, then the read-only announcement log.
+   // No keyboard shortcut starts Windows capture or arms the mouse.
+   KeyPreview=true;
+   KeyDown+=(sender,e)=>{if(e.KeyCode==Keys.F5){Status();e.Handled=true;e.SuppressKeyPress=true;}};
+   adapters.TabIndex=0;adapters.AccessibleName="PC network connection";
+   adapters.AccessibleDescription="Select the private Wi-Fi or Ethernet adapter connected to your LG television.";
+   tvIP.TabIndex=1;tvIP.AccessibleName="LG television IPv4 address";
+   tvIP.AccessibleDescription="The address shown in the LG television's network settings.";
+   confirm.TabIndex=2;confirm.AccessibleName="Confirm this is my own LG television";
+   confirm.AccessibleDescription="Required acknowledgement before saving device configuration.";
+   save.TabIndex=3;save.AccessibleName="Save LG television setup";
+   save.AccessibleDescription="Validate the selected network and TV address and save settings locally.";
+   sound.TabIndex=4;sound.AccessibleName="Enable LG television speaker audio";
+   sound.AccessibleDescription="When selected, the TV plays speaker audio and the laptop may be temporarily muted.";
+   start.TabIndex=5;start.AccessibleName="Start Windows desktop streaming to LG TV";
+   start.AccessibleDescription="Requires a confirmation dialog and never enables Windows mouse control automatically.";
+   stop.TabIndex=6;stop.AccessibleName="Stop this application's TV stream";
+   stop.AccessibleDescription="Requires confirmation; does not shut down other applications.";
+   status.TabIndex=7;status.AccessibleName="Refresh TV streaming status";
+   status.AccessibleDescription="Read the current TV connection state. Keyboard shortcut F5.";
+   uninstall.TabIndex=8;uninstall.AccessibleName="Open accessible application uninstaller";
+   uninstall.AccessibleDescription="Confirm to open Windows uninstallation; streaming must be stopped first.";
+   log.TabIndex=9;log.TabStop=true;log.AccessibleName="TV application activity and status messages";
+   log.AccessibleDescription="Read-only log of setup, connection and local application state.";
+   state.AccessibleName="LG television setup status";
    Load+=(s,e)=>Initialize();
+  }
+  public object AccessibilityReport(){
+   Control[] ordered={adapters,tvIP,confirm,save,sound,start,stop,status,uninstall,log};
+   var records=new List<Dictionary<string,object>>();
+   bool named=true,tabOrder=true,allTabStops=true;
+   for(int i=0;i<ordered.Length;i++){
+    Control c=ordered[i];
+    if(String.IsNullOrWhiteSpace(c.AccessibleName))named=false;
+    if(c.TabIndex!=i)tabOrder=false;
+    if(!c.TabStop)allTabStops=false;
+    records.Add(new Dictionary<string,object>{
+     {"name",c.AccessibleName},{"description",c.AccessibleDescription},
+     {"role",c.AccessibilityObject.Role.ToString()},{"tabIndex",c.TabIndex},
+     {"tabStop",c.TabStop},{"type",c.GetType().Name}
+    });
+   }
+   return new {window=Text,allNamed=named,tabOrderValid=tabOrder,
+    allTabStops=allTabStops,controlCount=records.Count,controls=records};
   }
   void AddLabel(string text,int x,int y,int w,int h,int pt=10,bool strong=false){
    Controls.Add(new Label{Left=x,Top=y,Width=w,Height=h,Text=text,
@@ -159,6 +203,14 @@ namespace ImAccessibilityDesktop {
  }
  static class Program{
   [STAThread] static void Main(string[] args){
+   if(args.Length==2&&args[0]=="--accessibility-selftest"){
+    try{
+     using(var window=new MainWindow()){
+      File.WriteAllText(args[1],new JavaScriptSerializer().Serialize(window.AccessibilityReport()),Encoding.UTF8);
+     }
+    }catch(Exception ex){File.WriteAllText(args[1],"{\"error\":"+new JavaScriptSerializer().Serialize(ex.Message)+"}",Encoding.UTF8);}
+    return;
+   }
    if(args.Length==2&&args[0]=="--selftest"){
     try{File.WriteAllText(args[1],new JavaScriptSerializer().Serialize(new{
      app="ImAccessibility Desktop",node=File.Exists(Engine.Node),ffmpeg=File.Exists(Engine.Ffmpeg),
