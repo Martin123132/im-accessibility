@@ -104,6 +104,9 @@ $compilerArgs+=('/resource:'+$zip+',ImAccessibilityInstallerPayload')
 $compilerArgs+=(Join-Path $source 'ImAccessibilitySetup.cs')
 & $csc @compilerArgs
 if($LASTEXITCODE -ne 0){throw 'Windows installer EXE compiler failed'}
+# Never mistake a successfully built private EXE for a cleared public release.
+& $NodeExe (Join-Path $source 'audit-release.cjs') $stage (Join-Path $out 'release-audit.json') $exe
+if($LASTEXITCODE -ne 0){throw 'Release audit detected package corruption or private data'}
 $summary=[pscustomobject]@{
  file=$exe;sizeBytes=(Get-Item -LiteralPath $exe).Length
  sha256=(Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()
