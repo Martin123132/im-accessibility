@@ -7,11 +7,12 @@ const {LAN_IP,PORT,isLocalIp}=require('./lan.cjs');
 const {discover}=require('./tv-discovery.cjs');
 const {launchTv}=require('./lg-launch.cjs');
 const SOUND=require('./sound.cjs');
+const VIEWING=require('../viewing-policy.cjs');
 const ROOT=__dirname,RUNTIME=path.join(ROOT,'runtime'),SEGMENTS=path.join(RUNTIME,'stream');
 const FFMPEG=process.env.IM_ACCESSIBILITY_CONFIG_PATH!==undefined
  ?require('../release-config.cjs').readUserSettings().executables.ffmpegExe
  :(process.env.PC_BRIDGE_FFMPEG_EXE||'ffmpeg');
-const WEB=path.join(ROOT,'web'),MAX_MS=4*60*60*1000,created=Date.now();
+const WEB=path.join(ROOT,'web'),MAX_MS=VIEWING.maxMs(),created=Date.now(),expiresAt=VIEWING.deadline(created);
 // Capture speaker output only when explicitly selected with Start with Sound.
 const WANT_AUDIO=SOUND.isAudioOptIn(process.env.IM_ACCESSIBILITY_TV_AUDIO);
 const controlKey=crypto.randomBytes(24).toString('hex'),watchKey=crypto.randomBytes(24).toString('hex');
@@ -48,7 +49,7 @@ function status(){
    captureStarted,streamReady:exists&&captureState==='running'&&streamAgeMs!==null&&streamAgeMs<8000,lastManifestModified:lastModified,
    streamAgeMs:streamAgeMs===null?null:Math.round(streamAgeMs),recoveryCount,lastRecoveryUtc,lastRecoveryReason,
    segments:segmentCount,resolution:'1280 x 720',targetFps:15,watchHits,lastWatchAt,phoneIndependent:true,
-   expiresAt:new Date(created+MAX_MS).toISOString(),lgState,lastDeviceIp,LAN_IP,port:PORT,receiverUrl:ctrlOrigin+'/tv/'+watchKey,
+   expiresAt:VIEWING.iso(expiresAt),viewingMode:VIEWING.MODE,lgState,lastDeviceIp,LAN_IP,port:PORT,receiverUrl:ctrlOrigin+'/tv/'+watchKey,
    error:captureError,audioRequested:WANT_AUDIO,audioState,audioEnabled:audioState==='active'&&captureAlive(),
    audioDeviceIdHash:audioState==='active'?audioDeviceIdHash:null,audioError};
 }
@@ -108,10 +109,10 @@ function spawnCapture(format=null){
   }
   const watchRecovery=pendingRestart;
   if(watchRecovery)pendingRestart=null;
-  if(watchRecovery&&!ownerStopped&&Date.now()<created+MAX_MS){
+  if(watchRecovery&&!ownerStopped&&VIEWING.active(expiresAt)){
    captureState='recovering';captureError=null;
    setTimeout(()=>{
-    if(ownerStopped||capture||Date.now()>=created+MAX_MS)return;
+    if(ownerStopped||capture||!VIEWING.active(expiresAt))return;
     try{clearSegments();spawnCapture(watchRecovery.format)}
     catch(e){captureState='failed';captureError=String(e.message).slice(0,180)}
    },350);
@@ -119,7 +120,7 @@ function spawnCapture(format=null){
   }
   // Unexpected FFmpeg exits should recover desktop video automatically as well.
   // Bound consecutive attempts to avoid a rapid encoder crash/restart loop.
-  if(!ownerStopped&&Date.now()<created+MAX_MS){
+  if(!ownerStopped&&VIEWING.active(expiresAt)){
    const now=Date.now();
    recoveries=recoveries.filter(t=>now-t<RECOVERY_WINDOW_MS);
    if(recoveries.length<4){
@@ -131,7 +132,7 @@ function spawnCapture(format=null){
      audioError='Audio/video encoder exited; recovering desktop video without sound'}
     captureState='recovering';captureError=null;
     setTimeout(()=>{
-     if(ownerStopped||capture||Date.now()>=created+MAX_MS)return;
+     if(ownerStopped||capture||!VIEWING.active(expiresAt))return;
      try{clearSegments();spawnCapture(nextFormat)}
      catch(e){captureState='failed';captureError=String(e.message).slice(0,180)}
     },450);
@@ -145,7 +146,7 @@ function spawnCapture(format=null){
  return status();
 }
 function startCapture(){
- if(Date.now()>=created+MAX_MS)throw Error('Receiver session has expired');
+ if(!VIEWING.active(expiresAt))throw Error('Receiver session has expired');
  if(captureAlive())return status();
  if(!fs.existsSync(FFMPEG))throw Error('Pinned FFmpeg executable is missing');
  ownerStopped=false;recoveryTried=false;
@@ -283,11 +284,11 @@ async function serve(){
  const server=makeServer();
  await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(PORT,LAN_IP,resolve)});
  const file=path.join(RUNTIME,'private-access.json');
- atomic(file,{createdAt:new Date().toISOString(),expiresAt:new Date(created+MAX_MS).toISOString(),
+ atomic(file,{createdAt:new Date().toISOString(),expiresAt:VIEWING.iso(expiresAt),viewingMode:VIEWING.MODE,
   controllerUrl:ctrlOrigin+'/controller#key='+controlKey,
   receiverUrl:ctrlOrigin+'/tv/'+watchKey,lan:LAN_IP,port:PORT});
  console.log(JSON.stringify({state:'ready',LAN_IP,port:PORT,controllerUrl:ctrlOrigin+'/controller#key='+controlKey,
-  receiverUrl:ctrlOrigin+'/tv/'+watchKey,expiresAt:new Date(created+MAX_MS).toISOString()}));
+  receiverUrl:ctrlOrigin+'/tv/'+watchKey,expiresAt:VIEWING.iso(expiresAt),viewingMode:VIEWING.MODE}));
  let closed=false;
  const exit=()=>{
   if(closed)return;closed=true;stopCapture();server.close();
@@ -297,7 +298,7 @@ async function serve(){
  const monitor=setInterval(()=>{try{watchdogTick()}catch(e){console.warn('HLS_WATCHDOG_ERROR '+String(e.message).slice(0,110))}},1500);
  monitor.unref();
  server.once('close',()=>clearInterval(monitor));
- const timer=setTimeout(()=>{exit();},MAX_MS);timer.unref();
+ if(MAX_MS!==null){const timer=setTimeout(()=>{exit();},MAX_MS);timer.unref()}
 }
 if(require.main===module){
  if(process.env.IM_ACCESSIBILITY_CONFIG_PATH===undefined){

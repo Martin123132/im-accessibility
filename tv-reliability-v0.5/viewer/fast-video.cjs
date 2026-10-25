@@ -137,7 +137,7 @@ function attach(server,{lan,port,origin,token,expiresAt,ffmpegExe,sameSubnet,onD
    ws.once('error',()=>closeStream(item,'TV socket error'));
    item.checker=setInterval(()=>{
     if(item.closed)return;
-    if(Date.now()>=expiresAt||Date.now()-item.lastMediaAt>9500)
+    if((expiresAt!==null&&Date.now()>=expiresAt)||Date.now()-item.lastMediaAt>9500)
      closeStream(item,'Video timed out; use HLS');
    },1700);
    item.checker.unref();
@@ -149,7 +149,7 @@ function attach(server,{lan,port,origin,token,expiresAt,ffmpegExe,sameSubnet,onD
  const handler=(req,socket,head)=>{
   const now=Date.now(),ip=req.socket.remoteAddress;
   if(!sameSubnet(ip)||req.headers.host!==lan+':'+port||req.headers.origin!==origin||
-   req.url!=='/fast/'+token||now>=expiresAt||active||now-lastConnected<2500){
+   req.url!=='/fast/'+token||(expiresAt!==null&&now>=expiresAt)||active||now-lastConnected<2500){
    socket.destroy();return;
   }
   lastConnected=now;

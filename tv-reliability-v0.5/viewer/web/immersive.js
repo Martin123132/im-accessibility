@@ -143,10 +143,10 @@
     report('Desktop video stalled · capture recovery in progress');
     return;
    }
-   expiresAt=Date.parse(s.expiresAt);
+   expiresAt=s.expiresAt===null?null:Date.parse(s.expiresAt);
    if(!s.canArm){mark(false);el('enable').disabled=true;report('Session expired');return}
-   var remain=Math.max(0,Math.floor((expiresAt-Date.now())/60e3));
-   report((fastVideoActive?'FAST DESKTOP':'LIVE DESKTOP')+' · '+remain+'m · Mouse '+(armed?'ON':'OFF')+
+   var remaining=expiresAt===null?'Until Stop':Math.max(0,Math.floor((expiresAt-Date.now())/60e3))+'m';
+   report((fastVideoActive?'FAST DESKTOP':'LIVE DESKTOP')+' · '+remaining+' · Mouse '+(armed?'ON':'OFF')+
    (!fastVideoActive&&reportedGapSeconds>0?' · Video '+Math.round(reportedGapSeconds)+'s behind':''));
   });
  }

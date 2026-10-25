@@ -47,8 +47,9 @@
    if(revision!==statusRevision)return;
    if(err){setArmed(false);show('Control service unavailable');return;}
    setArmed(d.enabled);show(d.enabled?'LIVE · Windows controls ON':(d.canArm?'LIVE · Windows controls OFF':'Session expired'));
-   var secs=Math.max(0,Math.floor((Date.parse(d.expiresAt)-Date.now())/1000));
-   $('session-remaining').textContent='TV video '+Math.floor(secs/3600)+'h '+Math.floor((secs%3600)/60)+'m remaining'+(d.enabled?' · Mouse ON (10-minute lease)':' · Mouse OFF');
+   var secs=d.expiresAt===null?null:Math.max(0,Math.floor((Date.parse(d.expiresAt)-Date.now())/1000));
+   var videoLabel=secs===null?'TV video until Stop':'TV video '+Math.floor(secs/3600)+'h '+Math.floor((secs%3600)/60)+'m remaining';
+   $('session-remaining').textContent=videoLabel+(d.enabled?' · Mouse ON (10-minute lease)':' · Mouse OFF');
    if(d.preview){var age=d.preview.latestCaptureSegmentAgeMs;
     $('preview-age').textContent=d.preview.successfulFrames?('Latest preview video segment '+(age/1000).toFixed(1)+'s old · JPEG '+d.preview.encodeMs+'ms'):'Preparing a desktop picture…';}
    if(!d.canArm){$('arm').disabled=true;result('Session expired. Please request a new temporary receiver link.');}

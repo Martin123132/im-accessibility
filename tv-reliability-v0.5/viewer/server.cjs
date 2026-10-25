@@ -8,6 +8,7 @@ const cp=require('node:child_process');
 const {getFrame,metrics:previewMetrics}=require('./snapshot.cjs');
 const {SpeakerRouter}=require('./speaker-routing.cjs');
 const FastVideo=require('./fast-video.cjs');
+const VIEWING=require('../viewing-policy.cjs');
 const speakerRouter=new SpeakerRouter();
 const SETTINGS=process.env.IM_ACCESSIBILITY_CONFIG_PATH!==undefined
  ?require('../release-config.cjs').readUserSettings():null;
@@ -16,8 +17,8 @@ const ORIGIN='http://'+LAN+':'+PORT,UPSTREAM_DIR=path.resolve(ROOT,'../cast');
 const SOURCE_FILE=path.join(UPSTREAM_DIR,'runtime','private-access.json');
 const NATIVE=path.join(ROOT,'native','TvPointer.exe'),EVIDENCE=path.join(ROOT,'evidence');
 const STOP_SIGNAL=path.resolve(ROOT,'../runtime/stop-request.json');
-const EXPIRES_MS=4*60*60*1000;
-const token=crypto.randomBytes(32).toString('hex'),began=Date.now(),expiresAt=began+EXPIRES_MS;
+const EXPIRES_MS=VIEWING.maxMs();
+const token=crypto.randomBytes(32).toString('hex'),began=Date.now(),expiresAt=VIEWING.deadline(began);
 let enabled=false,enabledUntil=0,lastActionAt=0,inputsThisMinute=0,minuteStart=Date.now(),actions=0;
 let revoked=false,lastReceipt=null,sourceUrl=null,sourceExpires=0;
 let primaryScreen=null,fastVideoController=null;
@@ -29,16 +30,16 @@ function sameSubnet(address){
    require('../release-config.cjs').subnet(address,LAN,SETTINGS.network.mask);
  return address==='127.0.0.1'||address===LAN||address.startsWith('192.168.4.')||address.startsWith('192.168.5.')||address.startsWith('192.168.6.')||address.startsWith('192.168.7.');
 }
-function active(){return !revoked&&Date.now()<expiresAt;}
+function active(){return !revoked&&VIEWING.active(expiresAt)}
 function available(){return active()&&enabled&&Date.now()<enabledUntil;}
 function tokenMatches(value){return typeof value==='string'&&value.length===token.length&&crypto.timingSafeEqual(Buffer.from(value),Buffer.from(token));}
 function safelyReadUpstream(){
  if(!fs.existsSync(SOURCE_FILE))throw Error('Existing TV cast source is not active');
  const info=JSON.parse(fs.readFileSync(SOURCE_FILE,'utf8'));
- if(!info.receiverUrl||Date.now()>=Date.parse(info.expiresAt))throw Error('Original source session has expired');
+ if(!info.receiverUrl||!VIEWING.recordValid(info))throw Error('Original source session has expired');
  const u=new URL(info.receiverUrl);
  if(u.protocol!=='http:'||u.hostname!==LAN||u.port!=='43196'||!/^\/tv\/[a-f0-9]{48}$/.test(u.pathname))throw Error('Unexpected original receiver origin');
- sourceExpires=Date.parse(info.expiresAt);
+ sourceExpires=info.expiresAt===null?null:Date.parse(info.expiresAt);
  sourceUrl='http://'+LAN+':43196/media/'+u.pathname.slice(4)+'/';
 }
 function json(res,code,body){
@@ -87,7 +88,7 @@ function consume(input){
 }
 async function sourceAudioInfo(){
  const offline={available:false,deviceIdHash:null,streamReady:false,streamAgeMs:null,recoveryCount:0};
- if(!sourceUrl||Date.now()>=sourceExpires)return offline;
+ if(!sourceUrl||!VIEWING.active(sourceExpires))return offline;
  try{
   const r=await fetch('http://'+LAN+':43196/health',{signal:AbortSignal.timeout(950),redirect:'error'});
   if(!r.ok)return offline;
@@ -105,16 +106,16 @@ async function sourceAudio(){return (await sourceAudioInfo()).available}
 function state(){return{receiver:'PC Bridge Interactive TV v0.1',
  screen:SETTINGS?(primaryScreen?primaryScreen.width+'x'+primaryScreen.height:'pending native verification'):'1920x1080',
  stream:'1280x720 H.264',
- enabled:available(),canArm:active(),expiresAt:new Date(expiresAt).toISOString(),
+ enabled:available(),canArm:active(),expiresAt:VIEWING.iso(expiresAt),viewingMode:VIEWING.MODE,
  armedUntil:available()?new Date(enabledUntil).toISOString():null,actions,lastAction:lastReceipt,
- sourceReady:!!sourceUrl&&Date.now()<sourceExpires,preview:previewMetrics()}};
+ sourceReady:!!sourceUrl&&VIEWING.active(sourceExpires),preview:previewMetrics()}};
 async function getBody(req){
  if(!/^application\/json(?:;|$)/i.test(req.headers['content-type']||''))throw Error('JSON content type required');
  let s='',size=0;for await(const c of req){size+=c.length;if(size>512)throw Error('JSON too large');s+=c}
  return JSON.parse(s);
 }
 async function proxy(res,name){
- if(!sourceUrl||Date.now()>sourceExpires)return json(res,503,{error:'Source session ended'});
+ if(!sourceUrl||!VIEWING.active(sourceExpires))return json(res,503,{error:'Source session ended'});
  try{
   const r=await fetch(sourceUrl+name,{cache:'no-store',signal:AbortSignal.timeout(3500),redirect:'error'});
   if(!r.ok)return json(res,503,{error:'Upstream video not ready'});
@@ -153,7 +154,7 @@ function createServer(){
    const frameRoute=route.match(/^\/frame\/([a-f0-9]{64})\/([0-9]{1,10})\.jpg$/);
    if(req.method==='GET'&&frameRoute){
     if(!active()||frameRoute[1]!==token)return json(res,403,{error:'Private preview key required'});
-    if(!sourceUrl||Date.now()>sourceExpires)return json(res,503,{error:'Desktop source not active'});
+    if(!sourceUrl||!VIEWING.active(sourceExpires))return json(res,503,{error:'Desktop source not active'});
     try{
      const frame=await getFrame();
      res.writeHead(200,{'Content-Type':'image/jpeg','Cache-Control':'no-store',
@@ -205,7 +206,8 @@ function createServer(){
      enabled=false;return json(res,503,{error:'Live desktop picture is not current; mouse remains disabled'});
     }
     if(input?.confirm!==true||Object.keys(input).length!==1)throw Error('Explicit click to enable required');
-    enabled=true;enabledUntil=Math.min(expiresAt,Date.now()+10*60*1000);
+    enabled=true;enabledUntil=expiresAt===null?Date.now()+VIEWING.MOUSE_LEASE_MS:
+     Math.min(expiresAt,Date.now()+VIEWING.MOUSE_LEASE_MS);
     return json(res,200,state());
    }
    if(route==='/api/disarm'){
@@ -255,10 +257,10 @@ async function serve(){
  await new Promise((resolve,reject)=>{srv.once('error',reject);srv.listen(PORT,LAN,resolve)});
  const url=ORIGIN+'/tv/'+token;
  fs.writeFileSync(path.join(ROOT,'runtime','session.json'),JSON.stringify({
-  createdAt:new Date(began).toISOString(),expiresAt:new Date(expiresAt).toISOString(),
-  url,port:PORT,sourcePort:43196,control:'mouse-only, opt-in on TV, 10-minute arm',sourceExpires:new Date(sourceExpires).toISOString()
+  createdAt:new Date(began).toISOString(),expiresAt:VIEWING.iso(expiresAt),viewingMode:VIEWING.MODE,
+  url,port:PORT,sourcePort:43196,control:'mouse-only, opt-in on TV, 10-minute arm',sourceExpires:VIEWING.iso(sourceExpires)
  },null,2)+'\n',{flag:'wx'});
- console.log(JSON.stringify({ready:true,port:PORT,expiresAt:new Date(expiresAt).toISOString(),url}));
+ console.log(JSON.stringify({ready:true,port:PORT,expiresAt:VIEWING.iso(expiresAt),viewingMode:VIEWING.MODE,url}));
  const maintenance=setInterval(async()=>{
   try{
    if(!active()||!(await sourceAudio()))speakerRouter.restore();
@@ -275,7 +277,7 @@ async function serve(){
  process.once('SIGTERM',shutdown);
  process.once('SIGINT',shutdown);
  srv.once('close',()=>{clearInterval(maintenance);speakerRouter.restore()});
- const expire=setTimeout(shutdown,EXPIRES_MS);expire.unref();
+ if(EXPIRES_MS!==null){const expire=setTimeout(shutdown,EXPIRES_MS);expire.unref()}
 }
 if(require.main===module){
  if(process.env.IM_ACCESSIBILITY_CONFIG_PATH===undefined){

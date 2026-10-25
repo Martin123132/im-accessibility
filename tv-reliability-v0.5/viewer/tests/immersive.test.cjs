@@ -120,7 +120,8 @@ test('letterboxing rejects clicks on black borders without forwarding to Windows
 });
 test('viewer maintains original time-limited authorisation and non-Codex backend',()=>{
  assert.match(server,/tokenMatches\(auth\)\|\|!active\(\)/);
- assert.match(server,/enabledUntil=Math\.min\(expiresAt,Date\.now\(\)\+10\*60\*1000\)/);
+ assert.match(server,/enabledUntil=expiresAt===null\?Date\.now\(\)\+VIEWING\.MOUSE_LEASE_MS/);
+  assert.match(server,/Math\.min\(expiresAt,Date\.now\(\)\+VIEWING\.MOUSE_LEASE_MS\)/);
  assert.match(server,/const media=route\.match/);
  assert.doesNotMatch(code,/execSync|cmd\.exe|Codex|keyboard/i);
 });

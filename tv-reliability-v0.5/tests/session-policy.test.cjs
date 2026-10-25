@@ -20,20 +20,23 @@ test('TV LAN policy fixture does not alter host networking',()=>{
  assert.equal(cast.LAN_IP,'192.168.4.36');
  assert.equal(cast.PORT,43196);
 });
-test('private TV video, viewer and host have explicit four-hour maximum',()=>{
+test('legacy unconfigured TV video, viewer and host remain four-hour bounded',()=>{
  const fourHours=4*60*60*1000,now=Date.now();
  assert.equal(host.MAX_MS,fourHours);
  for(const state of [cast.status(),viewer.state()]){
   const left=Date.parse(state.expiresAt)-now;
   assert.ok(left>fourHours-10000&&left<=fourHours,'Expected four-hour bounded session');
  }
- assert.match(read('cast/server.cjs'),/MAX_MS=4\*60\*60\*1000/);
- assert.match(read('viewer/server.cjs'),/EXPIRES_MS=4\*60\*60\*1000/);
+ assert.match(read('cast/server.cjs'),/MAX_MS=VIEWING\.maxMs\(\)/);
+ assert.match(read('viewer/server.cjs'),/EXPIRES_MS=VIEWING\.maxMs\(\)/);
+ assert.match(read('viewing-policy.cjs'),/LEGACY_MAX_MS=4\*60\*60\*1000/);
 });
 test('mouse remains disarmed by default and requires separate renewable ten-minute consent',()=>{
  assert.equal(viewer.state().enabled,false);
  const code=read('viewer/server.cjs');
- assert.match(code,/enabledUntil=Math\.min\(expiresAt,Date\.now\(\)\+10\*60\*1000\)/);
+ assert.match(code,/enabledUntil=expiresAt===null\?Date\.now\(\)\+VIEWING\.MOUSE_LEASE_MS/);
+ assert.match(code,/Math\.min\(expiresAt,Date\.now\(\)\+VIEWING\.MOUSE_LEASE_MS\)/);
+ assert.match(read('viewing-policy.cjs'),/MOUSE_LEASE_MS=10\*60\*1000/);
  assert.match(code,/if\(!available\(\)\)throw Error\('Controls disabled or expired'\)/);
  assert.match(code,/input\?\.confirm!==true/);
  assert.match(read('viewer/web/viewer.js'),/Mouse ON \(10-minute lease\)/);

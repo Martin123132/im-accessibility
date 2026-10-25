@@ -4,9 +4,9 @@
 const fs=require('node:fs'),path=require('node:path');
 const core=require('./package-core.cjs');
 const repo=path.resolve(__dirname,'..');
-const version='v0.3.16-audio-clockfix-acceptance-preview';
+const version='v0.3.18-owner-controlled-private-preview';
 const tv=[
- 'lg-pair.cjs','lg-active-view.cjs','release-config.cjs','resume.cjs','resume-host.cjs',
+ 'lg-pair.cjs','lg-active-view.cjs','release-config.cjs','viewing-policy.cjs','resume.cjs','resume-host.cjs',
  'cast/lan.cjs','cast/lg-launch.cjs','cast/package.json','cast/package-lock.json',
  'cast/server.cjs','cast/sound.cjs','cast/native/LoopbackCapture.cs.txt',
  'cast/native/LoopbackCapture.exe','cast/native/SpeakerEndpoint.cs.txt',
@@ -124,7 +124,8 @@ function build(out){
    'Fast mode now limits hardware decoder seeks and MSE memory pruning, keeping at least eight seconds behind the playhead and twelve seconds near the live edge.',
    'The same private fast-video WebSocket reports decoder frame counts for read-only diagnostics; no Windows control actions or screen data are sent.',
    'Fast-video WebSocket disconnection also revokes Windows mouse access, protecting against clicks on a stale desktop picture.',
-   'During an active four-hour viewing session, the optional LG activity guard sends only bounded one-pixel TV pointer movements while the TV browser and video are active.',
+   'In an owner-started configured session, video continues until explicit Stop, a critical service exit or Windows shutdown; no four-hour automatic expiry. Historical unconfigured tests remain time-limited.',
+   'The optional LG activity guard sends only bounded one-pixel TV pointer movements while the validated LG browser and live video are active.',
    'This does not disable OLED protection; Stop or switching away from the browser ends the signal.',
    'Stop.cmd requests shutdown; Uninstall.cmd removes only unchanged installed files.',
    'PC Bridge and Codex are NOT bundled. Binary provenance and Windows 11 TV acceptance pending.',

@@ -56,7 +56,11 @@ test('opt-in release settings bind the TV modules to one exact owner-selected LA
   const key='a'.repeat(48);
   assert.equal(launch.isAllowedTarget('http://10.50.2.10:43196/tv/'+key),true);
   assert.equal(launch.isAllowedTarget('http://10.50.3.10:43196/tv/'+key),false);
-  assert.equal(host.MAX_MS,4*60*60*1000);
+  assert.equal(host.MAX_MS,null);
+  assert.equal(host.VIEWING_MODE,'until-stopped');
+  assert.equal(cast.status().expiresAt,null);
+  assert.equal(viewer.state().expiresAt,null);
+  assert.equal(viewer.state().enabled,false);
   assert.equal(typeof control.resume,'function');
   assert.equal(typeof snapshot.getFrame,'function');
 
@@ -82,5 +86,6 @@ test('source keeps release mode gated behind explicitly enabled per-user config'
  assert.match(host,/SETTINGS\.executables\.nodeExe/);
  const viewer=fs.readFileSync(path.resolve(__dirname,'../viewer/server.cjs'),'utf8');
  assert.match(viewer,/primaryScreen/);
- assert.match(viewer,/enabledUntil=Math\.min\(expiresAt,Date\.now\(\)\+10\*60\*1000\)/);
+ assert.match(viewer,/enabledUntil=expiresAt===null\?Date\.now\(\)\+VIEWING\.MOUSE_LEASE_MS/);
+ assert.match(viewer,/Math\.min\(expiresAt,Date\.now\(\)\+VIEWING\.MOUSE_LEASE_MS\)/);
 });

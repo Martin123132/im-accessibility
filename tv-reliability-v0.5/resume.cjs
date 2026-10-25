@@ -51,13 +51,13 @@ async function resume(){
  if(x.video!=='stopped'||x.viewer!=='stopped'){
   throw Error('A partial TV session is still bound to a port. Refusing to overwrite it. Inspect the session status.');
  }
- console.log('Starting independent four-hour Windows desktop video and short-lease LG control...');
+ console.log('Starting owner-controlled Windows desktop viewing with short-lease LG mouse permission...');
  exactTaskStart();
  for(let i=0;i<80;i++){
   await sleep(450);
   const result=await status();
   if(result.running){
-   console.log('PC Bridge TV ready. Viewer expires '+result.expiresAt+'.');
+   console.log(result.expiresAt?'PC Bridge TV ready. Viewer expires '+result.expiresAt+'.':'PC Bridge TV ready. Viewing continues until Stop or a service failure.');
    console.log('If the TV remains on its previous page, open Resume again or use the TV browser to refresh.');
    return;
   }
