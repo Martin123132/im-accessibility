@@ -4,7 +4,7 @@
 const fs=require('node:fs'),path=require('node:path');
 const core=require('./package-core.cjs');
 const repo=path.resolve(__dirname,'..');
-const version='v0.3.20-session-audio-private-preview';
+const version='v0.3.21-independent-audio-guard-private-preview';
 const tv=[
  'lg-pair.cjs','lg-active-view.cjs','release-config.cjs','viewing-policy.cjs','resume.cjs','resume-host.cjs',
  'cast/lan.cjs','cast/lg-launch.cjs','cast/package.json','cast/package-lock.json',
@@ -65,6 +65,8 @@ function build(out){
   copy(path.join(__dirname,'uninstall.cjs'),'Uninstall.cjs');
   copy(path.join(__dirname,'stop-session.cjs'),'stop-session.cjs');
   copy(path.join(__dirname,'status-session.cjs'),'status-session.cjs');
+  // Optional on-demand, per-user guardian. Packaging does not register it.
+  copy(path.join(__dirname,'windows-oneclick','audio-guard-task.ps1'),'audio-guard-task.ps1');
   function add(name,lines){
    const value=Buffer.from(launcher(lines),'utf8');
    fs.writeFileSync(path.join(payload,name),value,{flag:'wx'});
@@ -111,6 +113,9 @@ function build(out){
    'Run Setup.cmd in the installed folder to select your PC adapter, LG TV and tool locations.',
    'Run Start.cmd only after owner-confirmed setup; it checks TV identity and refuses active/uncertain sessions.',
    'Start.cmd keeps speaker audio OFF; StartSound.cmd explicitly opts into Windows speaker-output audio.',
+   'v0.3.21: configured TV-only muting requires a separately approved independent Windows audio guardian. Until enabled, attempts to mute laptop sound safely fail.',
+   'Optional task setup (owner action only): use audio-guard-task.ps1 -Action Enable -OwnerConsent YES after review. Read-only Status and owner-approved Disable are available.',
+   'Installing the application does not register, start or schedule any Windows task. The guardian never opens or controls the TV.',
    'Experimental v0.3.16 rebuild of LoopbackCapture.exe fixes Windows silent-audio PCM pacing (48kHz output), provenance in LG_AUDIO_CLOCKFIX_2026-10-24.md.',
    'Sound starts on TV only and temporarily mutes the selected laptop speaker output. Select Laptop sound ON to use both rooms.',
    'Laptop-only sound returns when TV playback is disabled. End, closing the TV or losing its heartbeat restores the original Windows speaker mute state.',
