@@ -3,6 +3,7 @@
 // This owns ONLY its own cast/viewer children. It does not stop other PC Bridge services.
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto');
 const VIEWING=require('./viewing-policy.cjs');
+const {SpeakerRouter}=require('./viewer/speaker-routing.cjs');
 const ROOT=__dirname,RUNTIME=path.join(ROOT,'runtime'),CAST=path.join(ROOT,'cast'),VIEWER=path.join(ROOT,'viewer');
 const SETTINGS=process.env.IM_ACCESSIBILITY_CONFIG_PATH!==undefined
  ?require('./release-config.cjs').readUserSettings():null;
@@ -12,7 +13,7 @@ const STATE=path.join(RUNTIME,'state.json'),STOP=path.join(RUNTIME,'stop-request
 const RUN=crypto.randomBytes(8).toString('hex'),START=Date.now(),END=VIEWING.deadline(START);
 const logPath=path.join(RUNTIME,'host-'+RUN+'.log');
 const childProcs=[],delay=ms=>new Promise(r=>setTimeout(r,ms));
-let status={runId:RUN,state:'starting',createdUtc:new Date(START).toISOString(),expectedEndUtc:VIEWING.iso(END),viewingMode:VIEWING.MODE,
+let status={runId:RUN,supervisorPid:process.pid,state:'starting',createdUtc:new Date(START).toISOString(),expectedEndUtc:VIEWING.iso(END),viewingMode:VIEWING.MODE,
  stream:'starting',viewer:'waiting',lg:'not-attempted',mouseLeaseMinutes:10,videoSessionHours:MAX_MS===null?null:4},stopping=false,reason='';
 fs.mkdirSync(RUNTIME,{recursive:true});
 function log(msg){
@@ -151,11 +152,22 @@ async function killChild({child,name}){
   log(name+' forced task-tree exit code '+r.status);
  }catch(e){log(name+' task-tree cleanup error '+String(e.message).slice(0,100))}
 }
+function restoreAudioAfterViewerExit({routerFactory=()=>new SpeakerRouter(),logFn=log}={}){
+ // The viewer may have been terminated before its SIGTERM handler restored
+ // the exact Windows speaker endpoint. Recover from its bounded journal.
+ try{
+  const result=routerFactory().recover();
+  if(!result.recovered){logFn('LAPTOP_AUDIO_RESTORE_PENDING '+String(result.reason).slice(0,140));return false}
+  logFn(result.hadJournal?'LAPTOP_AUDIO_RESTORED':'No laptop audio journal to restore');
+  return true;
+ }catch(e){logFn('LAPTOP_AUDIO_RESTORE_PENDING '+String(e.message||e).slice(0,140));return false}
+}
 async function cleanup(why){
  if(stopping)return;stopping=true;
  log('Closing only owner session: '+why);
  update({state:'stopping',stopReason:why,lg:'closed'});
  for(const child of childProcs.slice().reverse())await killChild(child);
+ restoreAudioAfterViewerExit();
  try{fs.unlinkSync(path.join(VIEWER,'runtime','session.json'))}catch{}
  try{fs.unlinkSync(path.join(CAST,'runtime','private-access.json'))}catch{}
  try{fs.unlinkSync(STOP)}catch{}
@@ -183,4 +195,4 @@ if(require.main===module){
   process.exitCode=1;
  }else main().catch(e=>{log('Fatal host error '+e.message);process.exitCode=1});
 }
-module.exports={MAX_MS,VIEWING_MODE:VIEWING.MODE,archiveIfExists,reachable};
+module.exports={MAX_MS,VIEWING_MODE:VIEWING.MODE,archiveIfExists,reachable,restoreAudioAfterViewerExit};

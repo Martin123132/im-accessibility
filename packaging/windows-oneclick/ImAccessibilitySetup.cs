@@ -17,7 +17,7 @@ using Microsoft.Win32;
 namespace ImAccessibilityInstaller {
  static class InstallCore {
   const string PayloadResource="ImAccessibilityInstallerPayload";
-  public const string Version="v0.3.19-cinema-compact-private-preview";
+  public const string Version="v0.3.20-session-audio-private-preview";
   public static string LocalData {
    get {string e=Environment.GetEnvironmentVariable("LOCALAPPDATA");
     return String.IsNullOrWhiteSpace(e)?Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData):e;}
@@ -163,7 +163,7 @@ namespace ImAccessibilityInstaller {
    using(var key=Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\ImAccessibility")){
     if(key==null)throw new Exception("Windows uninstall registry unavailable.");
     key.SetValue("DisplayName","I'm-accessibility");
-    key.SetValue("DisplayVersion","0.3.18");
+    key.SetValue("DisplayVersion","0.3.20");
     key.SetValue("Publisher","I'm-accessibility project");
     key.SetValue("InstallLocation",root);
     key.SetValue("UninstallString","\""+Path.Combine(root,"ImAccessibility-Uninstall.exe")+"\"");

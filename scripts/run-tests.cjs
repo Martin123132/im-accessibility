@@ -30,6 +30,7 @@ const tv = [
 const packageTests=[
  'packaging/tests/portable-install.test.cjs',
  'packaging/tests/first-run.test.cjs',
+ 'packaging/tests/stale-session-recovery.test.cjs',
  'packaging/windows-oneclick/installer-source.test.cjs',
  'packaging/windows-oneclick/audit-release.test.cjs',
  'packaging/windows-oneclick/native-source.test.cjs'

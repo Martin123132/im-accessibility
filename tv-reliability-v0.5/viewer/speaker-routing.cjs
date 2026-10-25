@@ -4,10 +4,13 @@
 // The ORIGINAL Windows mute state is restored on session end / TV heartbeat expiry.
 // Only the exact playback endpoint can be touched; never changes volume or capture devices.
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto');
+const VIEWING=require('../viewing-policy.cjs');
 const ROOT=__dirname,NATIVE=path.resolve(ROOT,'../cast/native/SpeakerEndpoint.exe');
 const JOURNAL=path.join(ROOT,'runtime','speaker-route.json');
 const WATCH=path.join(ROOT,'speaker-route-watch.cjs');
-const HEARTBEAT_TIMEOUT_MS=22000, MAX_TV_SESSION_MS=4*60*60*1000;
+// The audio restoration lifetime must follow the *same* owner/legacy policy as video.
+// A null deadline means: keep the guard until journal removal or lost heartbeat.
+const HEARTBEAT_TIMEOUT_MS=22000, MAX_TV_SESSION_MS=VIEWING.maxMs();
 function isBit(v){return v===true||v===false}
 function validDeviceId(v){return typeof v==='string'&&/^[0-9a-f]{64}$/.test(v)}
 function runNative(binary,args,spawnSync=cp.spawnSync){
@@ -95,6 +98,17 @@ class SpeakerRouter{
    try{this.fs.unlinkSync(this.journal)}catch{}
    throw Error(this.lastError);
   }
+  // Start the safety watcher before altering playback mute: if protection cannot
+  // start, fail closed with the original Windows setting still unchanged.
+  if(!this.guardStarted){
+   this.journalSave(now);
+   try{this.watchFn();this.guardStarted=true}catch(e){
+    this.lastError=String(e.message).slice(0,120);
+    this.ownership=null;this.route='laptop-only';
+    try{this.fs.unlinkSync(this.journal)}catch{}
+    throw Error('Cannot change playback without restoration guard: '+this.lastError);
+   }
+  }
   if(current.muted!==target){
    // Persist intent BEFORE mutating Windows so a crash can still restore it.
    record.appliedMuted=target;
@@ -109,13 +123,6 @@ class SpeakerRouter{
   }
   this.route=mode;this.lastPulse=now;this.lastError=null;
   this.journalSave(now);
-  if(!this.guardStarted){
-   try{this.watchFn();this.guardStarted=true}catch(e){
-    this.lastError=String(e.message).slice(0,120);
-    this.restore();
-    throw Error('Cannot enter TV routing without restoration guard: '+this.lastError);
-   }
-  }
   if(mode==='laptop-only'){ /* explicitly restores listening to laptop */
    // Keep ownership until End to reinstate the original (possibly muted) speaker state.
   }
@@ -129,7 +136,7 @@ class SpeakerRouter{
  expire(){
   if(!this.ownership)return false;
   if(this.clock()-this.lastPulse < HEARTBEAT_TIMEOUT_MS &&
-     this.clock()-this.ownership.startedAt < MAX_TV_SESSION_MS)return false;
+     (MAX_TV_SESSION_MS===null||this.clock()-this.ownership.startedAt < MAX_TV_SESSION_MS))return false;
   return this.restore();
  }
  restore(){

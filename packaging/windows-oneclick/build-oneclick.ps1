@@ -78,7 +78,7 @@ foreach($file in @('Setup.cmd','Start.cmd','StartSound.cmd','Status.cmd')){
 [IO.File]::WriteAllText((Join-Path $stage 'Uninstall.cmd'),'@echo off'+$crlf+'start "" "%~dp0ImAccessibility-Uninstall.exe"'+$crlf,[Text.Encoding]::ASCII)
 [IO.File]::WriteAllText((Join-Path $stage 'Stop.cmd'),'@echo off'+$crlf+'"%~dp0Runtime\node.exe" "%~dp0stop-session.cjs"'+$crlf+'exit /b %errorlevel%'+$crlf,[Text.Encoding]::ASCII)
 $notice=@(
- 'ImAccessibility v0.3.19 CINEMA PRIVATE single-file click installer',
+ 'ImAccessibility v0.3.20 AUDIO-STABLE PRIVATE single-file click installer',
  'Install and launch with a graphical Windows app; TV never starts during install.',
  'Node.js and FFmpeg binaries are bundled with this local preview.',
  'Initial supported LG model: OLED55CX6LA.',
@@ -95,14 +95,14 @@ $inventory=@(foreach($item in $files){[pscustomobject]@{
  sha256=(Get-FileHash -LiteralPath $item.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
 }})
 $manifest=[pscustomobject]@{
- format=1;product='ImAccessibility';version='v0.3.19-cinema-compact-private-preview';files=$inventory
+ format=1;product='ImAccessibility';version='v0.3.20-session-audio-private-preview';files=$inventory
 }
 $man=Join-Path $stage 'installer-manifest.json'
 [IO.File]::WriteAllText($man,($manifest|ConvertTo-Json -Depth 8)+[Environment]::NewLine,(New-Object Text.UTF8Encoding($false)))
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $zip=Join-Path $out 'ImAccessibilityEmbeddedPayload.zip'
 [IO.Compression.ZipFile]::CreateFromDirectory($stage,$zip,[IO.Compression.CompressionLevel]::Optimal,$false)
-$exe=Join-Path $out 'ImAccessibility-Setup-v0.3.19-CINEMA-PRIVATE-PREVIEW.exe'
+$exe=Join-Path $out 'ImAccessibility-Setup-v0.3.20-AUDIO-STABLE-PRIVATE-PREVIEW.exe'
 $compilerArgs=@('/nologo','/target:winexe','/platform:x64',('/out:'+$exe))
 foreach($ref in @('System.Windows.Forms.dll','System.Drawing.dll','System.Web.Extensions.dll',
  'System.IO.Compression.dll','System.IO.Compression.FileSystem.dll','Microsoft.CSharp.dll')){
