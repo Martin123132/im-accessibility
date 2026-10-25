@@ -297,6 +297,7 @@ async function serve(){
  }
  await new Promise((resolve,reject)=>{srv.once('error',reject);srv.listen(PORT,LAN,resolve)});
  const url=ORIGIN+'/tv/'+token;
+ fs.mkdirSync(path.join(ROOT,'runtime'),{recursive:true});
  fs.writeFileSync(path.join(ROOT,'runtime','session.json'),JSON.stringify({
   createdAt:new Date(began).toISOString(),expiresAt:VIEWING.iso(expiresAt),viewingMode:VIEWING.MODE,
   url,port:PORT,sourcePort:43196,control:'mouse-only, opt-in on TV, 10-minute arm',sourceExpires:VIEWING.iso(sourceExpires)
