@@ -1,0 +1,15 @@
+# TV-first portable Windows preview
+
+This stage builds a **per-user Windows source-and-dependency bundle**. It is not yet a signed v1 installer or an independent device-acceptance result. No installed PC Bridge or Codex executable, Node runtime, FFmpeg executable, private pairing key or research data is bundled.
+
+The included LG libraries (`lgtv2@2.0.2`, `ws@8.22.0`) are MIT-licensed and their LICENSE files are copied into the bundle. The small TvPointer.exe comes from the existing source checkpoint; its independent rebuild/signing provenance remains an explicit **release blocker**. Do not distribute the bundle as a final signed release.
+
+The package contains `install.cjs`, a checksum manifest and a `payload/` tree. The payload now includes a terminal-based guided **Setup.cmd** and `first-run.cjs`, plus an independently guarded **Start.cmd**/`launch-host.cjs` launcher. `node install.cjs` installs known files to `%LOCALAPPDATA%\Programs\ImAccessibility`, refusing to overwrite an existing install. It does not create tasks, services, shortcuts outside its own directory, networking changes or pairing. The installed folder contains Setup.cmd, Start.cmd, Stop.cmd, Status.cmd and Uninstall.cmd. User settings are separate, in `%LOCALAPPDATA%\ImAccessibility\settings.json`.
+
+On installation, no TV or AI process is launched. Setup.cmd also never contacts the television or starts services; it lists local adapters, validates a chosen LG IP and executable paths, then stores configuration only after explicit confirmation. Start.cmd refuses missing/uncertain settings, a missing selected TV, an active/stale session or a pending Stop. It launches the exact validated Node executable rather than picking an unverified runtime for the TV supervisor. The Start command will validate settings before asking Windows to start the owner's separate on-demand TV host. Stop will request shutdown of the owned TV session without needing an active network adapter. Uninstall refuses modified/unknown runtime files instead of deleting unrelated data.
+
+Run `node packaging/build-preview.cjs <output-dir>` from the repository to construct the content-hashed preview. Then use Windows PowerShell `Compress-Archive` for a transport ZIP. The **manifest fingerprints the payload contents**; the ZIP hash is captured separately as an artifact checksum. Byte-identical ZIP rebuilds are not claimed.
+
+Source/bundle tests run only against disposable directories and never activate a TV stream or Codex session. The first-run tests exercise wrong subnets, missing dependencies, symlinks, duplicate configuration, stale sessions and the exact verified launch path using fake process injection. The interactive terminal prompts have not yet had independent usability acceptance. Follow [configuration guidance](../docs/CONFIGURATION.md) and the [v1 acceptance gates](../docs/V1_RELEASE_PLAN.md).
+
+Before general release: clean Windows 11 install, binary provenance and signing review, actual LG acceptance, guided setup, Start Menu integration and installer recovery testing remain open.

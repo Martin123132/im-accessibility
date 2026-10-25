@@ -4,7 +4,24 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
 const root=path.resolve(__dirname,'..');
 const required=[
   'README.md','docs/SETUP.md','docs/V1_RELEASE_PLAN.md','docs/SECURITY.md',
-  'tv-reliability-v0.5/cast/server.cjs','tv-reliability-v0.5/viewer/server.cjs',
+  'tv-reliability-v0.5/cast/server.cjs','tv-reliability-v0.5/cast/sound.cjs',
+  'tv-reliability-v0.5/cast/native/LoopbackCapture.cs.txt',
+  'tv-reliability-v0.5/cast/native/LoopbackCapture.exe',
+  'tv-reliability-v0.5/cast/native/SpeakerEndpoint.cs.txt',
+  'tv-reliability-v0.5/cast/native/SpeakerEndpoint.exe',
+  'tv-reliability-v0.5/viewer/speaker-routing.cjs',
+  'tv-reliability-v0.5/viewer/speaker-route-watch.cjs',
+  'tv-reliability-v0.5/viewer/server.cjs',
+  'tv-reliability-v0.5/viewer/fast-video.cjs',
+  'tv-reliability-v0.5/viewer/web/fast-video.js',
+  'tv-reliability-v0.5/lg-active-view.cjs',
+  'tv-reliability-v0.5/viewer/web/immersive.html',
+  'tv-reliability-v0.5/viewer/web/immersive.js',
+  'tv-reliability-v0.5/viewer/web/immersive.css',
+  'tv-reliability-v0.5/release-config.cjs',
+  'packaging/package-core.cjs','packaging/build-preview.cjs',
+  'packaging/install.cjs','packaging/uninstall.cjs',
+  'packaging/first-run.cjs','packaging/launch-host.cjs',
   'codex-chat-control-pilot-20261012/desk.cjs',
   'codex-chat-control-pilot-20261012/draft-ledger.cjs'
 ];
