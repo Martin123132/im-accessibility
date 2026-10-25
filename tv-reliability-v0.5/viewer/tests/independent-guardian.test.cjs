@@ -75,6 +75,8 @@ test('Task manager registration requires an exact owner approval; task code cont
  assert.match(ps,/New-ScheduledTaskPrincipal/);
  assert.match(ps,/-RunLevel Limited/);
  assert.match(ps,/Get-FileHash/);
+ assert.match(ps,/SecurityIdentifier/);
+ assert.match(ps,/Audio guardian must have no automatic task triggers/);
  assert.ok(ps.includes("if(Test-Path -LiteralPath $journal)"));
  assert.doesNotMatch(ps,/system\\.launcher|powershell -enc|Invoke-WebRequest|Start-Process.+resume-host/);
 });

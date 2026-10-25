@@ -46,9 +46,17 @@ function Assert-OwnedTask($task){
   throw 'A different Windows task already uses the audio guardian name; refusing overwrite'
  }
  $owner=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value
- if($task.Principal.UserId -ne $owner -or $task.Principal.RunLevel -ne 'Limited' -or
+ try{
+  $entry=[string]$task.Principal.UserId
+  if($entry -match '^S-1-'){$taskOwner=$entry}
+  else{$taskOwner=([Security.Principal.NTAccount]::new($entry).Translate([Security.Principal.SecurityIdentifier])).Value}
+ }catch{throw 'Unable to verify audio guardian task owner'}
+ if($taskOwner -ne $owner -or $task.Principal.RunLevel -ne 'Limited' -or
     $task.Principal.LogonType -ne 'Interactive'){
   throw 'Unexpected scheduled task owner or permission level'
+ }
+ if(@($task.Triggers | Where-Object {$_ -ne $null}).Count -ne 0){
+  throw 'Audio guardian must have no automatic task triggers'
  }
  return $true
 }
