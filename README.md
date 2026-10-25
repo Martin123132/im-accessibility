@@ -8,11 +8,19 @@
 
 **Public source preview · Windows + LG webOS · Human-led AI assistance**
 
-[Get started](docs/SETUP.md) · [Features](docs/FEATURES.md) · [7-day release sprint](docs/V1_7_DAY_SPRINT_2026-10-20.md) · [V1 release plan](docs/V1_RELEASE_PLAN.md) · [Safety](docs/SECURITY.md)
+[Current working version](docs/WHAT_IS_WORKING_2026-10-25.md) · [Get started](docs/SETUP.md) · [Features](docs/FEATURES.md) · [V1 release plan](docs/V1_RELEASE_PLAN.md) · [Safety](docs/SECURITY.md)
 
 </div>
 
 ---
+
+## Which version is current?
+
+**`main` contains the tested LG v0.3.16 source-preview baseline** (merged [PR #21](https://github.com/Martin123132/im-accessibility/pull/21)): full-screen H.264/AAC desktop, guarded Magic Remote controls, speaker clock correction and portable setup. The LG browser has previously shown a memory error during longer playback, so this is **not** a finished public release.
+
+**[Draft PR #24](https://github.com/Martin123132/im-accessibility/pull/24) is the only open development PR.** It contains the later v0.3.17 browser-memory cleanup candidate and one-click Windows installer **source**. Private Windows installer EXEs have passed isolated tests, but **no signed, approved public installer download exists yet**. Merging GitHub source does **not** replace an installed LG app.
+
+**[Read the exact working-version and PR status →](docs/WHAT_IS_WORKING_2026-10-25.md)**
 
 ## What if the computer worked around you?
 
@@ -75,7 +83,7 @@ The television can keep showing the desktop while mouse-control permission expir
 
 ## Test the source preview
 
-**This is not yet a one-click installer.** The separately installed PC Bridge application, the owner’s LG pairing, Windows task and local device settings are not included in the repository.
+**This default branch is not an approved one-click installer download.** The newer graphical installer **source** is being reviewed in [draft #24](https://github.com/Martin123132/im-accessibility/pull/24), while local unsigned binaries remain private. The separately installed PC Bridge application, the owner’s LG pairing, Windows task and local device settings are not included in the repository.
 
 On Windows with Node.js 24 installed:
 
