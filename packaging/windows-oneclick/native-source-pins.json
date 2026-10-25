@@ -1,0 +1,43 @@
+{
+  "format": 1,
+  "description": "Pinned native Windows C# helpers in verified ImAccessibility v0.3.17 private preview. PE timestamp and CLR module MVID change on each CSC build; binary identity otherwise matches the checked-in source.",
+  "compiler": "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe",
+  "flags": [
+    "/nologo",
+    "/target:exe",
+    "/optimize+",
+    "/platform:anycpu"
+  ],
+  "entries": [
+    {
+      "name": "LoopbackCapture",
+      "source": "tv-reliability-v0.5/cast/native/LoopbackCapture.cs.txt",
+      "binary": "tv-reliability-v0.5/cast/native/LoopbackCapture.exe",
+      "compiledAssembly": "LoopbackCapture-clockfix-t11.exe",
+      "sourceSHA256": "2c712d0ef1a58d1f63d11b6489b1cfc17f51bf071ef14116ec618b393a1c245e",
+      "binarySHA256": "e0be8c56eddadef0f604906faa8cfe7cd7a120782d9cc24d55ceaab83f7a5995",
+      "size": 10240,
+      "moduleGuidOffset": 6952
+    },
+    {
+      "name": "SpeakerEndpoint",
+      "source": "tv-reliability-v0.5/cast/native/SpeakerEndpoint.cs.txt",
+      "binary": "tv-reliability-v0.5/cast/native/SpeakerEndpoint.exe",
+      "compiledAssembly": "SpeakerEndpoint.exe",
+      "sourceSHA256": "0f8d271971c819a6adcfe87abc163d65c2a953602a5fc71753008c6317a7b1c5",
+      "binarySHA256": "6c4679f14eaa3883bfb52f51a02fdfe2e29c765bbc4ade33351552f47afc7486",
+      "size": 8704,
+      "moduleGuidOffset": 5832
+    },
+    {
+      "name": "TvPointer",
+      "source": "tv-reliability-v0.5/viewer/native/TvPointer.cs",
+      "binary": "tv-reliability-v0.5/viewer/native/TvPointer.exe",
+      "compiledAssembly": "TvPointer.exe",
+      "sourceSHA256": "15750d7e32600dba0b1c0fea3bdd277a398f20b2f97170bd4f4e24fc60ff12d4",
+      "binarySHA256": "c9d058fd4b98683466245a836dd040afda9df254c6f703be4632f94c6181c064",
+      "size": 7168,
+      "moduleGuidOffset": 4548
+    }
+  ]
+}

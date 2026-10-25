@@ -29,7 +29,8 @@ const packageTests=[
  'packaging/tests/portable-install.test.cjs',
  'packaging/tests/first-run.test.cjs',
  'packaging/windows-oneclick/installer-source.test.cjs',
- 'packaging/windows-oneclick/audit-release.test.cjs'
+ 'packaging/windows-oneclick/audit-release.test.cjs',
+ 'packaging/windows-oneclick/native-source.test.cjs'
 ];
 const selected=(mode==='codex'?codex:mode==='tv'?tv:mode==='package'?packageTests:[...codex,...tv,...packageTests]);
 for (const relative of selected) {

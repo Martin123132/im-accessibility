@@ -450,14 +450,22 @@
                               {
                                   "name":  "x264",
                                   "upstreamVersion":  "v0.165.3223",
-                                  "correspondingSourceArchived":  false,
-                                  "buildRecipeVerified":  false
+                                  "correspondingSourceArchived":  true,
+                                  "buildRecipeVerified":  false,
+                                  "sourceRevision":  "0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee",
+                                  "sourceURL":  "https://code.videolan.org/videolan/x264/-/commit/0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee",
+                                  "privateArchiveSHA256":  "7f091b0e530cee2800d25843307938bcda71b069838240a94d0409acc5296f0f",
+                                  "correspondenceConfidence":  "Candidate source commit consistent with upstream 0.165.3223; exact Gyan build checkout not proven"
                               },
                               {
                                   "name":  "x265",
                                   "upstreamVersion":  "4.3-6-g9ddc216",
-                                  "correspondingSourceArchived":  false,
-                                  "buildRecipeVerified":  false
+                                  "correspondingSourceArchived":  true,
+                                  "buildRecipeVerified":  false,
+                                  "sourceRevision":  "9ddc216defd1fa85535cb91456a9f6c09a2c3abc",
+                                  "sourceURL":  "https://github.com/Multicorewareinc/x265/commit/9ddc216defd1fa85535cb91456a9f6c09a2c3abc",
+                                  "privateArchiveSHA256":  "ef5033bc87969f5cd39196303e45c29a91c8a05fb51445168ac1869ee3823c78",
+                                  "correspondenceConfidence":  "Short Gyan version commit prefix matches pinned upstream commit; build patches not proven"
                               },
                               {
                                   "name":  "xavs2",

@@ -27,7 +27,7 @@ test('GPL and nonfree FFmpeg configure switches are parsed explicitly',()=>{
 });
 test('release auditor hard-codes manual gates rather than silently approving a binary',()=>{
  const source=fs.readFileSync(path.join(__dirname,'audit-release.cjs'),'utf8');
- for(const x of ['readyForPublicDistribution:false','corresponding sources','Native helper build provenance','owner approval','Human Narrator/NVDA']){
+ for(const x of ['readyForPublicDistribution:false','corresponding sources','Native helper code provenance verified','owner approval','Human Narrator/NVDA']){
   assert.ok(source.includes(x),'Missing release gate '+x);
  }
  assert.doesNotMatch(source,/git push|gh release create|New-LocalUser|Start TV stream/);
@@ -57,4 +57,23 @@ test('signing-readiness script is read-only and cannot produce trusted signature
  assert.match(script,/signedOrModifiedByThisScript=\$false/);
  assert.match(script,/publicReleaseApprovedByThisScript=\$false/);
  assert.doesNotMatch(script,/signtool(?:\.exe)? sign|New-SelfSignedCertificate|Import-PfxCertificate|gh release create/);
+});
+
+
+test('GPL x264 and x265 pinned source snapshots remain unapproved without build recipes',()=>{
+ const inventory=require('./ffmpeg-9.0.1-source-inventory.json');
+ const archived=inventory.externalLibraries.filter(x=>x.correspondingSourceArchived);
+ assert.equal(inventory.externalLibraries.length,82);
+ assert.equal(archived.length,2);
+ const x264=archived.find(x=>x.name==='x264');
+ const x265=archived.find(x=>x.name==='x265');
+ assert.equal(x264.sourceRevision,'0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee');
+ assert.equal(x265.sourceRevision,'9ddc216defd1fa85535cb91456a9f6c09a2c3abc');
+ assert.equal(x264.privateArchiveSHA256,'7f091b0e530cee2800d25843307938bcda71b069838240a94d0409acc5296f0f');
+ assert.equal(x265.privateArchiveSHA256,'ef5033bc87969f5cd39196303e45c29a91c8a05fb51445168ac1869ee3823c78');
+ assert.equal(archived.some(x=>x.buildRecipeVerified),false);
+ assert.equal(inventory.correspondingSourceComplete,false);
+ const checker=fs.readFileSync(path.join(__dirname,'audit-release.cjs'),'utf8');
+ assert.match(checker,/archivedExternalSourceCount/);
+ assert.match(checker,/verifiedExternalBuildRecipeCount/);
 });

@@ -5,6 +5,7 @@ const {spawnSync}=require('node:child_process');
 const TEMPLATE_SHA='2159d4e54dc38e3626a95f496a2e6c2f071b541bd07e2e0657c8acbbcdd9d9e8';
 // Exact Gyan 9.0.1 full-build provenance is pinned separately from the customer payload.
 const VENDOR=require('./ffmpeg-9.0.1-source-inventory.json');
+const NATIVE=require('./native-source-pins.json');
 const REQUIRED=['THIRD_PARTY/Node-LICENSE.txt','THIRD_PARTY/FFmpeg-LICENSE.txt',
  'THIRD_PARTY/FFmpeg-README.txt','tv-reliability-v0.5/cast/node_modules/lgtv2/LICENSE',
  'tv-reliability-v0.5/cast/node_modules/ws/LICENSE'];
@@ -31,6 +32,12 @@ function audit(stage,installer){
   if(!fs.existsSync(full)||!fs.statSync(full).isFile()||fs.statSync(full).size!==e.bytes||hash(full)!==e.sha256){failures.push(e.path);continue}
   if(privateFile(e))privatePaths.push(e.path);
  }
+ const archivedExternalSourceCount=VENDOR.externalLibraries.filter(e=>e.correspondingSourceArchived).length;
+ const verifiedExternalBuildRecipeCount=VENDOR.externalLibraries.filter(e=>e.buildRecipeVerified).length;
+ const nativePinsVerified=NATIVE.entries.every(e=>
+  byPath.get(e.source)?.sha256===e.sourceSHA256&&
+  byPath.get(e.binary)?.sha256===e.binarySHA256);
+ if(!nativePinsVerified)failures.push('Native helper manifest does not match verified C# source / original executable pins');
  const missingNotices=REQUIRED.filter(p=>!byPath.has(p));
  const nativeSourceGaps=[];
  for(const e of meta.files.filter(x=>/\/native\/[^/]+\.exe$/i.test(x.path))){
@@ -60,12 +67,12 @@ function audit(stage,installer){
  if(nativeSourceGaps.length)blockers.push('Native helper needs verified build provenance');
  if(fswitches.has('--enable-nonfree'))blockers.push('FFmpeg --enable-nonfree redistribution prohibited');
  if(!exactVendorMatch)blockers.push('FFmpeg executable requires renewed vendor provenance before packaging');
- if(!VENDOR.correspondingSourceComplete)blockers.push('Exact FFmpeg external-library source archives and build recipes are still incomplete ('+VENDOR.externalLibraryCount+' pinned dependencies)');
+ if(!VENDOR.correspondingSourceComplete)blockers.push('Exact FFmpeg external-library source evidence incomplete: '+archivedExternalSourceCount+'/'+VENDOR.externalLibraryCount+' upstream snapshots archived; '+verifiedExternalBuildRecipeCount+'/'+VENDOR.externalLibraryCount+' exact build recipes verified');
  if(fswitches.has('--enable-gpl'))blockers.push('GPL-enabled FFmpeg exact corresponding sources, build recipes and codec components not evidenced');
  else blockers.push('LGPL-mode FFmpeg source and notices still need review');
  const signature=sign(installer);
  if(signature!=='Valid')blockers.push('Trusted publisher signing not established');
- blockers.push('Native helper build provenance and third-party redistribution rights still need owner review');
+ blockers.push('Native helper code provenance verified at pinned build; project redistribution rights still need owner review');
  blockers.push('Noncommercial repository licence and intended customer distribution rights need owner approval');
  blockers.push('Owner release/licence approval outstanding');
  blockers.push('Human Narrator/NVDA speech and Windows 11 compatibility not accepted');
@@ -75,10 +82,10 @@ function audit(stage,installer){
   runtimes:{nodeVersion,nodeSha256:hash(node),ffmpegVersion,ffmpegSha256:ffmpegSHA256,
    vendorMatch:exactVendorMatch,ffmpegUpstreamCoreCommit:VENDOR.coreSourceCommit,
    vendorArchiveSha256:VENDOR.vendorZIPsha256,
-   externalLibraryCount:VENDOR.externalLibraryCount,correspondingSourceComplete:VENDOR.correspondingSourceComplete,
+   externalLibraryCount:VENDOR.externalLibraryCount,archivedExternalSourceCount,verifiedExternalBuildRecipeCount,correspondingSourceComplete:VENDOR.correspondingSourceComplete,
    ffmpegFlags:{gpl:fswitches.has('--enable-gpl'),version3:fswitches.has('--enable-version3'),
     nonfree:fswitches.has('--enable-nonfree'),x264:fswitches.has('--enable-libx264'),x265:fswitches.has('--enable-libx265')}},
-  packages,missingNotices,nativeSourceGaps,installerSignature:signature,
+  packages,missingNotices,nativeSourceGaps,nativeSourceAndBinaryPinsVerified:nativePinsVerified,installerSignature:signature,
   readyForPublicDistribution:false,blockers};
 }
 function main(args){

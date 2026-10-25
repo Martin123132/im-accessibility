@@ -44,6 +44,14 @@ foreach($entry in $preview.files){
  }
 }
 Copy-Item -Path (Join-Path $from '*') -Destination $stage -Recurse -ErrorAction Stop
+# Compile all three native helpers from checked-in source into an isolated
+# evidence folder; verify shipped EXEs differ only by CSC-generated metadata.
+# Never execute a helper or replace the working TV's binaries.
+$nativeEvidence=Join-Path $out 'native-helper-provenance'
+& (Join-Path $source 'verify-native-source.ps1') -TvBundleRoot $stage -OutputDirectory $nativeEvidence
+if(!(Test-Path -LiteralPath (Join-Path $nativeEvidence 'native-verification.json'))){
+ throw 'Native source/binary correspondence was not verified'
+}
 Copy-Item -LiteralPath (Join-Path $source 'gui-config-bridge.cjs') -Destination (Join-Path $stage 'gui-config-bridge.cjs') -ErrorAction Stop
 $rt=Join-Path $stage 'Runtime'
 $third=Join-Path $stage 'THIRD_PARTY'
