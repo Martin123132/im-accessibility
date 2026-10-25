@@ -1,0 +1,507 @@
+{
+    "product":  "ImAccessibility build provenance",
+    "upstream":  "FFmpeg",
+    "ffmpegRelease":  "9.0.1 full build Gyan",
+    "vendorReleaseURL":  "https://github.com/GyanD/codexffmpeg/releases/tag/9.0.1",
+    "coreSourceCommit":  "bf1b838f2ab88b4f8fd83443325c782ea0e0f7fa",
+    "coreArchiveSHA256":  "8a3473cde0b7ac3a795ef1d3ea09a086fccf48ccd8c1849a67e2b040de65636e",
+    "vendorZIPsha256":  "2e8e28af97c2ae338ccef92e36da9b2a4cd21d0cad9dde093545606cb07f5b00",
+    "vendorFFmpegExeSha256":  "57c56e369d5b4873b4d93fc1a1d833cb7cd8bc9325c14b05c34ce60b22842d8a",
+    "externalLibraryCount":  82,
+    "externalLibraries":  [
+                              {
+                                  "name":  "AMF",
+                                  "upstreamVersion":  "v1.5.2-2-gc35f613",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "aom",
+                                  "upstreamVersion":  "v3.14.1-147-gec0dedc1a2",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "aribb24",
+                                  "upstreamVersion":  "v1.0.3-5-g5e9be27",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "aribcaption",
+                                  "upstreamVersion":  "1.1.2",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "AviSynthPlus",
+                                  "upstreamVersion":  "v3.7.5-362-gf4628d0a",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "bs2b",
+                                  "upstreamVersion":  "3.1.0",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "bzip2",
+                                  "upstreamVersion":  "1.0.8-3",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "cairo",
+                                  "upstreamVersion":  "1.18.5",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "chromaprint",
+                                  "upstreamVersion":  "1.6.1",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "codec2",
+                                  "upstreamVersion":  "1.2.0-108-g310777b1",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "dav1d",
+                                  "upstreamVersion":  "1.5.4",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "davs2",
+                                  "upstreamVersion":  "1.7-1-gb41cf11",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "dvdnav",
+                                  "upstreamVersion":  "7.0.0-16-g2ffc50b",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "dvdread",
+                                  "upstreamVersion":  "7.1.1-92-g50009a0",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "ffnvcodec",
+                                  "upstreamVersion":  "n13.1.15.0-1-geddcea9",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "flite",
+                                  "upstreamVersion":  "v2.2-55-g6c9f20d",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "fontconfig",
+                                  "upstreamVersion":  "2.18.3",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "freetype",
+                                  "upstreamVersion":  "VER-2-14-3",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "frei0r",
+                                  "upstreamVersion":  "v3.2.3",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "fribidi",
+                                  "upstreamVersion":  "v1.0.16-5-g069a7e3",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "gmp",
+                                  "upstreamVersion":  "6.3.0-2",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "gnutls",
+                                  "upstreamVersion":  "3.8.13-1",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "gsm",
+                                  "upstreamVersion":  "1.0.24",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "harfbuzz",
+                                  "upstreamVersion":  "14.3.0-10-g9f2f0317",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "ladspa-sdk",
+                                  "upstreamVersion":  "1.17",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "lame",
+                                  "upstreamVersion":  "3.100",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "lc3",
+                                  "upstreamVersion":  "1.1.3",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "lcms2",
+                                  "upstreamVersion":  "2.16",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "lensfun",
+                                  "upstreamVersion":  "v0.3.95-1996-g6804b5f5",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "libass",
+                                  "upstreamVersion":  "0.17.5-3-g89cc0f4",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "libcdio-paranoia",
+                                  "upstreamVersion":  "10.2",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "libgme",
+                                  "upstreamVersion":  "0.6.6",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "libiconv",
+                                  "upstreamVersion":  "1.19-1",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "libilbc",
+                                  "upstreamVersion":  "v3.0.4-346-g6adb26d4a4",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "libjxl",
+                                  "upstreamVersion":  "v0.12-snapshot-3-ge8ff0976",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "libopencore-amrnb",
+                                  "upstreamVersion":  "0.1.6",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "libopencore-amrwb",
+                                  "upstreamVersion":  "0.1.6",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "libplacebo",
+                                  "upstreamVersion":  "v7.360.0-109-g4d82c68",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "libsoxr",
+                                  "upstreamVersion":  "0.1.3",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "libssh",
+                                  "upstreamVersion":  "0.12.0",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "libtheora",
+                                  "upstreamVersion":  "v1.2.0",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "libwebp",
+                                  "upstreamVersion":  "v1.6.0-199-g94d3c4a",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "libxml2",
+                                  "upstreamVersion":  "v2.15.0-122-gddcb79dc",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "openAL",
+                                  "upstreamVersion":  "1.25.2",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "openapv",
+                                  "upstreamVersion":  "v0.3.0.0-9-ga5312e4",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "openjpeg2",
+                                  "upstreamVersion":  "2.5.4",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "openmpt",
+                                  "upstreamVersion":  "libopenmpt-0.6.28-40-gefc11a27",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "opus",
+                                  "upstreamVersion":  "v1.6.1-50-g3da9f7a6",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "qrencode",
+                                  "upstreamVersion":  "4.1.1",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "quirc",
+                                  "upstreamVersion":  "1.2",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "rav1e",
+                                  "upstreamVersion":  "p20250624-3-g564ae3b",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "rist",
+                                  "upstreamVersion":  "0.2.20",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "rubberband",
+                                  "upstreamVersion":  "v4.0.0",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "SDL",
+                                  "upstreamVersion":  "release-2.32.0-228-ga2e7c76bd",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "shaderc",
+                                  "upstreamVersion":  "v2026.3-9-g7060a66",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "shine",
+                                  "upstreamVersion":  "3.1.1",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "snappy",
+                                  "upstreamVersion":  "1.2.2",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "speex",
+                                  "upstreamVersion":  "Speex-1.2.1-51-g0589522",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "srt",
+                                  "upstreamVersion":  "v1.5.6-2-gfcae571",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "SVT-AV1",
+                                  "upstreamVersion":  "v4.2.0-72-gae2658e53",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "SVT-JPEG-XS",
+                                  "upstreamVersion":  "v0.9.0-78-g8056642",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "twolame",
+                                  "upstreamVersion":  "0.4.0",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "uavs3d",
+                                  "upstreamVersion":  "v1.1-50-g0e20d2c",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "VAAPI",
+                                  "upstreamVersion":  "2.25.0.",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "vidstab",
+                                  "upstreamVersion":  "v1.1.2-105-gc7a720a",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "vmaf",
+                                  "upstreamVersion":  "v3.2.0-9-g4991d2b5",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "vo-amrwbenc",
+                                  "upstreamVersion":  "0.1.3",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "vorbis",
+                                  "upstreamVersion":  "v1.3.7-37-g1b75110b",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "VPL",
+                                  "upstreamVersion":  "2.17",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "vpx",
+                                  "upstreamVersion":  "v1.16.0-184-g0cfc6da39",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "vulkan-loader",
+                                  "upstreamVersion":  "v1.4.359",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "vvenc",
+                                  "upstreamVersion":  "v1.14.0-160-ga03b882",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "whisper.cpp",
+                                  "upstreamVersion":  "1.9.1",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "x264",
+                                  "upstreamVersion":  "v0.165.3223",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "x265",
+                                  "upstreamVersion":  "4.3-6-g9ddc216",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "xavs2",
+                                  "upstreamVersion":  "1.4",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "xevd",
+                                  "upstreamVersion":  "0.5.0",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "xeve",
+                                  "upstreamVersion":  "0.5.1",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "xvid",
+                                  "upstreamVersion":  "v1.3.7",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "zeromq",
+                                  "upstreamVersion":  "4.3.5",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "zimg",
+                                  "upstreamVersion":  "release-3.0.6-252-gf6cc75a",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              },
+                              {
+                                  "name":  "zvbi",
+                                  "upstreamVersion":  "v0.2.44-8-g4e222f9",
+                                  "correspondingSourceArchived":  false,
+                                  "buildRecipeVerified":  false
+                              }
+                          ],
+    "correspondingSourceComplete":  false,
+    "publicDistributionApproved":  false
+}

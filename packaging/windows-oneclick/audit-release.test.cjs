@@ -32,3 +32,29 @@ test('release auditor hard-codes manual gates rather than silently approving a b
  }
  assert.doesNotMatch(source,/git push|gh release create|New-LocalUser|Start TV stream/);
 });
+
+
+test('Gyan FFmpeg 9.0.1 vendor hash and exact upstream source pin remain explicit',()=>{
+ const v=require('./ffmpeg-9.0.1-source-inventory.json');
+ assert.equal(v.vendorFFmpegExeSha256,'57c56e369d5b4873b4d93fc1a1d833cb7cd8bc9325c14b05c34ce60b22842d8a');
+ assert.equal(v.vendorZIPsha256,'2e8e28af97c2ae338ccef92e36da9b2a4cd21d0cad9dde093545606cb07f5b00');
+ assert.equal(v.coreSourceCommit,'bf1b838f2ab88b4f8fd83443325c782ea0e0f7fa');
+ assert.equal(v.externalLibraryCount,82);
+ assert.equal(v.externalLibraries.length,82);
+ assert.equal(v.correspondingSourceComplete,false);
+ assert.equal(v.externalLibraries.find(x=>x.name==='x264')?.upstreamVersion,'v0.165.3223');
+ assert.equal(v.externalLibraries.find(x=>x.name==='x265')?.upstreamVersion,'4.3-6-g9ddc216');
+ const audit=fs.readFileSync(path.join(__dirname,'audit-release.cjs'),'utf8');
+ assert.match(audit,/exactVendorMatch/);
+ assert.match(audit,/ffmpegSha256:ffmpegSHA256/);
+ assert.match(audit,/Runtime\/ffmpeg\.exe differs from pinned Gyan vendor binary/);
+ assert.match(audit,/correspondingSourceComplete/);
+});
+test('signing-readiness script is read-only and cannot produce trusted signatures',()=>{
+ const script=fs.readFileSync(path.join(__dirname,'verify-publisher-signature.ps1'),'utf8');
+ assert.match(script,/Get-AuthenticodeSignature/);
+ assert.match(script,/verify \/pa \/v/);
+ assert.match(script,/signedOrModifiedByThisScript=\$false/);
+ assert.match(script,/publicReleaseApprovedByThisScript=\$false/);
+ assert.doesNotMatch(script,/signtool(?:\.exe)? sign|New-SelfSignedCertificate|Import-PfxCertificate|gh release create/);
+});

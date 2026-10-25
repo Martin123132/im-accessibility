@@ -3,6 +3,8 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {spawnSync}=require('node:child_process');
 const TEMPLATE_SHA='2159d4e54dc38e3626a95f496a2e6c2f071b541bd07e2e0657c8acbbcdd9d9e8';
+// Exact Gyan 9.0.1 full-build provenance is pinned separately from the customer payload.
+const VENDOR=require('./ffmpeg-9.0.1-source-inventory.json');
 const REQUIRED=['THIRD_PARTY/Node-LICENSE.txt','THIRD_PARTY/FFmpeg-LICENSE.txt',
  'THIRD_PARTY/FFmpeg-README.txt','tv-reliability-v0.5/cast/node_modules/lgtv2/LICENSE',
  'tv-reliability-v0.5/cast/node_modules/ws/LICENSE'];
@@ -40,6 +42,10 @@ function audit(stage,installer){
  const ff=execute(ffmpeg,['-hide_banner','-buildconf']);
  const fswitches=flags(ff);
  const ffmpegVersion=ff.split(/\r?\n/).find(s=>s.startsWith('ffmpeg version '))||'unknown';
+ const ffmpegSHA256=hash(ffmpeg);
+ const exactVendorMatch=ffmpegSHA256===VENDOR.vendorFFmpegExeSha256;
+ // Binary changes require a new independent upstream-source and vendor archive audit.
+ if(!exactVendorMatch)failures.push('Runtime/ffmpeg.exe differs from pinned Gyan vendor binary');
  const packages={};
  for(const name of ['ws','lgtv2']){
   const rel='tv-reliability-v0.5/cast/node_modules/'+name+'/package.json';
@@ -53,6 +59,8 @@ function audit(stage,installer){
  if(missingNotices.length)blockers.push('Missing bundled third-party licence notices');
  if(nativeSourceGaps.length)blockers.push('Native helper needs verified build provenance');
  if(fswitches.has('--enable-nonfree'))blockers.push('FFmpeg --enable-nonfree redistribution prohibited');
+ if(!exactVendorMatch)blockers.push('FFmpeg executable requires renewed vendor provenance before packaging');
+ if(!VENDOR.correspondingSourceComplete)blockers.push('Exact FFmpeg external-library source archives and build recipes are still incomplete ('+VENDOR.externalLibraryCount+' pinned dependencies)');
  if(fswitches.has('--enable-gpl'))blockers.push('GPL-enabled FFmpeg exact corresponding sources, build recipes and codec components not evidenced');
  else blockers.push('LGPL-mode FFmpeg source and notices still need review');
  const signature=sign(installer);
@@ -64,7 +72,10 @@ function audit(stage,installer){
  return {schema:1,product:'ImAccessibility',version:meta.version,createdUtc:new Date().toISOString(),
   files:meta.files.length,integrity:{failures,passed:meta.files.length-failures.length},
   privacy:{flaggedPaths:privatePaths,upstreamPairingTemplate:byPath.get('tv-reliability-v0.5/cast/node_modules/lgtv2/pairing.json')?.sha256===TEMPLATE_SHA},
-  runtimes:{nodeVersion,nodeSha256:hash(node),ffmpegVersion,ffmpegSha256:hash(ffmpeg),
+  runtimes:{nodeVersion,nodeSha256:hash(node),ffmpegVersion,ffmpegSha256:ffmpegSHA256,
+   vendorMatch:exactVendorMatch,ffmpegUpstreamCoreCommit:VENDOR.coreSourceCommit,
+   vendorArchiveSha256:VENDOR.vendorZIPsha256,
+   externalLibraryCount:VENDOR.externalLibraryCount,correspondingSourceComplete:VENDOR.correspondingSourceComplete,
    ffmpegFlags:{gpl:fswitches.has('--enable-gpl'),version3:fswitches.has('--enable-version3'),
     nonfree:fswitches.has('--enable-nonfree'),x264:fswitches.has('--enable-libx264'),x265:fswitches.has('--enable-libx265')}},
   packages,missingNotices,nativeSourceGaps,installerSignature:signature,
