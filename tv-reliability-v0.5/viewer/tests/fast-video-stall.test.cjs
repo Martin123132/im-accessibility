@@ -166,7 +166,7 @@ test('MSE seek throttling avoids repeated hardware decoder resets',()=>{
  assert.equal(c.video.currentTime,1,'A second seek inside cooldown is refused');
  c.video.webkitDecodedFrameCount+=1;
  c.step(3900);
- assert.ok(c.video.currentTime>10,'Later real drift may be corrected');
+ assert.equal(c.video.currentTime,1,'Continued decoded-frame progress must not trigger another seeking reset');
 });
 test('Real LG decoder health is sampled over its existing authenticated media WebSocket',()=>{
  const c=browser();

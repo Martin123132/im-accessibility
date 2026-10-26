@@ -100,7 +100,7 @@
    queue:[],queueBytes:0,closed:false,lastData:Date.now(),lastAppend:0,
    fragmentCount:0,monitor:null,openTimer:null,
    lastProgressAt:Date.now(),lastTime:0,lastFrames:null,stallNudgeAt:0,
-   lastSeekAt:0,lastTrimAt:0,lastDecoderReportAt:0};
+   lastSeekAt:0,lastTrimAt:0,lastDecoderReportAt:0,initialCatchupDone:false};
   current=c;
   function fail(message){
    if(c.closed||current!==c)return;
@@ -136,12 +136,16 @@
     var r=video.buffered,end=r.end(r.length-1),begin=r.start(r.length-1);
     if(!isFinite(end)||!isFinite(begin))return;
     var now=Date.now(),lag=end-video.currentTime;
-    // Seeking on every incoming media fragment can keep resetting LG's
-    // hardware decoder. Allow one meaningful correction per ~3.6 seconds.
-    if(lag>2.0&&end-begin>1.2&&now-c.lastSeekAt>3600){
-     var target=Math.max(begin+0.05,end-0.8);
-     if(target>video.currentTime+0.5){video.currentTime=target;c.lastSeekAt=now}
+    // Leave a progressing LG hardware decoder alone. One initial alignment,
+    // then only seek if decoded playback has truly stalled for five seconds.
+    var stalled=now-c.lastProgressAt>5000;
+    if(lag>2.5&&end-begin>1.2&&
+       (!c.initialCatchupDone||(stalled&&now-c.lastSeekAt>12000))){
+     var target=Math.max(begin+0.05,end-1.25);
+     if(target>video.currentTime+1){video.currentTime=target;c.lastSeekAt=now}
+     c.initialCatchupDone=true;
     }
+    if(c.fragmentCount>12)c.initialCatchupDone=true;
    }catch(e){}
   }
   function drain(){

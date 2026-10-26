@@ -11,7 +11,7 @@
  var qualityMode='interactive',qualitySwitching=false,qualityAwaitingReload=false;
  // TV playback can lag behind a healthy capture after network stalls.
  var streamFresh=false,lastRecoveryCount=-1,lastVideoClock=0,lastVideoProgressAt=Date.now(),
-  lastVideoReloadAt=0,lastLiveSeekAt=0,reportedGapSeconds=null;
+  lastVideoReloadAt=0,lastLiveSeekAt=0,reportedGapSeconds=null,hlsInitialSeekDone=false;
  if(!key){status.textContent='Invalid private TV session';return}
  // webOS must keep an HTML hit target. Never enable the video control surface.
  video.controls=false;video.removeAttribute('controls');
@@ -95,7 +95,7 @@
   if(fastVideoActive)return;
   var now=Date.now();
   if(now-lastVideoReloadAt<(manual?4000:12000))return;
-  lastVideoReloadAt=now;lastVideoProgressAt=now;lastVideoClock=0;
+  lastVideoReloadAt=now;lastVideoProgressAt=now;lastVideoClock=0;hlsInitialSeekDone=false;
   report('Reconnecting live desktop: '+reason);
   try{
    // Preserve the existing high-quality HLS video element and native LG plane.
@@ -123,12 +123,16 @@
    if(!isFinite(end)||!isFinite(begin))return;
    var lag=end-t;
    reportedGapSeconds=lag;
-   // LG supports live seeking, but not faster-than-real-time HLS playback.
-   // Only jump after substantial drift and leave 1.5 s decode headroom.
-   if(lag>3&&end-begin>1.2){
-    var target=Math.max(begin+0.1,end-0.9);
-    if(target>t+1.2){video.currentTime=target;lastLiveSeekAt=now;
+   // A healthy LG native decoder must not be re-seeked every few seconds.
+   // One initial catch-up leaves two seconds of decode headroom; further
+   // correction requires an actual stopped playhead.
+   var stalled=now-lastVideoProgressAt>5000;
+   if(lag>5&&end-begin>1.2&&now-lastLiveSeekAt>12000&&
+      (!hlsInitialSeekDone||stalled)){
+    var target=Math.max(begin+0.1,end-1.8);
+    if(target>t+3){video.currentTime=target;lastLiveSeekAt=now;
      lastVideoClock=target;lastVideoProgressAt=now;info('Catching up to live Windows desktop…')}
+    hlsInitialSeekDone=true;
    }
   }catch(e){}
  }

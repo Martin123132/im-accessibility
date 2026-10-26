@@ -56,7 +56,8 @@ function argsFor(streamDir,format=null,startNumber=0,qualityMode='interactive'){
    '-af','aresample=async=1:first_pts=0');
  args.push('-f','hls','-hls_time',q.segment,'-hls_list_size',q.list,'-hls_delete_threshold','3',
    '-start_number',String(startNumber),
-   '-hls_flags','delete_segments+temp_file+independent_segments',
+   '-hls_flags','delete_segments+temp_file+independent_segments'+
+    (startNumber>0?'+discont_start':''),
    '-hls_segment_filename',path.join(streamDir,'segment%06d.ts'),
    path.join(streamDir,'index.m3u8'));
  return args;

@@ -10,6 +10,11 @@ test('Cinema is a separate higher-quality HLS profile; original interaction unch
  const dir=path.join(__dirname,'no-real-video-created');
  const base=sound.argsFor(dir);
  const cinema=sound.argsFor(dir,null,0,'cinema');
+ const restInteractive=sound.argsFor(dir,null,100,'interactive');
+ const restCinema=sound.argsFor(dir,null,101,'cinema');
+ assert.equal(value(base,'-hls_flags').includes('discont_start'),false);
+ assert.equal(value(restInteractive,'-hls_flags').includes('discont_start'),true);
+ assert.equal(value(restCinema,'-hls_flags').includes('discont_start'),true);
  assert.equal(value(base,'-framerate'),'15');
  assert.equal(value(base,'-vf'),'scale=1280:-2');
  assert.equal(value(base,'-crf'),'28');
