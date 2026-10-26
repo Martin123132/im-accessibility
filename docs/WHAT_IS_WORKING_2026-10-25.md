@@ -1,3 +1,5 @@
+> **Historical 25 October snapshot.** The later [26 October owner-tested LG source checkpoint](OWNER_TESTED_LG_SOURCE_2026-10-26.md) covers v0.3.21 Cinema, owner Windows controls and Wi-Fi discovery. No public signed installer is available.
+
 # Which version is working? — 25 October 2026
 
 **This page is the repository's current source-of-truth for tested source, development experiments and download status.** It distinguishes code merged into `main` from the owner's separately installed hardware-test versions.

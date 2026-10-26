@@ -1,6 +1,6 @@
 {
   "name": "im-accessibility",
-  "version": "0.2.0-preview",
+  "version": "0.3.21-preview",
   "private": true,
   "description": "I’m-accessibility: human-led Windows accessibility, TV control and optional AI assistance",
   "engines": {

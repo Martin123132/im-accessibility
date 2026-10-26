@@ -28,6 +28,7 @@ const tv = [
     .sort().map(n=>'tv-reliability-v0.5/viewer/tests/'+n)
 ];
 const packageTests=[
+ 'packaging/windows-control-panel/TVFinder.test.cjs',
  'packaging/tests/portable-install.test.cjs',
  'packaging/tests/first-run.test.cjs',
  'packaging/tests/stale-session-recovery.test.cjs',
