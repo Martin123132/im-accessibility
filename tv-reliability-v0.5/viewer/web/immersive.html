@@ -10,12 +10,13 @@
  <video id="desktop" muted autoplay playsinline preload="auto" aria-label="Live Windows desktop video"></video>
  <button id="surface" type="button" aria-label="Click the full-screen Windows desktop using the LG Magic Remote"></button>
  <div id="controls" aria-label="Desktop control options">
-  <button id="control-toggle" type="button" aria-controls="control-panel" aria-expanded="false">Controls ▲</button>
+  <button id="control-toggle" type="button" aria-label="Open TV controls menu" title="TV controls" aria-controls="control-panel" aria-expanded="false">☰</button>
   <div id="control-panel" hidden aria-label="Desktop controls menu">
    <button id="enable" type="button">Enable mouse</button>
    <button id="pause" type="button" disabled>Pause mouse</button>
    <button id="play" type="button">Play video</button>
    <button id="catchup" type="button" aria-label="Jump the HLS desktop picture back to live">Catch up picture</button>
+   <button id="quality" type="button" aria-label="Choose high-quality cinema video with Windows mouse disabled">Cinema mode · better picture</button>
    <button id="fast" type="button" aria-label="Try direct low latency video; return to HLS at any time">Try faster video (experimental)</button>
    <button id="sound" type="button" aria-label="Toggle the television's Windows desktop audio" disabled>TV sound OFF</button>
    <button id="laptop" type="button" aria-label="Switch between television-only and simultaneous television and laptop audio" disabled>Laptop sound ON</button>

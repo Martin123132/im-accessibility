@@ -3,6 +3,7 @@
 const fs=require('node:fs'),path=require('node:path');
 const LGTV=require('./cast/node_modules/lgtv2');
 const {discover}=require('./cast/tv-discovery.cjs');
+const VIEWING=require('./viewing-policy.cjs');
 const SETTINGS=process.env.IM_ACCESSIBILITY_CONFIG_PATH!==undefined
  ?require('./release-config.cjs').readUserSettings():null;
 const ROOT=__dirname,MODEL=SETTINGS?SETTINGS.television.model:'OLED55CX6LA',
@@ -14,7 +15,7 @@ const SESSION=path.join(ROOT,'viewer','runtime','session.json');
 function privateReceiver(){
  const s=JSON.parse(fs.readFileSync(SESSION,'utf8')),u=new URL(s.url);
  if(u.origin!=='http://'+LAN+':'+PORT||!/^\/tv\/[a-f0-9]{64}$/.test(u.pathname)||u.search||u.hash||
-    Date.now()>=Date.parse(s.expiresAt))throw Error('Local TV viewing session unavailable/expired');
+    !VIEWING.recordValid(s))throw Error('Local TV viewing session unavailable/expired');
  return{url:s.url,expiresAt:s.expiresAt};
 }
 function localCandidate(ip){

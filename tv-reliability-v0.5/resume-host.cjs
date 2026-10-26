@@ -1,18 +1,20 @@
 'use strict';
-// Four-hour on-demand session supervisor for the owner's PC and LG television.
+// Owner-controlled on-demand TV session supervisor. No arbitrary four-hour stop.
 // This owns ONLY its own cast/viewer children. It does not stop other PC Bridge services.
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto');
+const VIEWING=require('./viewing-policy.cjs');
+const {SpeakerRouter}=require('./viewer/speaker-routing.cjs');
 const ROOT=__dirname,RUNTIME=path.join(ROOT,'runtime'),CAST=path.join(ROOT,'cast'),VIEWER=path.join(ROOT,'viewer');
 const SETTINGS=process.env.IM_ACCESSIBILITY_CONFIG_PATH!==undefined
  ?require('./release-config.cjs').readUserSettings():null;
 const NODE=SETTINGS?SETTINGS.executables.nodeExe:'C:/Program Files/nodejs/node.exe',
- LAN=SETTINGS?SETTINGS.network.ip:'192.168.4.36',MAX_MS=4*60*60*1000;
+ LAN=SETTINGS?SETTINGS.network.ip:'192.168.4.36',MAX_MS=VIEWING.maxMs();
 const STATE=path.join(RUNTIME,'state.json'),STOP=path.join(RUNTIME,'stop-request.json');
-const RUN=crypto.randomBytes(8).toString('hex'),START=Date.now();
+const RUN=crypto.randomBytes(8).toString('hex'),START=Date.now(),END=VIEWING.deadline(START);
 const logPath=path.join(RUNTIME,'host-'+RUN+'.log');
 const childProcs=[],delay=ms=>new Promise(r=>setTimeout(r,ms));
-let status={runId:RUN,state:'starting',createdUtc:new Date(START).toISOString(),expectedEndUtc:new Date(START+MAX_MS).toISOString(),
- stream:'starting',viewer:'waiting',lg:'not-attempted',mouseLeaseMinutes:10,videoSessionHours:4},stopping=false,reason='';
+let status={runId:RUN,supervisorPid:process.pid,state:'starting',createdUtc:new Date(START).toISOString(),expectedEndUtc:VIEWING.iso(END),viewingMode:VIEWING.MODE,
+ stream:'starting',viewer:'waiting',lg:'not-attempted',mouseLeaseMinutes:10,videoSessionHours:MAX_MS===null?null:4},stopping=false,reason='';
 fs.mkdirSync(RUNTIME,{recursive:true});
 function log(msg){
  const row=new Date().toISOString()+' '+String(msg).slice(0,800);
@@ -53,7 +55,7 @@ function spawnService(dir,name){
 }
 function spawnActivityGuard(){
  // Optional LG-only activity signal; if unavailable the viewer MUST keep running.
- // This subprocess is owned by this exact four-hour session and stopped with it.
+ // This subprocess is owned by this exact session and stopped with it.
  if(!SETTINGS)return;
  const program=path.join(ROOT,'lg-active-view.cjs');
  if(!fs.existsSync(program)){log('Optional LG activity guard unavailable');return}
@@ -74,7 +76,8 @@ async function waitFile(file,child,limitMs=11000){
  while(Date.now()<deadline){
   if(fs.existsSync(file)){
    const obj=JSON.parse(fs.readFileSync(file,'utf8'));
-   if(obj.expiresAt&&Date.parse(obj.expiresAt)>Date.now()+60*60*1000)return obj;
+   if(VIEWING.recordValid(obj)&&
+      (obj.expiresAt===null||Date.parse(obj.expiresAt)>Date.now()+60*60*1000))return obj;
   }
   if(child.exitCode!==null)throw Error('Child exited before generating '+path.basename(file));
   await delay(220);
@@ -125,7 +128,7 @@ async function launch(){
  }
  if(!viewerReady)throw Error('Viewer did not connect to desktop video');
  update({state:'ready',viewer:'ready',viewerExpiresAtUtc:s.expiresAt});
- log('Four-hour private video and mouse receiver ready');
+ log('Private TV video ready until owner Stop or service failure');
  try{
   const {open}=require('./lg-pair.cjs');
   const pair=await open({onEvent:e=>log('LG '+e.stage+' '+(e.ip||''))});
@@ -149,11 +152,22 @@ async function killChild({child,name}){
   log(name+' forced task-tree exit code '+r.status);
  }catch(e){log(name+' task-tree cleanup error '+String(e.message).slice(0,100))}
 }
+function restoreAudioAfterViewerExit({routerFactory=()=>new SpeakerRouter(),logFn=log}={}){
+ // The viewer may have been terminated before its SIGTERM handler restored
+ // the exact Windows speaker endpoint. Recover from its bounded journal.
+ try{
+  const result=routerFactory().recover();
+  if(!result.recovered){logFn('LAPTOP_AUDIO_RESTORE_PENDING '+String(result.reason).slice(0,140));return false}
+  logFn(result.hadJournal?'LAPTOP_AUDIO_RESTORED':'No laptop audio journal to restore');
+  return true;
+ }catch(e){logFn('LAPTOP_AUDIO_RESTORE_PENDING '+String(e.message||e).slice(0,140));return false}
+}
 async function cleanup(why){
  if(stopping)return;stopping=true;
  log('Closing only owner session: '+why);
  update({state:'stopping',stopReason:why,lg:'closed'});
  for(const child of childProcs.slice().reverse())await killChild(child);
+ restoreAudioAfterViewerExit();
  try{fs.unlinkSync(path.join(VIEWER,'runtime','session.json'))}catch{}
  try{fs.unlinkSync(path.join(CAST,'runtime','private-access.json'))}catch{}
  try{fs.unlinkSync(STOP)}catch{}
@@ -162,16 +176,16 @@ async function cleanup(why){
 process.once('SIGTERM',()=>{reason='Windows task stop';});
 process.once('SIGINT',()=>{reason='Owner interrupted launcher';});
 async function main(){
- log('Starting owner four-hour session '+RUN);
+ log('Starting owner-controlled private TV session '+RUN);
  try{
   await launch();
-  while(!reason&&Date.now()<START+MAX_MS){
+  while(!reason&&VIEWING.active(END)){
    if(fs.existsSync(STOP)){reason='Owner selected End TV session';break;}
    const exited=childProcs.find(x=>!x.optional&&x.child.exitCode!==null);
    if(exited){reason=exited.name+' exited unexpectedly';break;}
    await delay(800);
   }
-  if(!reason)reason='Four-hour session expired normally';
+  if(!reason)reason='Legacy four-hour session expired normally';
  }catch(e){reason='Start failure: '+String(e.message||e).slice(0,200);log(reason)}
  finally{await cleanup(reason)}
 }
@@ -181,4 +195,4 @@ if(require.main===module){
   process.exitCode=1;
  }else main().catch(e=>{log('Fatal host error '+e.message);process.exitCode=1});
 }
-module.exports={MAX_MS,archiveIfExists,reachable};
+module.exports={MAX_MS,VIEWING_MODE:VIEWING.MODE,archiveIfExists,reachable,restoreAudioAfterViewerExit};

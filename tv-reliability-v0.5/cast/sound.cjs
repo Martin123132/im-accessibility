@@ -26,9 +26,18 @@ function probe(binary=BINARY,spawnSync=cp.spawnSync){
   deviceIdHash:f.deviceIdHash
  });
 }
-function argsFor(streamDir,format=null,startNumber=0){
+const QUALITY_PROFILES=Object.freeze({
+ interactive:Object.freeze({fps:'15',scale:'scale=1280:-2',preset:'veryfast',crf:'28',profile:'main',level:'3.1',gop:'15',segment:'1',list:'4',bitrate:'128k'}),
+ cinema:Object.freeze({fps:'30',scale:'scale=1920:-2',preset:'veryfast',crf:'18',profile:'high',level:'4.1',gop:'60',segment:'2',list:'18',bitrate:'192k'})
+});
+function qualityProfile(mode){
+ if(!Object.prototype.hasOwnProperty.call(QUALITY_PROFILES,mode))throw Error('Unsupported display quality mode');
+ return QUALITY_PROFILES[mode];
+}
+function argsFor(streamDir,format=null,startNumber=0,qualityMode='interactive'){
+ const q=qualityProfile(qualityMode);
  if(!Number.isSafeInteger(startNumber)||startNumber<0||startNumber>999999)throw Error('Invalid bounded HLS media start number');
- const args=['-hide_banner','-loglevel','warning','-nostdin','-f','gdigrab','-framerate','15','-draw_mouse','1','-i','desktop'];
+ const args=['-hide_banner','-loglevel','warning','-nostdin','-f','gdigrab','-framerate',q.fps,'-draw_mouse','1','-i','desktop'];
  if(format){
   if(!SUPPORTED_SAMPLES.has(format.sampleFormat)||!Number.isInteger(format.sampleRate)||
    format.sampleRate<8000||format.sampleRate>192000||!Number.isInteger(format.channels)||
@@ -36,19 +45,21 @@ function argsFor(streamDir,format=null,startNumber=0){
   args.push('-thread_queue_size','512','-f',format.sampleFormat,
    '-ar',String(format.sampleRate),'-ac',String(format.channels),'-i','pipe:3');
  }
- args.push('-vf','scale=1280:-2','-map','0:v:0');
+ args.push('-vf',q.scale,'-map','0:v:0');
  if(format)args.push('-map','1:a:0');
  else args.push('-an');
- args.push('-c:v','libx264','-preset','veryfast','-tune','zerolatency',
-   '-crf','28','-pix_fmt','yuv420p','-profile:v','main','-level','3.1',
-   '-g','15','-keyint_min','15','-sc_threshold','0');
- if(format)args.push('-c:a','aac','-ac','2','-ar','48000','-b:a','128k',
+ args.push('-c:v','libx264','-preset',q.preset);
+ if(qualityMode==='interactive')args.push('-tune','zerolatency');
+ args.push('-crf',q.crf,'-pix_fmt','yuv420p','-profile:v',q.profile,'-level',q.level,
+   '-g',q.gop,'-keyint_min',q.gop,'-sc_threshold','0');
+ if(format)args.push('-c:a','aac','-ac','2','-ar','48000','-b:a',q.bitrate,
    '-af','aresample=async=1:first_pts=0');
- args.push('-f','hls','-hls_time','1','-hls_list_size','4','-hls_delete_threshold','3',
+ args.push('-f','hls','-hls_time',q.segment,'-hls_list_size',q.list,'-hls_delete_threshold','3',
    '-start_number',String(startNumber),
-   '-hls_flags','delete_segments+temp_file+independent_segments',
+   '-hls_flags','delete_segments+temp_file+independent_segments'+
+    (startNumber>0?'+discont_start':''),
    '-hls_segment_filename',path.join(streamDir,'segment%06d.ts'),
    path.join(streamDir,'index.m3u8'));
  return args;
 }
-module.exports={BINARY,isAudioOptIn,validFormat,probe,argsFor};
+module.exports={BINARY,isAudioOptIn,validFormat,probe,argsFor,qualityProfile,QUALITY_PROFILES};

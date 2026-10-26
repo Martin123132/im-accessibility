@@ -4,16 +4,17 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const code=fs.readFileSync(path.resolve(__dirname,'../web/fast-video.js'),'utf8');
 const TOKEN='a'.repeat(64);
 function browser(storageData={},t=1000000){
- let now=t,timer=null,mse=null,socket=null,closed=0,loaded=0,disarm=0,reloaded=0,go=null;
+ let now=t,timer=null,mse=null,socket=null,closed=0,loaded=0,released=0,disarm=0,reloaded=0,go=null;
  const statuses=[],store=storageData,removals=[],decoderMessages=[];
  const video={muted:true,defaultMuted:true,paused:false,readyState:4,currentTime:5,
   currentSrc:'',webkitDecodedFrameCount:12,
   buffered:{length:1,start(){return 0},end(){return 9}},
   pause(){this.paused=true},play(){this.paused=false;return Promise.resolve()},
   removeAttribute(){},load(){loaded++}};
- function MediaSource(){mse=this;this.listeners={}}
+ function MediaSource(){mse=this;this.listeners={};this.readyState='open'}
  MediaSource.isTypeSupported=()=>true;
  MediaSource.prototype.addEventListener=function(name,cb){this.listeners[name]=cb};
+ MediaSource.prototype.removeSourceBuffer=function(){released++};
  MediaSource.prototype.addSourceBuffer=function(){
   return {updating:false,mode:'segments',listeners:{},appendBuffer(){},
    addEventListener(name,cb){this.listeners[name]=cb},
@@ -59,7 +60,8 @@ function browser(storageData={},t=1000000){
   get goto(){return go},
   get disarm(){return disarm},
   get closed(){return closed},
-  get loaded(){return loaded}
+  get loaded(){return loaded},
+  get released(){return released}
  };
 }
 test('LG decoded-frame freeze attempts live seek then controlled document reconnect with mouse disarm',()=>{
@@ -129,6 +131,28 @@ test('MSE pruning retains at least eight seconds behind playhead and avoids freq
  c.step(1100);
  assert.equal(c.removals.length,1,'Repeated small trims must not churn LG decoder');
 });
+test('LG MSE pruning includes stale earlier disjoint buffered ranges',()=>{
+ const c=browser();
+ c.video.currentTime=29;
+ c.video.buffered={length:2,
+  start(i){return i===0?0:24},
+  end(i){return i===0?6:34}};
+ c.step(1100);
+ assert.equal(c.removals.length,1,'Disjoint old frames must not remain retained');
+ assert.equal(c.removals[0][0],0,'Prune from the oldest range, not the live range');
+ assert.ok(c.removals[0][1]<=c.video.currentTime-8,'Preserve eight seconds behind actual seek-adjusted playhead');
+ assert.ok(c.removals[0][1]<=22,'Retain twelve seconds before buffered live edge');
+});
+
+test('Closing a frozen MSE stream releases SourceBuffer and detaches video decoder',()=>{
+ const c=browser();
+ c.step(1000);
+ c.step(8200);
+ c.step(4000);
+ assert.equal(c.released,1,'Release old SourceBuffer instead of leaving an orphan');
+ assert.ok(c.loaded>=1,'Detach src and request hardware decoder release');
+});
+
 test('MSE seek throttling avoids repeated hardware decoder resets',()=>{
  const c=browser();
  c.video.buffered={length:1,start(){return 0},end(){return 12}};
@@ -142,7 +166,7 @@ test('MSE seek throttling avoids repeated hardware decoder resets',()=>{
  assert.equal(c.video.currentTime,1,'A second seek inside cooldown is refused');
  c.video.webkitDecodedFrameCount+=1;
  c.step(3900);
- assert.ok(c.video.currentTime>10,'Later real drift may be corrected');
+ assert.equal(c.video.currentTime,1,'Continued decoded-frame progress must not trigger another seeking reset');
 });
 test('Real LG decoder health is sampled over its existing authenticated media WebSocket',()=>{
  const c=browser();

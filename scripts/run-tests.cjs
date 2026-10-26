@@ -19,13 +19,23 @@ const tv = [
   'tv-reliability-v0.5/cast/tests/sound.test.cjs',
   'tv-reliability-v0.5/cast/tests/loopback-clockfix.test.cjs',
   'tv-reliability-v0.5/tests/session-policy.test.cjs',
+  'tv-reliability-v0.5/tests/owner-controlled-viewing.test.cjs',
+  'tv-reliability-v0.5/tests/cinema-quality.test.cjs',
   'tv-reliability-v0.5/tests/lg-active-view.test.cjs',
   'tv-reliability-v0.5/tests/release-config.test.cjs',
   'tv-reliability-v0.5/tests/release-runtime-config.test.cjs',
   ...fs.readdirSync(viewerDir).filter(n=>n.endsWith('.test.cjs'))
     .sort().map(n=>'tv-reliability-v0.5/viewer/tests/'+n)
 ];
-const packageTests=['packaging/tests/portable-install.test.cjs','packaging/tests/first-run.test.cjs'];
+const packageTests=[
+ 'packaging/windows-control-panel/TVFinder.test.cjs',
+ 'packaging/tests/portable-install.test.cjs',
+ 'packaging/tests/first-run.test.cjs',
+ 'packaging/tests/stale-session-recovery.test.cjs',
+ 'packaging/windows-oneclick/installer-source.test.cjs',
+ 'packaging/windows-oneclick/audit-release.test.cjs',
+ 'packaging/windows-oneclick/native-source.test.cjs'
+];
 const selected=(mode==='codex'?codex:mode==='tv'?tv:mode==='package'?packageTests:[...codex,...tv,...packageTests]);
 for (const relative of selected) {
   if (!fs.statSync(absolute(relative)).isFile()) throw Error('Missing test file: '+relative);

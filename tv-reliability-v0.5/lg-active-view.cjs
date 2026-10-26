@@ -6,6 +6,7 @@
 const fs=require('node:fs');
 const path=require('node:path');
 const {readUserSettings}=require('./release-config.cjs');
+const VIEWING=require('./viewing-policy.cjs');
 const ROOT=__dirname;
 const PERIOD_MS=75000;
 const MAX_BYTES=16384;
@@ -29,17 +30,24 @@ function boundSession({root=ROOT,fsApi=fs,now=Date.now(),settings}={}){
  if(!/^[a-f0-9]{16}$/.test(state.runId||'')||state.state!=='ready'||
     state.stream!=='ready'||state.viewer!=='ready'||state.lg!=='opened'||
     state.lgIp!==settings.television.ip)return null;
- const hostExpiry=Date.parse(state.expectedEndUtc||'');
- const viewerExpiry=Date.parse(viewer.expiresAt||'');
- if(!Number.isFinite(hostExpiry)||!Number.isFinite(viewerExpiry)||
-    now>=hostExpiry||now>=viewerExpiry||hostExpiry-now>4*60*60*1000||
-    viewerExpiry-now>4*60*60*1000)return null;
+ let until=null;
+ if(VIEWING.MODE==='until-stopped'){
+  if(state.viewingMode!=='until-stopped'||viewer.viewingMode!=='until-stopped'||
+     state.expectedEndUtc!==null||viewer.expiresAt!==null)return null;
+ }else{
+  const hostExpiry=Date.parse(state.expectedEndUtc||'');
+  const viewerExpiry=Date.parse(viewer.expiresAt||'');
+  if(!Number.isFinite(hostExpiry)||!Number.isFinite(viewerExpiry)||
+     now>=hostExpiry||now>=viewerExpiry||hostExpiry-now>VIEWING.LEGACY_MAX_MS||
+     viewerExpiry-now>VIEWING.LEGACY_MAX_MS)return null;
+  until=Math.min(hostExpiry,viewerExpiry);
+ }
  try{
   const u=new URL(viewer.url);
   if(u.protocol!=='http:'||u.hostname!==settings.network.ip||u.port!=='43198'||
       !/^\/tv\/[a-f0-9]{64}$/.test(u.pathname)||u.search||u.hash)return null;
  }catch{return null}
- return {runId:state.runId,expiresAtMs:Math.min(hostExpiry,viewerExpiry)};
+ return {runId:state.runId,expiresAtMs:until,viewingMode:VIEWING.MODE};
 }
 async function servicesReady(settings,{fetchFn=fetch}={}){
  try{

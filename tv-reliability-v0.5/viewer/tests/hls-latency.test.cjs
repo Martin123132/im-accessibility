@@ -9,7 +9,7 @@ function harness(){
  const token='a'.repeat(64),elements=new Map(),handlers={},timers=[],requests=[];
  let now=100000,loads=0;
  const ids=['desktop','surface','controls','control-toggle','control-panel','enable','pause',
-  'play','catchup','fast','sound','laptop','classic','stop','status','hint','marker'];
+  'play','catchup','quality','fast','sound','laptop','classic','stop','status','hint','marker'];
  for(const id of ids)elements.set(id,{
   id,textContent:'',disabled:false,hidden:false,style:{},controls:false,muted:true,
   currentTime:10,paused:false,videoWidth:1280,videoHeight:720,
@@ -54,10 +54,23 @@ test('seekable playhead catches up only after meaningful drift, without replacin
  h.complete('status',{canArm:true,enabled:false,sourceReady:true,audioAvailable:true,
   recoveryCount:0,expiresAt:'2031-01-01T00:00:00Z'});
  h.tick(2000);
- assert.equal(h.video.currentTime,21.1,'Native video jumps near live edge with 0.9-second margin');
+ assert.equal(h.video.currentTime,20.2,'Initial catch-up leaves 1.8 seconds of native decoder headroom');
  assert.equal(h.loads,0,'A catch-up seek must not reset the video decoder');
  assert.equal(h.requests.filter(p=>p.route==='/api/mouse').length,0);
 });
+test('an advancing native LG decoder is not repeatedly jerked to the live edge',()=>{
+ const h=harness();
+ h.complete('status',{canArm:true,enabled:false,sourceReady:true,
+  recoveryCount:0,expiresAt:'2031-01-01T00:00:00Z'});
+ h.tick(2000);
+ assert.equal(h.video.currentTime,20.2);
+ h.advance(22000);
+ h.video.currentTime=25;
+ h.video.seekable={length:1,start(){return 0},end(){return 40}};
+ h.tick(2000);
+ assert.equal(h.video.currentTime,25,'Do not repeatedly seek a progressing decoder');
+});
+
 test('stalled decoder reloads boundedly and follows explicit server encoder-recovery counter',()=>{
  const h=harness();
  h.complete('status',{canArm:true,enabled:false,sourceReady:true,recoveryCount:0,
@@ -78,6 +91,14 @@ test('stalled decoder reloads boundedly and follows explicit server encoder-reco
   expiresAt:'2031-01-01T00:00:00Z'});
  assert.equal(h.loads,2,'A short repeat after manual reload is rate limited');
  assert.equal(h.requests.filter(p=>p.route==='/api/mouse').length,0);
+});
+test('Cinema mode leaves intentional HLS buffering alone and never seeks near live edge',()=>{
+ const h=harness();
+ h.complete('status',{canArm:true,enabled:false,sourceReady:true,
+  qualityMode:'cinema',recoveryCount:0,expiresAt:'2031-01-01T00:00:00Z'});
+ h.tick(2000);
+ assert.equal(h.video.currentTime,10,'Cinema keeps the 12-second buffer instead of skipping forward');
+ assert.equal(h.loads,0);
 });
 test('mouse broker refuses clicks and arming when HLS capture is stale',()=>{
  assert.match(broker,/if\(!upstream\.streamReady\)enabled=false/);

@@ -10,7 +10,7 @@
 <div class="toolbar">
 <button id="play">Play video</button><button id="full">Full screen</button><button id="newfull" type="button">Interactive full screen</button>
 <button id="arm" class="on">Enable PC controls</button><button id="disarm" class="off" disabled>Pause PC controls</button>
-<button id="clicklast" disabled>Click at pointer</button><button id="showpicture" class="picture-button">Click desktop picture</button><button id="showpad">Hide click pad</button><button id="end-viewing" class="off">End TV session</button><span id="session-remaining" class="small">Four-hour viewer</span><button id="up" disabled>Scroll ↑</button><button id="down" disabled>Scroll ↓</button>
+<button id="clicklast" disabled>Click at pointer</button><button id="showpicture" class="picture-button">Click desktop picture</button><button id="showpad">Hide click pad</button><button id="end-viewing" class="off">End TV session</button><span id="session-remaining" class="small">TV until Stop</span><button id="up" disabled>Scroll ↑</button><button id="down" disabled>Scroll ↓</button>
 <span class="small" id="result" role="status">Waiting for TV remote.</span>
 
 <section id="picture-pad" class="picture-pad" hidden aria-label="Click directly on a desktop picture">
@@ -46,5 +46,5 @@
  <p class="pad-note">Use the buttons outside the video. First position the cursor with a preset and arrows, then choose CLICK WINDOWS. Watch the delayed TV picture before clicking again.</p>
 </section>
 </div>
-<p class="note">Four-hour TV video; you can re-enable PC controls for another ten minutes whenever needed. The click pad is visible by default because that was the physically verified LG remote control method. Only explicitly enabled mouse input is forwarded to Windows; the video remains view-only. No keyboard or Codex message submission is enabled.</p>
+<p class="note">TV video continues until you select Stop, the computer shuts down or a critical service fails. Mouse permission still expires after ten minutes; you can explicitly re-enable it when needed. The click pad is visible by default because that was the physically verified LG remote control method. Only explicitly enabled mouse input is forwarded to Windows; the video remains view-only. No keyboard or Codex message submission is enabled.</p>
 </div><script src="/viewer.js"></script></body></html>

@@ -16,9 +16,9 @@
 
 ## Which version is current?
 
-**`main` contains the tested LG v0.3.16 source-preview baseline** (merged [PR #21](https://github.com/Martin123132/im-accessibility/pull/21)): full-screen H.264/AAC desktop, guarded Magic Remote controls, speaker clock correction and portable setup. The LG browser has previously shown a memory error during longer playback, so this is **not** a finished public release.
+**October 26 source-preview candidate: LG v0.3.21.** This checkout advances the previously merged v0.3.16 H.264/AAC baseline with Cinema/Interactive/Fast viewing modes, the compact LG menu, owner-controlled session/audio recovery, and the playback live-edge fixes recorded in commit e322f22. The separate Windows tray control panel and **multi-brand, read-only Find TVs** source are under [Windows control panel](packaging/windows-control-panel/). See the [owner-tested source checkpoint](docs/OWNER_TESTED_LG_SOURCE_2026-10-26.md) for what was physically demonstrated and what remains untested. **This is source, not a signed installer or general release.**
 
-**[Draft PR #24](https://github.com/Martin123132/im-accessibility/pull/24) is the only open development PR.** It contains the later v0.3.17 browser-memory cleanup candidate and one-click Windows installer **source**. Private Windows installer EXEs have passed isolated tests, but **no signed, approved public installer download exists yet**. Merging GitHub source does **not** replace an installed LG app.
+**Earlier [draft PR #24](https://github.com/Martin123132/im-accessibility/pull/24)** contains the v0.3.17 browser-memory/one-click source candidate. It remains a historical development review alongside the later v0.3.21 source until the repo maintainer resolves its status. GitHub updates do **not** replace the owner's installed Windows/LG setup.
 
 **[Read the exact working-version and PR status →](docs/WHAT_IS_WORKING_2026-10-25.md)**
 
@@ -83,7 +83,7 @@ The television can keep showing the desktop while mouse-control permission expir
 
 ## Test the source preview
 
-**This default branch is not an approved one-click installer download.** The newer graphical installer **source** is being reviewed in [draft #24](https://github.com/Martin123132/im-accessibility/pull/24), while local unsigned binaries remain private. The separately installed PC Bridge application, the owner’s LG pairing, Windows task and local device settings are not included in the repository.
+**This repository has no approved one-click installer download.** The Windows graphical installer and owner task/control-panel implementations are provided as **source previews**; local unsigned binaries remain private. The separately installed PC Bridge application, the owner's LG pairing, Windows task and local device settings are not included in the repository.
 
 On Windows with Node.js 24 installed:
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## 26 October 2026 - LG v0.3.21 source candidate
+
+- Preserve the owner-tested Cinema H.264/AAC pipeline and live-edge playback-stutter fixes from commit e322f22.
+- Bring forward compact LG controls, on-demand viewing and independent laptop-audio restoration as source previews.
+- Add a limited-user, no-auto-trigger Windows TV task control source, taskbar/status GUI, and read-only multibrand TV discovery.
+- Discovery only for LG/Samsung/Sony/Roku/Google Cast/Android TV/AirPlay/Fire TV/DIAL/DLNA; actual PC desktop streaming is LG-only in this preview.
+- Keep pairing credentials, private settings, live task registrations and unsigned installers out of Git.
+
+
 ## In development — I’m-accessibility v1
 
 - Serialize TV viewer and controller status polls so slow responses cannot accumulate. Ignore status replies superseded by newer owner actions, and settle each viewer request once on network errors.

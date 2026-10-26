@@ -4,9 +4,9 @@
 const fs=require('node:fs'),path=require('node:path');
 const core=require('./package-core.cjs');
 const repo=path.resolve(__dirname,'..');
-const version='v0.3.16-audio-clockfix-acceptance-preview';
+const version='v0.3.21-independent-audio-guard-private-preview';
 const tv=[
- 'lg-pair.cjs','lg-active-view.cjs','release-config.cjs','resume.cjs','resume-host.cjs',
+ 'lg-pair.cjs','lg-active-view.cjs','release-config.cjs','viewing-policy.cjs','resume.cjs','resume-host.cjs',
  'cast/lan.cjs','cast/lg-launch.cjs','cast/package.json','cast/package-lock.json',
  'cast/server.cjs','cast/sound.cjs','cast/native/LoopbackCapture.cs.txt',
  'cast/native/LoopbackCapture.exe','cast/native/SpeakerEndpoint.cs.txt',
@@ -65,6 +65,8 @@ function build(out){
   copy(path.join(__dirname,'uninstall.cjs'),'Uninstall.cjs');
   copy(path.join(__dirname,'stop-session.cjs'),'stop-session.cjs');
   copy(path.join(__dirname,'status-session.cjs'),'status-session.cjs');
+  // Optional on-demand, per-user guardian. Packaging does not register it.
+  copy(path.join(__dirname,'windows-oneclick','audio-guard-task.ps1'),'audio-guard-task.ps1');
   function add(name,lines){
    const value=Buffer.from(launcher(lines),'utf8');
    fs.writeFileSync(path.join(payload,name),value,{flag:'wx'});
@@ -111,20 +113,25 @@ function build(out){
    'Run Setup.cmd in the installed folder to select your PC adapter, LG TV and tool locations.',
    'Run Start.cmd only after owner-confirmed setup; it checks TV identity and refuses active/uncertain sessions.',
    'Start.cmd keeps speaker audio OFF; StartSound.cmd explicitly opts into Windows speaker-output audio.',
+   'v0.3.21: configured TV-only muting requires a separately approved independent Windows audio guardian. Until enabled, attempts to mute laptop sound safely fail.',
+   'Optional task setup (owner action only): use audio-guard-task.ps1 -Action Enable -OwnerConsent YES after review. Read-only Status and owner-approved Disable are available.',
+   'Installing the application does not register, start or schedule any Windows task. The guardian never opens or controls the TV.',
    'Experimental v0.3.16 rebuild of LoopbackCapture.exe fixes Windows silent-audio PCM pacing (48kHz output), provenance in LG_AUDIO_CLOCKFIX_2026-10-24.md.',
    'Sound starts on TV only and temporarily mutes the selected laptop speaker output. Select Laptop sound ON to use both rooms.',
    'Laptop-only sound returns when TV playback is disabled. End, closing the TV or losing its heartbeat restores the original Windows speaker mute state.',
    'The TV Sound button is enabled only when the HLS source contains audio; video remains muted until the owner presses it.',
    'An encoder-stall watchdog restarts only the video capture; if sound repeatedly stalls, video-only fallback preserves desktop control.',
-   'The desktop viewer follows the HLS live edge and has a Catch up picture option in its bottom-right Controls menu.',
-   'Fullscreen TV buttons and status live in a small bottom-right expandable Controls menu.',
+   'Interactive mode follows the HLS live edge; Cinema mode retains buffer for higher quality and smooth film viewing.',
+   'Fullscreen TV controls open under the small top-left menu icon; the bottom-right of Windows is unobstructed.',
+   'Cinema 1080p/30fps uses H.264 CRF18, two-second HLS segments and a 36-second playlist window. Switch back to Interactive 720p/15fps from the TV controls; Cinema disarms Windows mouse.',
    'Try faster video opens a separate full-screen MSE-only viewer with the identical controls; original HLS is the default and Return to HLS reopens its own page.',
    'Fast mode uses the same 720p H.264/AAC quality settings, does not grant Windows mouse permission and runs only while selected by the owner.',
    'If LG fast-video decoder frames stop advancing, it seeks toward live, then reconnects a bounded number of times; repeated stalls restore original HLS.',
    'Fast mode now limits hardware decoder seeks and MSE memory pruning, keeping at least eight seconds behind the playhead and twelve seconds near the live edge.',
    'The same private fast-video WebSocket reports decoder frame counts for read-only diagnostics; no Windows control actions or screen data are sent.',
    'Fast-video WebSocket disconnection also revokes Windows mouse access, protecting against clicks on a stale desktop picture.',
-   'During an active four-hour viewing session, the optional LG activity guard sends only bounded one-pixel TV pointer movements while the TV browser and video are active.',
+   'In an owner-started configured session, video continues until explicit Stop, a critical service exit or Windows shutdown; no four-hour automatic expiry. Historical unconfigured tests remain time-limited.',
+   'The optional LG activity guard sends only bounded one-pixel TV pointer movements while the validated LG browser and live video are active.',
    'This does not disable OLED protection; Stop or switching away from the browser ends the signal.',
    'Stop.cmd requests shutdown; Uninstall.cmd removes only unchanged installed files.',
    'PC Bridge and Codex are NOT bundled. Binary provenance and Windows 11 TV acceptance pending.',
