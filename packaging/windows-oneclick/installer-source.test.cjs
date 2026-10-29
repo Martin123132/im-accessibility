@@ -83,3 +83,16 @@ test('offline Windows builder takes explicit third-party licences and creates no
   assert.match(script,new RegExp(name.replace('.','\\.')));
  }
 });
+
+test('first-run TV discovery is packaged and limited to local owner-selected adapter',()=>{
+ const ui=read('ImAccessibilityApp.cs'),bridge=read('gui-config-bridge.cjs'),builder=read('build-oneclick.ps1');
+ assert.match(ui,/Find TVs on Wi-Fi/);
+ assert.match(ui,/Task\.Run\(\(\)=>Engine\.Run\("discover",input,false\)\)/);
+ assert.match(ui,/tvIP\.ReadOnly=true/);
+ assert.match(ui,/new FoundTV/);
+ assert.match(ui,/chosen\.IsLG/);
+ assert.match(bridge,/command==='discover'/);
+ assert.match(bridge,/finder\.scan\(\{durationMs:4200,adapter:v\}\)/);
+ assert.match(builder,/TVFinder\.cjs/);
+ assert.doesNotMatch(bridge,/eval\(|execSync\(/);
+});

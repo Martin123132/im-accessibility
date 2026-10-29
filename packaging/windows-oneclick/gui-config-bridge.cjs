@@ -14,6 +14,17 @@ async function main(){
   if(command==='doctor'){
     return output(first.doctor({nodeExe:process.execPath,ffmpegExe:ffmpeg}));
   }
+  if(command==='discover'){
+    // Read-only discovery before settings exist; never pairs or launches a television.
+    let data='';
+    for await(const part of process.stdin){data+=String(part);if(data.length>1024)throw Error('Discovery input too large')}
+    const v=JSON.parse(data);
+    if(!v||typeof v!=='object'||Array.isArray(v)||
+       Object.keys(v).sort().join(',')!=='adapterName,localIp')
+      throw Error('Select one current PC network before discovery');
+    const finder=require('./TVFinder.cjs');
+    return output(await finder.scan({durationMs:4200,adapter:v}));
+  }
   if(command==='save'){
     let data='';
     for await(const part of process.stdin){
