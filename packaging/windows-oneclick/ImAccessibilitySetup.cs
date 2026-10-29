@@ -124,7 +124,7 @@ namespace ImAccessibilityInstaller {
       using(var source=archive.GetEntry("installer-manifest.json").Open())
       using(var outStream=new FileStream(receipt,FileMode.CreateNew,FileAccess.Write,FileShare.None))
        source.CopyTo(outStream);
-      foreach(string required in new[]{"ImAccessibility.exe","ImAccessibility-Uninstall.exe","gui-config-bridge.cjs",
+      foreach(string required in new[]{"ImAccessibility.exe","ImAccessibility-Uninstall.exe","gui-config-bridge.cjs","TVFinder.cjs",
          "Runtime/node.exe","Runtime/ffmpeg.exe","tv-reliability-v0.5/viewer/web/fast-video.js"})
        if(!allNames.Contains(required))throw new Exception("Essential application component is missing: "+required);
      }

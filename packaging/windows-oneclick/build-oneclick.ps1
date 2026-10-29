@@ -53,6 +53,8 @@ if(!(Test-Path -LiteralPath (Join-Path $nativeEvidence 'native-verification.json
  throw 'Native source/binary correspondence was not verified'
 }
 Copy-Item -LiteralPath (Join-Path $source 'gui-config-bridge.cjs') -Destination (Join-Path $stage 'gui-config-bridge.cjs') -ErrorAction Stop
+# Reuse bounded LAN SSDP/DNS-SD discovery before a TV has been configured.
+Copy-Item -LiteralPath (Join-Path $source '..\windows-control-panel\TVFinder.cjs') -Destination (Join-Path $stage 'TVFinder.cjs') -ErrorAction Stop
 $rt=Join-Path $stage 'Runtime'
 $third=Join-Path $stage 'THIRD_PARTY'
 New-Item -ItemType Directory -Path $rt,$third -ErrorAction Stop|Out-Null

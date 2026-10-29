@@ -1,10 +1,11 @@
 'use strict';
 // Multibrand TV discovery: read-only local SSDP and DNS-SD/mDNS.
 // Finding a device never pairs, connects, modifies configuration or starts streaming.
-const dgram=require('node:dgram'),path=require('node:path');
+const dgram=require('node:dgram'),path=require('node:path'),os=require('node:os');
 const fs=require('node:fs');
 function findReleaseConfig(){
   const possibilities=[
+    path.resolve(__dirname,'tv-reliability-v0.5','release-config.cjs'),
     path.resolve(__dirname,'..','tv-reliability-v0.5','release-config.cjs'),
     path.resolve(__dirname,'..','..','tv-reliability-v0.5','release-config.cjs')
   ];
@@ -14,7 +15,7 @@ function findReleaseConfig(){
 }
 // Installed builds use the standard per-user settings in LOCALAPPDATA.
 // Source tests can supply IM_ACCESSIBILITY_CONFIG_PATH explicitly.
-const {readUserSettings,isPrivate,subnet,usableHost}=require(findReleaseConfig());
+const {readUserSettings,isPrivate,subnet,usableHost,chooseAdapter,SUPPORTED_MODEL}=require(findReleaseConfig());
 const SERVICES=[
  ['_googlecast._tcp.local','Google Cast','Cast receiver'],
  ['_airplay._tcp.local','Apple AirPlay','AirPlay receiver'],
@@ -109,7 +110,10 @@ function recognizeMdns(packet){
     name=clean(original.toLowerCase().endsWith(suffix)?
        original.slice(0,-suffix.length):original);
    }
-   if(!best||r.type==='PTR')best={brand,name:name||brand,kind,method:'mDNS'};
+   const lgAirPlay=service==='_airplay._tcp.local' && /^\[LG\]\s*webOS\s+TV\b/i.test(name);
+   const identifiedBrand=lgAirPlay?'LG':brand;
+   if(!best||identifiedBrand==='LG'||(r.type==='PTR'&&best.brand!=='LG'))
+    best={brand:identifiedBrand,name:name||identifiedBrand,kind:lgAirPlay?'Smart TV':kind,method:'mDNS'};
   }
  }
  return best;
@@ -128,13 +132,16 @@ function mergeRows(found,verified){
   if(!h||!validLan(h.ip,verified.network))continue;
   const old=rows.get(h.ip);
   const isCurrent=h.ip===verified.television.ip;
+  const recognizedLg=h.brand==='LG';
   const item={ip:h.ip,brand:isCurrent?'LG':clean(h.brand,40),
    name:isCurrent?'LG webOS TV ('+verified.television.model+')':clean(h.name),
    kind:isCurrent?'Smart TV':clean(h.kind,60),
    methods:old?[...new Set([...old.methods,h.method])]:[h.method],found:true,
    current:isCurrent,
-   connection:isCurrent?'Current supported LG TV':'Discovered - connection not yet supported'};
-  if(old&&old.methods.includes('mDNS')&&h.method==='SSDP'){
+   connection:isCurrent?'Current supported LG TV':recognizedLg?
+    'LG webOS found - model verified at connection':'Discovered - connection not yet supported'};
+  if(old&&((old.brand==='LG'&&item.brand!=='LG')||
+    (old.methods.includes('mDNS')&&h.method==='SSDP'&&item.brand!=='LG'))){
    old.methods=item.methods;rows.set(h.ip,old);continue;
   }
   rows.set(h.ip,item);
@@ -173,11 +180,14 @@ function scanUdp(mode,network,onHit,durationMs){
   setTimeout(finish,durationMs);
  });
 }
-async function scan({durationMs=4200}={}){
- const verified=readUserSettings();const found=[];
+async function scan({durationMs=4200,adapter=null}={}){
+ // Initial setup has no saved settings; restrict discovery to the actual selected LAN adapter.
+ const network=adapter?chooseAdapter(adapter,os.networkInterfaces()):null;
+ const verified=network?{network,television:{ip:null,model:SUPPORTED_MODEL}}:readUserSettings();
+ const found=[];
  await Promise.all(['ssdp','mdns'].map(mode=>scanUdp(mode,verified.network,x=>found.push(x),durationMs)));
  const devices=mergeRows(found,verified);
- return {ok:true,readOnly:true,network:'Local Wi-Fi',currentIp:verified.television.ip,count:devices.length,devices};
+ return {ok:true,readOnly:true,network:verified.network.name||'Local Wi-Fi',currentIp:verified.television.ip,count:devices.length,devices};
 }
 if(require.main===module){
  if(process.argv.length!==3||process.argv[2]!=='--scan'){
