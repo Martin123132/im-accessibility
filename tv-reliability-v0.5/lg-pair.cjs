@@ -16,7 +16,9 @@ function privateReceiver(){
  const s=JSON.parse(fs.readFileSync(SESSION,'utf8')),u=new URL(s.url);
  if(u.origin!=='http://'+LAN+':'+PORT||!/^\/tv\/[a-f0-9]{64}$/.test(u.pathname)||u.search||u.hash||
     !VIEWING.recordValid(s))throw Error('Local TV viewing session unavailable/expired');
- return{url:s.url,expiresAt:s.expiresAt};
+ // The existing /full/ page uses the same validated private capability and expiry.
+ u.pathname=u.pathname.replace(/^\/tv\//,'/full/');
+ return{url:u.href,expiresAt:s.expiresAt};
 }
 function localCandidate(ip){
  if(SETTINGS)return ip===SETTINGS.television.ip&&ip!==LAN&&

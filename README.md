@@ -6,7 +6,7 @@
 
 **Use your Windows PC from your television, share control with an AI assistant, and decide what happens next.**
 
-**Public source preview · Windows + LG webOS · Human-led AI assistance**
+**Public source preview · Windows-to-TV across brands (LG connection prototype) · Human-led AI assistance**
 
 [Current working version](docs/WHAT_IS_WORKING_2026-10-25.md) · [Get started](docs/SETUP.md) · [Features](docs/FEATURES.md) · [V1 release plan](docs/V1_RELEASE_PLAN.md) · [Safety](docs/SECURITY.md)
 
@@ -21,6 +21,14 @@
 **Earlier [draft PR #24](https://github.com/Martin123132/im-accessibility/pull/24)** contains the v0.3.17 browser-memory/one-click source candidate. It remains a historical development review alongside the later v0.3.21 source until the repo maintainer resolves its status. GitHub updates do **not** replace the owner's installed Windows/LG setup.
 
 **[Read the exact working-version and PR status →](docs/WHAT_IS_WORKING_2026-10-25.md)**
+
+## TV brands and first-run discovery
+
+The product is **not intended to be LG-only**. The Windows setup source now has a **Find TVs** option that discovers LG, Samsung, Sony, Roku, Google Cast, Android/Google TV, Amazon Fire TV, AirPlay receivers and other advertised devices without saved pairing credentials.
+
+**Discovery is not casting:** only the LG OLED55CX6LA connection has been owner-tested so far. Unsupported devices appear as *discovered, connection not yet available*. Other protocol adapters are still required before those devices can receive desktop video.
+
+[See supported platforms, detected devices and connection roadmap](docs/TV_PLATFORM_SUPPORT.md). The public one-click executable is not released while third-party binary and installer acceptance requirements remain unresolved.
 
 ## What if the computer worked around you?
 
@@ -74,6 +82,7 @@ The television can keep showing the desktop while mouse-control permission expir
 | --- | --- |
 | [Setup](docs/SETUP.md) | Prerequisites, source checkout and local test commands |
 | [Features](docs/FEATURES.md) | What works now, what is only a prototype, what is planned |
+| [TV platform support](docs/TV_PLATFORM_SUPPORT.md) | Multi-brand discovery, connection status and adapter roadmap |
 | [Architecture](docs/ARCHITECTURE.md) | TV, Windows, ChatGPT, PC Bridge and Codex boundaries |
 | [Accessibility](docs/ACCESSIBILITY.md) | Design principles, control alternatives and testing goals |
 | [Testing](docs/TESTING.md) | Reproducible tests and real hardware evidence |

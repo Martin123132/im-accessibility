@@ -6,7 +6,7 @@ const core=require('./package-core.cjs');
 const repo=path.resolve(__dirname,'..');
 const version='v0.3.21-independent-audio-guard-private-preview';
 const tv=[
- 'lg-pair.cjs','lg-active-view.cjs','release-config.cjs','viewing-policy.cjs','resume.cjs','resume-host.cjs',
+ 'lg-pair.cjs','lg-active-view.cjs','cinema-start.cjs','release-config.cjs','viewing-policy.cjs','resume.cjs','resume-host.cjs',
  'cast/lan.cjs','cast/lg-launch.cjs','cast/package.json','cast/package-lock.json',
  'cast/server.cjs','cast/sound.cjs','cast/native/LoopbackCapture.cs.txt',
  'cast/native/LoopbackCapture.exe','cast/native/SpeakerEndpoint.cs.txt',

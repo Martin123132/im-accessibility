@@ -14,6 +14,16 @@ async function main(){
   if(command==='doctor'){
     return output(first.doctor({nodeExe:process.execPath,ffmpegExe:ffmpeg}));
   }
+  if(command==='discover'){
+    // No saved config is needed. Only the owner-selected physical LAN is queried.
+    let input='';
+    for await(const part of process.stdin){
+      input+=String(part);
+      if(input.length>1024)throw Error('Discovery request too large');
+    }
+    const choice=JSON.parse(input);
+    return output(await require('./discover-setup.cjs').scan(choice));
+  }
   if(command==='save'){
     let data='';
     for await(const part of process.stdin){

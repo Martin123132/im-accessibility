@@ -43,6 +43,14 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\packaging\windows-onec
 
 The result is `out\ImAccessibility-Setup-v0.3.17-PRIVATE-PREVIEW.exe`. Keep this private until provenance and distribution obligations are reviewed and the installer is accepted by the owner.
 
+## Multi-brand first-run discovery
+
+The graphical Windows app now offers **Find TVs** using bounded, read-only SSDP/mDNS scans on the user-selected trusted network. It works **without saved TV settings**, detects multiple TV and receiver families, and includes manual TV-address entry if multicast discovery is unavailable. The scanner does not pair, stream, open applications or change network settings.
+
+**Detection does not imply connection support.** The owner-tested direct connection remains LG OLED55CX6LA. Samsung, Sony, Google Cast/Chromecast, Android/Google TV, Roku, Apple AirPlay, Amazon Fire TV and other receivers can be discovered, but their connection adapters have not yet been implemented and validated. The setup app labels them accordingly and refuses to route them through the LG connector.
+
+The multibrand scanner source is `discover-setup.cjs` with regression tests in `discover-setup.test.cjs`, invoked only via the narrow `gui-config-bridge.cjs` `discover` command. See [platform support](../../docs/TV_PLATFORM_SUPPORT.md) for the distinction between discovery and actual desktop casting.
+
 ## Release gates
 
 1. **Same-computer first-run usability acceptance:** verify visually that setup opens, the text/control sizes are accessible, keyboard and screen-reader navigation are usable, selecting the LG TV works, saved settings persist, and the app is available from the desktop/Start Menu and Windows installed-apps list. This can be carried out on an isolated Windows user profile; a second physical computer is **not** required.

@@ -3,6 +3,7 @@
 // This owns ONLY its own cast/viewer children. It does not stop other PC Bridge services.
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto');
 const VIEWING=require('./viewing-policy.cjs');
+const {promote:promoteCinema}=require('./cinema-start.cjs');
 const {SpeakerRouter}=require('./viewer/speaker-routing.cjs');
 const ROOT=__dirname,RUNTIME=path.join(ROOT,'runtime'),CAST=path.join(ROOT,'cast'),VIEWER=path.join(ROOT,'viewer');
 const SETTINGS=process.env.IM_ACCESSIBILITY_CONFIG_PATH!==undefined
@@ -135,6 +136,13 @@ async function launch(){
   update({lg:pair.opened?'opened':'needs-tv',lgIp:pair.opened?pair.host:null});
   log(pair.opened?'LG browser requested to open':'LG not available; session remains live for manual connection');
   if(pair.opened){
+   try{
+    await promoteCinema({sessionUrl:s.url,lan:LAN,verifiedIp:pair.host,
+      lg:require('./lg-pair.cjs')});
+    log('Cinema 1080p ready; LG immersive viewer reopened after stream readiness');
+   }catch(e){
+    log('Cinema reopen unconfirmed; interactive viewer remains available: '+String(e.message||e).slice(0,130));
+   }
    try{spawnActivityGuard()}catch(e){log('Optional LG activity setup failed: '+String(e.message).slice(0,120))}
   }
  }catch(e){update({lg:'unavailable'});log('LG launch unavailable: '+String(e.message||e).slice(0,200))}

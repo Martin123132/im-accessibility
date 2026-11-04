@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.Drawing;
 using System.Diagnostics;
+using System.Threading;
 using System.Collections;
 using System.Collections.Generic;
 using System.Windows.Forms;
@@ -48,23 +49,27 @@ namespace ImAccessibilityDesktop {
   ComboBox adapters=new ComboBox();
   TextBox tvIP=new TextBox(),log=new TextBox();
   CheckBox confirm=new CheckBox(),sound=new CheckBox();
-  Button save=new Button(),start=new Button(),stop=new Button(),status=new Button(),uninstall=new Button();
+  Button save=new Button(),start=new Button(),stop=new Button(),status=new Button(),uninstall=new Button(),findTvs=new Button();
   Label state=new Label();
+   readonly System.Windows.Forms.Timer presentationPoll=new System.Windows.Forms.Timer();
+   int presentationTries; bool presentationBusy;
   public MainWindow(){
-   Text="I'm-accessibility - Windows desktop to LG TV";Font=new Font("Segoe UI",10);
+   Text="I'm-accessibility - Windows desktop to TV";Font=new Font("Segoe UI",10);
    BackColor=Color.FromArgb(247,249,250);ForeColor=Color.FromArgb(28,42,56);
    Size=new Size(775,650);MinimumSize=new Size(710,600);
    StartPosition=FormStartPosition.CenterScreen;AutoScaleMode=AutoScaleMode.Font;
    AddLabel("I'm-accessibility",28,20,680,44,20,true);
-   AddLabel("Share your Windows desktop with your LG TV. TV control remains yours.",30,74,695,27);
+   AddLabel("Share your Windows desktop with your television. You stay in control.",30,74,695,27);
    Panel bar=new Panel{Left=28,Top=109,Width=694,Height=2,BackColor=Color.Silver};Controls.Add(bar);
-   AddLabel("1   CONNECT YOUR LG TV",28,130,680,27,11,true);
+   AddLabel("1   FIND AND CONNECT A TV",28,130,680,27,11,true);
    AddLabel("PC network",30,174,117,25);
    adapters.SetBounds(156,169,547,33);adapters.DropDownStyle=ComboBoxStyle.DropDownList;Controls.Add(adapters);
-   AddLabel("LG TV IP",30,218,117,26);
+   AddLabel("TV address",30,218,117,26);
    tvIP.SetBounds(156,213,195,32);tvIP.MaxLength=15;Controls.Add(tvIP);
-   AddLabel("Find this under LG Settings > Network. Initial supported model: OLED55CX6LA.",365,216,344,43);
-   confirm.SetBounds(155,260,540,30);confirm.Text="I confirm this is the LG TV I want to connect to.";Controls.Add(confirm);
+   findTvs.Text="Find TVs";findTvs.SetBounds(365,213,133,33);
+    findTvs.Click+=(s,e)=>DiscoverTVs();Controls.Add(findTvs);
+    AddLabel("LG webOS connection preview. Other TVs are discovery-only.",507,206,212,55);
+   confirm.SetBounds(155,260,540,30);confirm.Text="I confirm I own or am authorised to connect to this television.";Controls.Add(confirm);
    save.Text="Save setup";save.SetBounds(155,304,172,40);Primary(save);save.Click+=(s,e)=>Save();
    Controls.Add(save);
    state.SetBounds(345,312,350,30);state.Text="Checking setup...";Controls.Add(state);
@@ -83,36 +88,40 @@ namespace ImAccessibilityDesktop {
    log.Anchor=AnchorStyles.Left|AnchorStyles.Right|AnchorStyles.Bottom|AnchorStyles.Top;
    log.Text="Ready. Nothing starts streaming until you press Start.";
    Controls.Add(log);
+    presentationPoll.Interval=1800;
+    presentationPoll.Tick+=(sender,e)=>ProbeDesktopReady();
    // Intentional tab sequence: network, address, confirmation, save, sound,
    // start/stop/status, uninstall, then the read-only announcement log.
    // No keyboard shortcut starts Windows capture or arms the mouse.
    KeyPreview=true;
    KeyDown+=(sender,e)=>{if(e.KeyCode==Keys.F5){Status();e.Handled=true;e.SuppressKeyPress=true;}};
    adapters.TabIndex=0;adapters.AccessibleName="PC network connection";
-   adapters.AccessibleDescription="Select the private Wi-Fi or Ethernet adapter connected to your LG television.";
-   tvIP.TabIndex=1;tvIP.AccessibleName="LG television IPv4 address";
-   tvIP.AccessibleDescription="The address shown in the LG television's network settings.";
-   confirm.TabIndex=2;confirm.AccessibleName="Confirm this is my own LG television";
+   adapters.AccessibleDescription="Select your private Wi-Fi or Ethernet network for television discovery.";
+   tvIP.TabIndex=1;tvIP.AccessibleName="Television IPv4 address";
+   tvIP.AccessibleDescription="The address shown in the television's network settings.";
+   findTvs.TabIndex=2;findTvs.AccessibleName="Find TVs on my local network";
+    findTvs.AccessibleDescription="Read-only discovery of nearby televisions before configuration is saved.";
+    confirm.TabIndex=3;confirm.AccessibleName="Confirm I am authorised to connect to this television";
    confirm.AccessibleDescription="Required acknowledgement before saving device configuration.";
-   save.TabIndex=3;save.AccessibleName="Save LG television setup";
+   save.TabIndex=4;save.AccessibleName="Save supported television setup";
    save.AccessibleDescription="Validate the selected network and TV address and save settings locally.";
-   sound.TabIndex=4;sound.AccessibleName="Enable LG television speaker audio";
+   sound.TabIndex=5;sound.AccessibleName="Enable television speaker audio";
    sound.AccessibleDescription="When selected, the TV plays speaker audio and the laptop may be temporarily muted.";
-   start.TabIndex=5;start.AccessibleName="Start Windows desktop streaming to LG TV";
+   start.TabIndex=6;start.AccessibleName="Start Windows desktop streaming to the selected television";
    start.AccessibleDescription="Requires a confirmation dialog and never enables Windows mouse control automatically.";
-   stop.TabIndex=6;stop.AccessibleName="Stop this application's TV stream";
+   stop.TabIndex=7;stop.AccessibleName="Stop this application's TV stream";
    stop.AccessibleDescription="Requires confirmation; does not shut down other applications.";
-   status.TabIndex=7;status.AccessibleName="Refresh TV streaming status";
+   status.TabIndex=8;status.AccessibleName="Refresh TV streaming status";
    status.AccessibleDescription="Read the current TV connection state. Keyboard shortcut F5.";
-   uninstall.TabIndex=8;uninstall.AccessibleName="Open accessible application uninstaller";
+   uninstall.TabIndex=9;uninstall.AccessibleName="Open accessible application uninstaller";
    uninstall.AccessibleDescription="Confirm to open Windows uninstallation; streaming must be stopped first.";
-   log.TabIndex=9;log.TabStop=true;log.AccessibleName="TV application activity and status messages";
+   log.TabIndex=10;log.TabStop=true;log.AccessibleName="TV application activity and status messages";
    log.AccessibleDescription="Read-only log of setup, connection and local application state.";
-   state.AccessibleName="LG television setup status";
+   state.AccessibleName="Television setup status";
    Load+=(s,e)=>Initialize();
   }
   public object AccessibilityReport(){
-   Control[] ordered={adapters,tvIP,confirm,save,sound,start,stop,status,uninstall,log};
+   Control[] ordered={adapters,tvIP,findTvs,confirm,save,sound,start,stop,status,uninstall,log};
    var records=new List<Dictionary<string,object>>();
    bool named=true,tabOrder=true,allTabStops=true;
    for(int i=0;i<ordered.Length;i++){
@@ -159,9 +168,88 @@ namespace ImAccessibilityDesktop {
     Status();
    }catch(Exception ex){Log("Setup check: "+ex.Message);start.Enabled=false;save.Enabled=false;}
   }
-  void Save(){
+   // Discovery is independent of saved pairing credentials and streaming.
+   void DiscoverTVs(){
+    var net=adapters.SelectedItem as Adapter;
+    if(net==null){Log("Choose your PC network before searching.");return;}
+    if(!findTvs.Enabled)return;
+    findTvs.Enabled=false;
+    Log("Searching the selected local network for TVs and receivers...");
+    var input=new JavaScriptSerializer().Serialize(
+      new Dictionary<string,object>{{"adapterName",net.Name},{"localIp",net.IP}});
+    ThreadPool.QueueUserWorkItem(delegate{
+      string result=null,error=null;
+      try{result=Engine.Run("discover",input,false);}
+      catch(Exception ex){error=ex.Message;}
+      if(IsDisposed||!IsHandleCreated)return;
+      try{BeginInvoke((Action)delegate{
+        findTvs.Enabled=true;
+        if(error!=null){Log("Discovery unavailable: "+error);return;}
+        try{ShowDiscoveredTVs(result);}
+        catch(Exception ex){Log("Cannot display TV results: "+ex.Message);}
+      });}catch(InvalidOperationException){}
+    });
+   }
+   void ShowDiscoveredTVs(string json){
+    var response=Engine.Parse(json);
+    object found;
+    var rows=response!=null&&response.TryGetValue("devices",out found)
+      ?found as ArrayList:null;
+    if(rows==null)throw new Exception("Invalid TV discovery response.");
+    using(var dialog=new Form()){
+      dialog.Text="Nearby TVs and streaming devices";
+      dialog.ClientSize=new Size(745,395);
+      dialog.StartPosition=FormStartPosition.CenterParent;
+      dialog.FormBorderStyle=FormBorderStyle.FixedDialog;
+      dialog.MaximizeBox=false;dialog.MinimizeBox=false;
+      dialog.Font=new Font("Segoe UI",9.5f);
+      var heading=new Label{Left=17,Top=14,Width=711,Height=46,
+       Text="Choose a TV. A device being detected does not guarantee streaming support."};
+      dialog.Controls.Add(heading);
+      var list=new ListView{Left=17,Top=62,Width=711,Height=248,
+       View=View.Details,FullRowSelect=true,MultiSelect=false,GridLines=true};
+      list.Columns.Add("Device",192);list.Columns.Add("Brand",97);
+      list.Columns.Add("IP address",115);list.Columns.Add("Connection status",302);
+      foreach(object row in rows){
+       var device=row as Dictionary<string,object>;if(device==null)continue;
+       string ip=Engine.Field(device,"ip");if(ip.Length==0)continue;
+       var entry=new ListViewItem(Engine.Field(device,"name"));
+       entry.SubItems.Add(Engine.Field(device,"brand"));
+       entry.SubItems.Add(ip);
+       entry.SubItems.Add(Engine.Field(device,"status"));
+       entry.Tag=device;list.Items.Add(entry);
+      }
+      dialog.Controls.Add(list);
+      var note=new Label{Left=17,Top=315,Width=711,Height=29,
+       Text="The owner-tested connection is LG OLED55CX6LA. Other TV adapters are in development."};
+      dialog.Controls.Add(note);
+      var pick=new Button{Left=17,Top=349,Width=169,Height=32,Text="Use selected TV"};
+      pick.Click+=(s,e)=>{
+       if(list.SelectedItems.Count!=1)return;
+       var selected=list.SelectedItems[0].Tag as Dictionary<string,object>;
+       if(selected==null)return;
+       if(Engine.Field(selected,"adapter")!="lg-webos"){
+        MessageBox.Show(dialog,
+         "This device was detected, but direct casting is not yet implemented for its platform.",
+         "Connection not yet available",MessageBoxButtons.OK,MessageBoxIcon.Information);
+        return;
+       }
+       tvIP.Text=Engine.Field(selected,"ip");
+       confirm.Checked=false;
+       state.Text="LG address chosen; confirm ownership and save.";
+       dialog.DialogResult=DialogResult.OK;
+       dialog.Close();
+      };
+      dialog.Controls.Add(pick);
+      var close=new Button{Left=607,Top=349,Width=121,Height=32,Text="Close"};
+      close.Click+=(s,e)=>dialog.Close();
+      dialog.Controls.Add(close);
+      Log(list.Items.Count+" devices detected on your local network.");
+      dialog.ShowDialog(this);
+    }
+   }   void Save(){
    var a=adapters.SelectedItem as Adapter;if(a==null){Log("Select a PC network first.");return;}
-   if(!confirm.Checked){Log("Confirm your LG TV before saving.");return;}
+   if(!confirm.Checked){Log("Confirm that you are authorised to connect to this television.");return;}
    IPAddress ip; if(!IPAddress.TryParse(tvIP.Text.Trim(),out ip)||ip.AddressFamily!=System.Net.Sockets.AddressFamily.InterNetwork){
     Log("Enter a valid TV IPv4 address.");return;
    }
@@ -175,21 +263,52 @@ namespace ImAccessibilityDesktop {
   }
   void StartTV(){
    if(!File.Exists(Engine.Settings)){Log("Save your TV setup first.");return;}
-   string s="Open the Windows desktop stream on your selected LG TV?\r\n"+
+   string s="Open the Windows desktop stream on your selected television?\r\n"+
      (sound.Checked?"TV audio will be enabled.":"TV audio will stay disabled.")+
      "\r\nWindows mouse control will remain OFF until you enable it on the TV.";
    if(MessageBox.Show(this,s,"Confirm TV start",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
-   try{Engine.Run("validate",null,false);Log(Engine.Run("start",null,sound.Checked));}
+   try{
+     Engine.Run("validate",null,false);
+     Log(Engine.Run("start",null,sound.Checked));
+     presentationTries=0;
+     presentationPoll.Start();
+    }
    catch(Exception ex){Log("Start refused: "+ex.Message);}
   }
   void StopTV(){
+    presentationPoll.Stop();
    if(MessageBox.Show(this,"Stop this TV stream only?","Confirm stop",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
    try{Log(Engine.Run("stop",null,false));}catch(Exception ex){Log("Stop failed: "+ex.Message);}
   }
-  void Status(){
+     // Minimise this control window only; preserve any user's chosen desktop app.
+   void ProbeDesktopReady(){
+    if(presentationBusy || !presentationPoll.Enabled)return;
+    presentationBusy=true;
+    ThreadPool.QueueUserWorkItem(delegate{
+     bool connected=false;
+     try{
+      var data=Engine.Parse(Engine.Run("status",null,false));
+      connected=Engine.Field(data,"viewer")=="ready"&&Engine.Field(data,"lg")=="opened"
+        &&Engine.Field(data,"stream")=="ready";
+     }catch{}
+     if(IsDisposed || !IsHandleCreated)return;
+     try{BeginInvoke((Action)delegate{
+      presentationBusy=false;
+      if(!presentationPoll.Enabled)return;
+      presentationTries++;
+      if(connected){
+       presentationPoll.Stop();
+       WindowState=FormWindowState.Minimized;
+      }else if(presentationTries>=15){
+       presentationPoll.Stop();
+       Log("TV connection not confirmed; controls remain open for inspection.");
+      }
+     });}catch(InvalidOperationException){}
+    });
+   }void Status(){
    try{var d=Engine.Parse(Engine.Run("status",null,false));
     Log("State "+Engine.Field(d,"state")+" | video "+Engine.Field(d,"stream")+
-     " | viewer "+Engine.Field(d,"viewer")+" | LG "+Engine.Field(d,"lg"));
+     " | viewer "+Engine.Field(d,"viewer")+" | TV "+Engine.Field(d,"lg"));
    }catch(Exception ex){Log("Status: "+ex.Message);}
   }
   void Uninstall(){

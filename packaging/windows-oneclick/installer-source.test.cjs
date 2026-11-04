@@ -7,6 +7,22 @@ const path=require('node:path');
 const root=__dirname;
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 
+test('first-run discovers multiple TV families without existing settings or pretending every TV can connect',()=>{
+ const finder=read('discover-setup.cjs');
+ const bridge=read('gui-config-bridge.cjs');
+ const gui=read('ImAccessibilityApp.cs');
+ const builder=read('build-oneclick.ps1');
+ for(const brand of ['Samsung','Sony','Roku','Google Cast','Apple AirPlay','LG']){
+  assert.ok(finder.includes(brand),'Missing discoverable device family: '+brand);
+ }
+ assert.match(bridge,/command==='discover'/);
+ assert.match(bridge,/discover-setup\.cjs/);
+ assert.match(gui,/Find TVs/);
+ assert.match(gui,/direct casting is not yet implemented/);
+ assert.match(builder,/discover-setup\.cjs/);
+ assert.doesNotMatch(finder,/readUserSettings\(/);
+});
+
 test('the click installer is graphical, embeds a checksum manifest and refuses install overwrite',()=>{
  const source=read('ImAccessibilitySetup.cs');
  assert.match(source,/Application\.Run\(new InstallerWindow\(\)\)/);
@@ -46,12 +62,12 @@ test('uninstaller keeps settings, checks every installed file hash and refuses a
 
 test('accessibility annotations provide named roles, keyboard tab sequence and explicit selftests',()=>{
  const ui=read('ImAccessibilityApp.cs'),setup=read('ImAccessibilitySetup.cs');
- for(const name of ['PC network connection','LG television IPv4 address',
-  'Start Windows desktop streaming to LG TV','Stop this application',
+ for(const name of ['PC network connection','Television IPv4 address','Find TVs on my local network',
+  'Start Windows desktop streaming to the selected television','Stop this application',
   'TV application activity and status messages']){
   assert.ok(ui.includes(name),'Missing screen-reader name: '+name);
  }
- for(let i=0;i<=9;i++)assert.match(ui,new RegExp('\\.TabIndex='+i+';'));
+ for(let i=0;i<=10;i++)assert.match(ui,new RegExp('\\.TabIndex='+i+';'));
  assert.match(ui,/AccessibilityReport\(\)/);
  assert.match(ui,/--accessibility-selftest/);
  assert.match(ui,/KeyCode==Keys\.F5/);

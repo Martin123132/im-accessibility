@@ -12,6 +12,14 @@
 
 Cloning this repository does **not** install or authorise the PC Bridge application.
 
+## First-run television discovery (Windows installer source)
+
+The Windows setup UI now includes **Find TVs**, which scans a user-selected trusted local network **before** any TV is paired or settings are saved. It recognises multiple TV and receiver families, while clearly distinguishing a detected device from one with an implemented connection adapter. It also retains manual IP entry.
+
+The current owner-tested connection is LG OLED55CX6LA. Other models/brands need a validated adapter and hardware testing; the scanner cannot itself cast to them. See [TV platform support](TV_PLATFORM_SUPPORT.md).
+
+The Windows installer is presently a private test build. There is no approved public downloadable executable yet, so developers can inspect and test the source; do not mistake the private QA build for a general release.
+
 ## Get the source and dependencies
 
 ~~~powershell
