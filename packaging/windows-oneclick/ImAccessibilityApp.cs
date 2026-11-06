@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.Drawing;
 using System.Diagnostics;
+using System.Threading;
 using System.Collections;
 using System.Collections.Generic;
 using System.Windows.Forms;
@@ -60,7 +61,9 @@ namespace ImAccessibilityDesktop {
   CheckBox confirm=new CheckBox(),sound=new CheckBox();
   Button find=new Button(),save=new Button(),start=new Button(),stop=new Button(),status=new Button(),uninstall=new Button();
   Label state=new Label();
-  bool scanning=false;
+   bool scanning=false;
+   readonly System.Windows.Forms.Timer presentationPoll=new System.Windows.Forms.Timer();
+   int presentationTries;bool presentationBusy;
   public MainWindow(){
    Text="I'm-accessibility - Find TVs on your Wi-Fi";Font=new Font("Segoe UI",10);
    BackColor=Color.FromArgb(247,249,250);ForeColor=Color.FromArgb(28,42,56);
@@ -131,7 +134,9 @@ namespace ImAccessibilityDesktop {
    log.TabIndex=11;log.TabStop=true;log.AccessibleName="TV application activity and status messages";
    log.AccessibleDescription="Read-only log of setup, discovery, and streaming status.";
    state.AccessibleName="LG television setup status";
-   Load+=(s,e)=>Initialize();
+       presentationPoll.Interval=1800;
+    presentationPoll.Tick+=(sender,e)=>ProbeDesktopReady();
+    Load+=(s,e)=>Initialize();
   }
   public object AccessibilityReport(){
    Control[] ordered={adapters,find,televisions,tvIP,confirm,save,sound,start,stop,status,uninstall,log};
@@ -210,7 +215,7 @@ namespace ImAccessibilityDesktop {
     var rows=reply.ContainsKey("devices")?reply["devices"] as ArrayList:null;
     if(rows!=null)foreach(object value in rows){
      var device=value as Dictionary<string,object>;if(device==null)continue;
-     if(!device.ContainsKey("found")||!(device["found"] is bool)||!(bool)device["found"])continue;
+     if(device.ContainsKey("found")&&device["found"] is bool&&!(bool)device["found"])continue;
      string address=Engine.Field(device,"ip");
      IPAddress parsed;
      if(!IPAddress.TryParse(address,out parsed)||parsed.AddressFamily!=System.Net.Sockets.AddressFamily.InterNetwork)continue;
@@ -258,14 +263,45 @@ namespace ImAccessibilityDesktop {
      (sound.Checked?"TV audio will be enabled.":"TV audio will stay disabled.")+
      "\r\nWindows mouse control will remain OFF until you enable it on the TV.";
    if(MessageBox.Show(this,s,"Confirm TV start",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
-   try{Engine.Run("validate",null,false);Log(Engine.Run("start",null,sound.Checked));}
+   try{
+      Engine.Run("validate",null,false);
+      Log(Engine.Run("start",null,sound.Checked));
+      presentationTries=0;presentationBusy=false;presentationPoll.Start();
+    }
    catch(Exception ex){Log("Start refused: "+ex.Message);}
   }
   void StopTV(){
    if(MessageBox.Show(this,"Stop this TV stream only?","Confirm stop",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
-   try{Log(Engine.Run("stop",null,false));}catch(Exception ex){Log("Stop failed: "+ex.Message);}
+       presentationPoll.Stop();
+    try{Log(Engine.Run("stop",null,false));}catch(Exception ex){Log("Stop failed: "+ex.Message);}
   }
-  void Status(){
+     // Presentation only: after receiver and source are confirmed ready, minimise
+   // this controls window. Never launch or manipulate another Windows app.
+   void ProbeDesktopReady(){
+    if(presentationBusy||!presentationPoll.Enabled)return;
+    presentationBusy=true;
+    ThreadPool.QueueUserWorkItem(delegate{
+      bool connected=false;
+      try{
+        var data=Engine.Parse(Engine.Run("status",null,false));
+        connected=Engine.Field(data,"viewer")=="ready"&&
+          Engine.Field(data,"lg")=="opened"&&Engine.Field(data,"stream")=="ready";
+      }catch{}
+      if(IsDisposed||!IsHandleCreated)return;
+      try{BeginInvoke((Action)delegate{
+        presentationBusy=false;
+        if(!presentationPoll.Enabled)return;
+        presentationTries++;
+        if(connected){
+          presentationPoll.Stop();
+          WindowState=FormWindowState.Minimized;
+        }else if(presentationTries>=15){
+          presentationPoll.Stop();
+          Log("TV connection is not yet confirmed; controls remain available.");
+        }
+      });}catch(InvalidOperationException){}
+    });
+   }   void Status(){
    try{var d=Engine.Parse(Engine.Run("status",null,false));
     Log("State "+Engine.Field(d,"state")+" | video "+Engine.Field(d,"stream")+
      " | viewer "+Engine.Field(d,"viewer")+" | LG "+Engine.Field(d,"lg"));

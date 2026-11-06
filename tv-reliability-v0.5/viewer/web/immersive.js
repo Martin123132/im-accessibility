@@ -6,7 +6,7 @@
  function el(id){return document.getElementById(id)}
  var video=el('desktop'),surface=el('surface'),status=el('status'),hint=el('hint');
  var armed=false,pending=false,pausePending=false,pauseEpoch=0,lastClickAt=0,expiresAt=0,confirmStopUntil=0;
- var audioAvailable=false,audioBusy=false,audioRoute='laptop-only',controlsOpen=false;
+ var audioAvailable=false,audioBusy=false,audioRoute='laptop-only',controlsOpen=false,autoTvSoundAttempted=false;
  var fastVideoActive=fastPage,fastVideoAllowed=false;
  var qualityMode='interactive',qualitySwitching=false,qualityAwaitingReload=false;
  // TV playback can lag behind a healthy capture after network stalls.
@@ -91,7 +91,41 @@
    setSound(audioAvailable,'laptop-only');report('TV sound OFF · Laptop sound restored');
   });
  }
- function reconnectLiveVideo(reason,manual){
+  // One bounded auto-audio attempt after Cinema video and audio capture are ready.
+  // Fail closed: laptop mute is only requested AFTER webOS accepts TV sound playback.
+  function startDefaultTvSound(){
+    if(autoTvSoundAttempted || audioBusy || !audioAvailable || !streamFresh ||
+       qualityMode!=='cinema' || fastPage || video.readyState<2 ||
+       video.paused || !video.muted || document.visibilityState==='hidden')return;
+    autoTvSoundAttempted=true;
+    video.muted=false;video.defaultMuted=false;
+    function fallback(){
+      video.muted=true;video.defaultMuted=true;
+      setSound(audioAvailable,'laptop-only');
+      report('TV audio needs approval. Select TV sound in the existing menu.');
+    }
+    function accepted(){
+      if(video.paused || video.muted){fallback();return}
+      audioBusy=true;setSound(audioAvailable,audioRoute);
+      request('audio-route','POST',{mode:'tv-only'},function(err,reply){
+        if(err || !reply || reply.audioRoute!=='tv-only'){
+          // Restore Windows output even if the prior request partially succeeded.
+          request('audio-route','POST',{mode:'laptop-only'},function(){
+            audioBusy=false;fallback();
+          });
+          return;
+        }
+        audioBusy=false;audioRoute='tv-only';setSound(true,'tv-only');
+      });
+    }
+    try{
+      var playing=video.play();
+      if(playing && typeof playing.then==='function')playing.then(accepted,fallback);
+      else if(!video.paused)accepted();
+      else fallback();
+    }catch(e){fallback()}
+  }
+  function reconnectLiveVideo(reason,manual){
   if(fastVideoActive)return;
   var now=Date.now();
   if(now-lastVideoReloadAt<(manual?4000:12000))return;
@@ -147,7 +181,8 @@
    if(!audioBusy)setSound(s.audioAvailable===true,s.audioRoute);
    fastVideoAllowed=s.fastVideoAvailable===true;
    renderQuality();
-   streamFresh=s.sourceReady===true;
+    streamFresh=s.sourceReady===true;
+    if(streamFresh)startDefaultTvSound();
    if(qualityAwaitingReload&&streamFresh&&s.qualityMode===qualityMode){
     qualityAwaitingReload=false;
     lastVideoReloadAt=0;

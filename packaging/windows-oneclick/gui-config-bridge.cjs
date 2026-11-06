@@ -22,8 +22,8 @@ async function main(){
     if(!v||typeof v!=='object'||Array.isArray(v)||
        Object.keys(v).sort().join(',')!=='adapterName,localIp')
       throw Error('Select one current PC network before discovery');
-    const finder=require('./TVFinder.cjs');
-    return output(await finder.scan({durationMs:4200,adapter:v}));
+    const finder=require('./discover-setup.cjs');
+    return output(await finder.scan(v,{durationMs:4200}));
   }
   if(command==='save'){
     let data='';

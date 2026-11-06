@@ -18,6 +18,7 @@ $csc='C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 foreach($inputPath in @($csc,$NodeExe,$NodeLicense,$FFmpegExe,$FFmpegLicense,$FFmpegReadme,
  (Join-Path $source 'ImAccessibilitySetup.cs'),(Join-Path $source 'ImAccessibilityApp.cs'),
  (Join-Path $source 'ImAccessibilityUninstall.cs'),(Join-Path $source 'gui-config-bridge.cjs'),
+  (Join-Path $source 'discover-setup.cjs'),
  (Join-Path $PreviewBundle 'package-manifest.json'),(Join-Path $PreviewBundle 'payload'))) {
  if(!(Test-Path -LiteralPath $inputPath)){throw ('Missing required input: '+$inputPath)}
 }
@@ -53,6 +54,7 @@ if(!(Test-Path -LiteralPath (Join-Path $nativeEvidence 'native-verification.json
  throw 'Native source/binary correspondence was not verified'
 }
 Copy-Item -LiteralPath (Join-Path $source 'gui-config-bridge.cjs') -Destination (Join-Path $stage 'gui-config-bridge.cjs') -ErrorAction Stop
+Copy-Item -LiteralPath (Join-Path $source 'discover-setup.cjs') -Destination (Join-Path $stage 'discover-setup.cjs') -ErrorAction Stop
 # Reuse bounded LAN SSDP/DNS-SD discovery before a TV has been configured.
 Copy-Item -LiteralPath (Join-Path $source '..\windows-control-panel\TVFinder.cjs') -Destination (Join-Path $stage 'TVFinder.cjs') -ErrorAction Stop
 $rt=Join-Path $stage 'Runtime'
