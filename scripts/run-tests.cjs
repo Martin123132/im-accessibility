@@ -22,6 +22,7 @@ const tv = [
   'tv-reliability-v0.5/tests/owner-controlled-viewing.test.cjs',
   'tv-reliability-v0.5/tests/cinema-quality.test.cjs',
   'tv-reliability-v0.5/tests/cinema-first-open.test.cjs',
+  'tv-reliability-v0.5/tests/google-cast-adapter.test.cjs',
   'tv-reliability-v0.5/tests/lg-active-view.test.cjs',
   'tv-reliability-v0.5/tests/release-config.test.cjs',
   'tv-reliability-v0.5/tests/release-runtime-config.test.cjs',

@@ -9,7 +9,7 @@ I'm Accessibility is intended to work with different televisions and streaming r
 | LG webOS | SSDP | Owner-tested on **LG OLED55CX6LA** only; other LG models require validation |
 | Samsung / Tizen | SSDP | Not yet implemented |
 | Sony BRAVIA | SSDP (when advertised) | Not yet implemented; capabilities vary by model |
-| Google Cast / Chromecast | SSDP and mDNS | Not yet implemented |
+| Google Cast / Chromecast | SSDP and mDNS | Experimental sender source with mock tests; **no physical playback acceptance or installer support** |
 | Android / Google TV | SSDP and mDNS | Not yet implemented |
 | Amazon Fire TV | SSDP | Not yet implemented |
 | Roku | SSDP and mDNS | Not yet implemented |
@@ -26,6 +26,12 @@ I'm Accessibility is intended to work with different televisions and streaming r
 3. Review discovered devices and explicit connection availability. Current owner-tested LG connections can be selected after ownership confirmation. Other devices remain visible but cannot be falsely started through the LG protocol.
 4. When the selected platform's adapter is implemented, confirm any pairing request on that device, then press Start TV. The app should hide only its own controls—not launch or focus a particular media player.
 5. If discovery fails, explain that network multicast may be restricted and retain manual address/setup diagnostics. Never change router, firewall or Windows security settings without owner approval.
+
+## Google Cast experimental adapter (6 November 2026)
+
+A separate opt-in CastV2 Default Media Receiver sender prototype now validates the selected private LAN, an explicit owner-approved mDNS device, the current private Cinema HLS playlist and bounded media loading. It has mock sender/receiver tests but **has not connected to real Google Cast hardware**. The production LG app and customer installer do not enable it.
+
+See [Google Cast sender preview and remaining acceptance gates](GOOGLE_CAST_SENDER_PREVIEW.md). A receiver LOAD acknowledgment is not proof of visible playback.
 
 ## Cross-brand connection architecture to implement
 
