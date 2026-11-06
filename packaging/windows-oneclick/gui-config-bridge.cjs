@@ -15,14 +15,15 @@ async function main(){
     return output(first.doctor({nodeExe:process.execPath,ffmpegExe:ffmpeg}));
   }
   if(command==='discover'){
-    // No saved config is needed. Only the owner-selected physical LAN is queried.
-    let input='';
-    for await(const part of process.stdin){
-      input+=String(part);
-      if(input.length>1024)throw Error('Discovery request too large');
-    }
-    const choice=JSON.parse(input);
-    return output(await require('./discover-setup.cjs').scan(choice));
+    // Read-only discovery before settings exist; never pairs or launches a television.
+    let data='';
+    for await(const part of process.stdin){data+=String(part);if(data.length>1024)throw Error('Discovery input too large')}
+    const v=JSON.parse(data);
+    if(!v||typeof v!=='object'||Array.isArray(v)||
+       Object.keys(v).sort().join(',')!=='adapterName,localIp')
+      throw Error('Select one current PC network before discovery');
+    const finder=require('./discover-setup.cjs');
+    return output(await finder.scan(v,{durationMs:4200}));
   }
   if(command==='save'){
     let data='';

@@ -68,3 +68,27 @@ test('DNS compression loop rejected without crashing',()=>{
  const b=Buffer.alloc(30);b.writeUInt16BE(1,6);b[12]=0xc0;b[13]=12;
  assert.deepEqual(f.mdnsRecords(b),[]);
 });
+
+test('LG advertising AirPlay remains an LG before setup exists',()=>{
+ const p=ptrAnswer('_airplay._tcp.local','[LG] webOS TV OLED55CX6LA._airplay._tcp.local');
+ const hit=f.recognizeMdns(p);
+ assert.equal(hit.brand,'LG');
+ const before={network:fake.network,television:{ip:null,model:'OLED55CX6LA'}};
+ const rows=f.mergeRows([{ip:'192.168.50.23',...hit}],before);
+ assert.equal(rows.length,1);
+ assert.equal(rows[0].brand,'LG');
+ assert.equal(rows[0].found,true);
+ assert.equal(rows[0].current,false);
+ assert.match(rows[0].connection,/LG webOS found/);
+});
+test('LG and AirPlay on the same IP are deduplicated without saved config',()=>{
+ const before={network:fake.network,television:{ip:null,model:'OLED55CX6LA'}};
+ const rows=f.mergeRows([
+  {ip:'192.168.50.23',brand:'LG',name:'LG webOS TV',kind:'Smart TV',method:'SSDP'},
+  {ip:'192.168.50.23',brand:'Apple AirPlay',name:'[LG] webOS TV OLED55CX6LA',kind:'AirPlay',method:'mDNS'},
+  {ip:'192.168.50.88',brand:'Samsung',name:'Samsung TV',kind:'Smart TV',method:'SSDP'}
+ ],before);
+ assert.equal(rows.length,2);
+ assert.equal(rows.find(x=>x.ip==='192.168.50.23').brand,'LG');
+ assert.equal(rows.find(x=>x.ip==='192.168.50.88').brand,'Samsung');
+});

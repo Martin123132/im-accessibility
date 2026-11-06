@@ -18,7 +18,8 @@ test('first-run discovers multiple TV families without existing settings or pret
  assert.match(bridge,/command==='discover'/);
  assert.match(bridge,/discover-setup\.cjs/);
  assert.match(gui,/Find TVs/);
- assert.match(gui,/direct casting is not yet implemented/);
+ assert.match(gui,/Found - viewing not yet supported/);
+ assert.match(gui,/televisions\.SelectedIndexChanged/);
  assert.match(builder,/discover-setup\.cjs/);
  assert.doesNotMatch(finder,/readUserSettings\(/);
 });
@@ -62,12 +63,12 @@ test('uninstaller keeps settings, checks every installed file hash and refuses a
 
 test('accessibility annotations provide named roles, keyboard tab sequence and explicit selftests',()=>{
  const ui=read('ImAccessibilityApp.cs'),setup=read('ImAccessibilitySetup.cs');
- for(const name of ['PC network connection','Television IPv4 address','Find TVs on my local network',
-  'Start Windows desktop streaming to the selected television','Stop this application',
+ for(const name of ['PC network connection','LG television IPv4 address','Find TVs on selected Wi-Fi',
+  'Start Windows desktop streaming to LG TV','Stop this application',
   'TV application activity and status messages']){
   assert.ok(ui.includes(name),'Missing screen-reader name: '+name);
  }
- for(let i=0;i<=10;i++)assert.match(ui,new RegExp('\\.TabIndex='+i+';'));
+ for(let i=0;i<=11;i++)assert.match(ui,new RegExp('\\.TabIndex='+i+';'));
  assert.match(ui,/AccessibilityReport\(\)/);
  assert.match(ui,/--accessibility-selftest/);
  assert.match(ui,/KeyCode==Keys\.F5/);
@@ -98,4 +99,17 @@ test('offline Windows builder takes explicit third-party licences and creates no
  for(const name of ['ImAccessibilityApp.cs','ImAccessibilityUninstall.cs','ImAccessibilitySetup.cs']){
   assert.match(script,new RegExp(name.replace('.','\\.')));
  }
+});
+
+test('first-run TV discovery is packaged and limited to local owner-selected adapter',()=>{
+ const ui=read('ImAccessibilityApp.cs'),bridge=read('gui-config-bridge.cjs'),builder=read('build-oneclick.ps1');
+ assert.match(ui,/Find TVs on Wi-Fi/);
+ assert.match(ui,/Task\.Run\(\(\)=>Engine\.Run\("discover",input,false\)\)/);
+ assert.match(ui,/tvIP\.ReadOnly=true/);
+ assert.match(ui,/new FoundTV/);
+ assert.match(ui,/chosen\.IsLG/);
+ assert.match(bridge,/command==='discover'/);
+ assert.match(bridge,/finder\.scan\(v,\{durationMs:4200\}\)/);
+ assert.match(builder,/TVFinder\.cjs/);
+ assert.doesNotMatch(bridge,/eval\(|execSync\(/);
 });
