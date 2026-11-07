@@ -47,7 +47,9 @@ test('Gyan FFmpeg 9.0.1 vendor hash and exact upstream source pin remain explici
  const audit=fs.readFileSync(path.join(__dirname,'audit-release.cjs'),'utf8');
  assert.match(audit,/exactVendorMatch/);
  assert.match(audit,/ffmpegSha256:ffmpegSHA256/);
- assert.match(audit,/Runtime\/ffmpeg\.exe differs from pinned Gyan vendor binary/);
+ assert.match(audit,/Runtime\/ffmpeg\.exe differs from approved, pinned vendor binaries/);
+ assert.match(audit,/71ac0a64a4e3e0caaf7a8c25c7e73d161ac1b269cca930d207e89e1b23959dfb/);
+ assert.match(audit,/lgplPinned/);
  assert.match(audit,/correspondingSourceComplete/);
 });
 test('signing-readiness script is read-only and cannot produce trusted signatures',()=>{

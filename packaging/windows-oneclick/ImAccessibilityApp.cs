@@ -32,6 +32,15 @@ namespace ImAccessibilityDesktop {
    si.EnvironmentVariables["PC_BRIDGE_FFMPEG_EXE"]=Ffmpeg;
    si.EnvironmentVariables["IM_ACCESSIBILITY_CONFIG_PATH"]=Settings;
    si.EnvironmentVariables["IM_ACCESSIBILITY_TV_AUDIO"]=audio?"1":"0";
+// An independently verified LGPL preview includes a pinned encoder profile.
+// Legacy owner builds omit this file and retain the x264 argument sequence.
+string encoderProfile=Path.Combine(Root,"encoder-profile.txt");
+if(File.Exists(encoderProfile)){
+ string choice=File.ReadAllText(encoderProfile,Encoding.UTF8).Trim();
+ if(choice!="h264_mf"&&choice!="libopenh264")
+  throw new IOException("Unrecognised installed video encoder profile.");
+ si.EnvironmentVariables["IM_ACCESSIBILITY_H264_ENCODER"]=choice;
+}
    using(var p=new Process()) {
     p.StartInfo=si;p.Start();
     if(input!=null)p.StandardInput.Write(input);

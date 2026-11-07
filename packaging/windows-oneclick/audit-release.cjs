@@ -51,8 +51,12 @@ function audit(stage,installer){
  const ffmpegVersion=ff.split(/\r?\n/).find(s=>s.startsWith('ffmpeg version '))||'unknown';
  const ffmpegSHA256=hash(ffmpeg);
  const exactVendorMatch=ffmpegSHA256===VENDOR.vendorFFmpegExeSha256;
+ const lgplPinned=ffmpegSHA256==='71ac0a64a4e3e0caaf7a8c25c7e73d161ac1b269cca930d207e89e1b23959dfb'&&
+  !fswitches.has('--enable-gpl')&&!fswitches.has('--enable-nonfree')&&
+  ff.includes('--disable-libx264')&&ff.includes('--disable-libx265');
+ const acceptedFFmpeg=exactVendorMatch||lgplPinned;
  // Binary changes require a new independent upstream-source and vendor archive audit.
- if(!exactVendorMatch)failures.push('Runtime/ffmpeg.exe differs from pinned Gyan vendor binary');
+ if(!acceptedFFmpeg)failures.push('Runtime/ffmpeg.exe differs from approved, pinned vendor binaries');
  const packages={};
  for(const name of ['ws','lgtv2']){
   const rel='tv-reliability-v0.5/cast/node_modules/'+name+'/package.json';
@@ -66,9 +70,10 @@ function audit(stage,installer){
  if(missingNotices.length)blockers.push('Missing bundled third-party licence notices');
  if(nativeSourceGaps.length)blockers.push('Native helper needs verified build provenance');
  if(fswitches.has('--enable-nonfree'))blockers.push('FFmpeg --enable-nonfree redistribution prohibited');
- if(!exactVendorMatch)blockers.push('FFmpeg executable requires renewed vendor provenance before packaging');
- if(!VENDOR.correspondingSourceComplete)blockers.push('Exact FFmpeg external-library source evidence incomplete: '+archivedExternalSourceCount+'/'+VENDOR.externalLibraryCount+' upstream snapshots archived; '+verifiedExternalBuildRecipeCount+'/'+VENDOR.externalLibraryCount+' exact build recipes verified');
+ if(!acceptedFFmpeg)blockers.push('FFmpeg executable requires renewed vendor provenance before packaging');
+ if(!lgplPinned&&!VENDOR.correspondingSourceComplete)blockers.push('Exact FFmpeg external-library source evidence incomplete: '+archivedExternalSourceCount+'/'+VENDOR.externalLibraryCount+' upstream snapshots archived; '+verifiedExternalBuildRecipeCount+'/'+VENDOR.externalLibraryCount+' exact build recipes verified');
  if(fswitches.has('--enable-gpl'))blockers.push('GPL-enabled FFmpeg exact corresponding sources, build recipes and codec components not evidenced');
+ else if(lgplPinned)blockers.push('Pinned LGPL FFmpeg corresponding-source/build-recipe and transitive notices need independent review before customer distribution');
  else blockers.push('LGPL-mode FFmpeg source and notices still need review');
  const signature=sign(installer);
  if(signature!=='Valid')blockers.push('Trusted publisher signing not established');
@@ -80,8 +85,8 @@ function audit(stage,installer){
   files:meta.files.length,integrity:{failures,passed:meta.files.length-failures.length},
   privacy:{flaggedPaths:privatePaths,upstreamPairingTemplate:byPath.get('tv-reliability-v0.5/cast/node_modules/lgtv2/pairing.json')?.sha256===TEMPLATE_SHA},
   runtimes:{nodeVersion,nodeSha256:hash(node),ffmpegVersion,ffmpegSha256:ffmpegSHA256,
-   vendorMatch:exactVendorMatch,ffmpegUpstreamCoreCommit:VENDOR.coreSourceCommit,
-   vendorArchiveSha256:VENDOR.vendorZIPsha256,
+   vendorMatch:acceptedFFmpeg,lgplPinned,ffmpegUpstreamCoreCommit:lgplPinned?'d4070a14ce':VENDOR.coreSourceCommit,
+   vendorArchiveSha256:lgplPinned?'7a347fb3220968b63fc7e025ed78370588726e0d0bf2bd0445d3f8f2387c36db':VENDOR.vendorZIPsha256,
    externalLibraryCount:VENDOR.externalLibraryCount,archivedExternalSourceCount,verifiedExternalBuildRecipeCount,correspondingSourceComplete:VENDOR.correspondingSourceComplete,
    ffmpegFlags:{gpl:fswitches.has('--enable-gpl'),version3:fswitches.has('--enable-version3'),
     nonfree:fswitches.has('--enable-nonfree'),x264:fswitches.has('--enable-libx264'),x265:fswitches.has('--enable-libx265')}},

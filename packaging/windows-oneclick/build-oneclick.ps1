@@ -65,6 +65,16 @@ Copy-Item -LiteralPath $FFmpegExe -Destination (Join-Path $rt 'ffmpeg.exe') -Err
 Copy-Item -LiteralPath $NodeLicense -Destination (Join-Path $third 'Node-LICENSE.txt') -ErrorAction Stop
 Copy-Item -LiteralPath $FFmpegLicense -Destination (Join-Path $third 'FFmpeg-LICENSE.txt') -ErrorAction Stop
 Copy-Item -LiteralPath $FFmpegReadme -Destination (Join-Path $third 'FFmpeg-README.txt') -ErrorAction Stop
+# The separately QA-tested FFmpeg LGPL executable is allowed only by exact SHA.
+# Keep the original x264 behaviour for old private owner builds.
+$lgplPin='71ac0a64a4e3e0caaf7a8c25c7e73d161ac1b269cca930d207e89e1b23959dfb'
+$ffmpegHash=(Get-FileHash -LiteralPath $FFmpegExe -Algorithm SHA256).Hash.ToLowerInvariant()
+if($ffmpegHash -eq $lgplPin){
+ $notice=[IO.File]::ReadAllText($FFmpegLicense)
+ if($notice -notmatch 'GNU LESSER GENERAL PUBLIC LICENSE'){throw 'Pinned LGPL license notice missing'}
+ [IO.File]::WriteAllText((Join-Path $stage 'encoder-profile.txt'),"h264_mf" + [Environment]::NewLine,(New-Object Text.UTF8Encoding($false)))
+ Write-Output 'Pinned LGPL FFmpeg: Windows Media Foundation H264 selected for HLS; fast MSE unverified, HLS kept.'
+}
 function Compile-Exe([string]$sourceFile,[string]$outputName,[string[]]$references){
  $argsList=@('/nologo','/target:winexe','/platform:x64',('/out:'+(Join-Path $stage $outputName)))
  foreach($ref in $references){$argsList+=('/reference:'+$ref)}

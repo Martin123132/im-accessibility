@@ -8,6 +8,7 @@ const cp=require('node:child_process');
 const {getFrame,metrics:previewMetrics}=require('./snapshot.cjs');
 const {SpeakerRouter}=require('./speaker-routing.cjs');
 const FastVideo=require('./fast-video.cjs');
+const ENCODER=require('../cast/sound.cjs');
 const VIEWING=require('../viewing-policy.cjs');
 const speakerRouter=new SpeakerRouter();
 const SETTINGS=process.env.IM_ACCESSIBILITY_CONFIG_PATH!==undefined
@@ -203,7 +204,7 @@ function createServer(){
      streamAgeMs:upstream.streamAgeMs,recoveryCount:upstream.recoveryCount,
      qualityMode:upstream.qualityMode,qualityVersion:upstream.qualityVersion,
      stream:upstream.qualityMode==='cinema'?'1920x1080 H.264 Cinema':'1280x720 H.264',
-     audioAvailable:upstream.available,fastVideoAvailable:!!SETTINGS,
+     audioAvailable:upstream.available,fastVideoAvailable:!!SETTINGS&&ENCODER.encoderKind()==='libx264',
      fastVideoStatus:fastVideoController?fastVideoController.snapshot():null,
      ...speakerRouter.snapshot()});
    }
@@ -288,7 +289,9 @@ async function serve(){
  // Optional fast viewer is never started by default; only an authenticated TV
  // WebSocket selecting Try fast video opens this extra temporary capture.
  let fast=null;
- if(SETTINGS){
+ // MSE fast mode is verified only for the original x264 profile.
+ // Normal HLS remains available for LGPL Media Foundation/OpenH264 encoders.
+ if(SETTINGS&&ENCODER.encoderKind()==='libx264'){
   try{fast=FastVideo.attach(srv,{lan:LAN,port:PORT,origin:ORIGIN,token,
     expiresAt,ffmpegExe:SETTINGS.executables.ffmpegExe,sameSubnet,
     onDisconnect:()=>{enabled=false;enabledUntil=0}});
