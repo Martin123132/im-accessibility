@@ -41,7 +41,7 @@ function encoderKind(value=process.env.IM_ACCESSIBILITY_H264_ENCODER){
  if(value==='h264_mf'||value==='libopenh264')return value;
  throw Error('Unsupported H.264 encoder selection');
 }
-function argsFor(streamDir,format=null,startNumber=0,qualityMode='interactive'){
+function argsFor(streamDir,format=null,startNumber=0,qualityMode='interactive',encoderOverride=undefined){
  const q=qualityProfile(qualityMode);
  if(!Number.isSafeInteger(startNumber)||startNumber<0||startNumber>999999)throw Error('Invalid bounded HLS media start number');
  const args=['-hide_banner','-loglevel','warning','-nostdin','-f','gdigrab','-framerate',q.fps,'-draw_mouse','1','-i','desktop'];
@@ -55,7 +55,7 @@ function argsFor(streamDir,format=null,startNumber=0,qualityMode='interactive'){
  args.push('-vf',q.scale,'-map','0:v:0');
  if(format)args.push('-map','1:a:0');
  else args.push('-an');
- const codec=encoderKind();
+ const codec=encoderOverride===undefined?encoderKind():encoderKind(encoderOverride);
  if(codec==='libx264'){
   args.push('-c:v','libx264','-preset',q.preset);
   if(qualityMode==='interactive')args.push('-tune','zerolatency');

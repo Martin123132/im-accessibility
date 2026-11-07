@@ -43,3 +43,21 @@ This branch tests replacing the previous GPL-enabled FFmpeg package with a separ
 5. Final owner release approval.
 
 The release auditor deliberately reports `readyForPublicDistribution:false` until those checks are actually complete. **Do not publish any of the private QA .exe files, bundled node/ffmpeg binaries or private pairing state as GitHub Release assets.** This branch is a source-level candidate for review, not a downloadable customer release.
+
+
+## Automatic Media Foundation recovery — 7 November 2026
+
+The source-preview release branch now includes `tv-reliability-v0.5/cast/encoder-fallback.cjs`, a **bounded one-time** switch from `h264_mf` to `libopenh264` when either (1) the Media Foundation FFmpeg child exits with a nonzero code before producing its initial HLS playlist, or (2) a still-running Media Foundation process produces **no playlist** after the existing 14-second startup grace period.
+
+- A fallback is **not** triggered by an owner Stop, a deliberate quality-change restart, audio failure or a missing FFmpeg executable. The existing laptop-audio safety and owner-scoped capture controls are unchanged.
+- The replacement encoder reuses the **existing** HLS session, quality mode, optional speaker audio, bounded retry/recovery budget, and private token. No additional capture runs concurrently. The current codec and fallback reason are visible in local status without exposing credentials.
+- Each viewing start permits at most **one codec switch**. If OpenH264 also creates no HLS playlist after the startup grace, the app fails closed with a diagnostic instead of silently looping on a blank screen.
+- Pure policy tests and in-memory fake-FFmpeg integration tests exercised the **real server module** for early nonzero process exit, a live first-playlist stall, failed-software handling and owner Stop, without starting a LAN listener or Windows capture. Full source suite: **217 passed, 2 expected skips, 0 failures**.
+- The 81-file portable source payload includes the fallback module. A separate **private** 93-file Windows installer build verified all 93 hashes, reported zero privacy flags and used only the pinned LGPL binary, retaining `readyForPublicDistribution:false`. Fresh-profile installer verification, installation, encoder-profile pin, 12-control accessibility self-test, and external-copy uninstall all passed.
+- This is **not physical playback acceptance** on a PC where Media Foundation genuinely fails. That still requires an independently consenting Windows/TV test environment.
+
+### Pinned upstream vendor build-script reference
+
+A read-only GitHub API check resolved the **exact BtbN release tag** `autobuild-2026-11-07-12-47` to builder commit `c63bb308a1de656b425c132a8102f8fd5389afc5`. Its public Git tree exposes `build.sh`, `images/base-win64/Dockerfile`, `.github/workflows/build.yml`, dependency-specific `scripts.d/` recipes and `patches/`. This is a reproducible reference for further review; it **is not** independent proof those scripts and corresponding sources recreate the pinned `ffmpeg.exe` or that all transitive component licences and conveyance requirements have been satisfied. Keep source correspondence, licence/attribution and Windows signing as explicit release blockers.
+
+No public binary, owner pairing credentials or local runtime archives were added to this source branch.
