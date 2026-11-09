@@ -6,6 +6,12 @@ param(
  [ValidateSet('NO','YES')][string]$OwnerConsent='NO'
 )
 $ErrorActionPreference='Stop'
+# GUI launchers can inherit PowerShell 7's PSModulePath. Windows PowerShell must
+# load its own built-in modules, not an incompatible copy earlier on that path.
+# Scope is this process only; no profile, policy or system environment is changed.
+foreach($module in @('Microsoft.PowerShell.Management','Microsoft.PowerShell.Utility','ScheduledTasks')){
+ Import-Module ([IO.Path]::Combine($PSHOME,'Modules',$module,($module+'.psd1'))) -ErrorAction Stop
+}
 $root=Split-Path -Parent $MyInvocation.MyCommand.Path
 # Installed previews have their own on-demand guardian. Never reuse the legacy
 # owner's task name or edit an existing task from a different installation.

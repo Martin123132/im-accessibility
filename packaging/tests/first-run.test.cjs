@@ -2,6 +2,7 @@
 // Offline-only user-profile settings and launcher tests; no TV, network calls or real child processes.
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),cp=require('node:child_process');
+const crypto=require('node:crypto');
 const setup=require('../first-run.cjs'),launcher=require('../launch-host.cjs');
 const onlyWindows=process.platform!=='win32';
 const lan={
@@ -57,6 +58,49 @@ test('invalid adapter or wrong-subnet TV fails closed before creating settings',
   p.settings.tvIp='10.36.2.40';p.settings.adapterName='wrong';
   assert.throws(()=>setup.saveSettings(p.settings,p),/No matching physical/);
   assert.equal(fs.existsSync(path.join(p.local,'ImAccessibility')),false);
+ }finally{fs.rmSync(base,{recursive:true,force:true})}
+});
+
+test('reinstall can reconfirm the saved TV without rewriting settings, including DHCP renewal',{skip:onlyWindows},()=>{
+ const base=temp();try{
+  const p=create(base),saved=setup.saveSettings(p.settings,p),before=fs.readFileSync(saved.file);
+  const expectedHash=crypto.createHash('sha256').update(before).digest('hex');
+  const same=setup.saveSettings(p.settings,{...p,expectedHash});
+  assert.equal(same.unchanged,true);assert.equal(same.written,false);
+  const networkInterfaces={Ethernet:[{family:'IPv4',internal:false,address:'10.36.2.152',netmask:'255.255.255.0'}]};
+  const renewed=setup.saveSettings({...p.settings,localIp:'10.36.2.152'},{...p,networkInterfaces,expectedHash});
+  assert.equal(renewed.unchanged,true);assert.deepEqual(fs.readFileSync(saved.file),before);
+  assert.deepEqual(fs.readdirSync(path.dirname(saved.file)),['settings.json']);
+ }finally{fs.rmSync(base,{recursive:true,force:true})}
+});
+
+test('explicit TV reselection keeps a byte-exact backup and rejects stale confirmation or a wrong LAN',{skip:onlyWindows},()=>{
+ const base=temp();try{
+  const p=create(base),saved=setup.saveSettings(p.settings,p),before=fs.readFileSync(saved.file);
+  const expectedHash=crypto.createHash('sha256').update(before).digest('hex');
+  for(const invalid of [{tvIp:'10.36.3.40'},{adapterName:'Wrong NIC'},{tvIp:'10.36.2.14'}]){
+   assert.throws(()=>setup.saveSettings({...p.settings,...invalid},{...p,expectedHash}));
+   assert.deepEqual(fs.readFileSync(saved.file),before);
+  }
+  const changed=setup.saveSettings({...p.settings,tvIp:'10.36.2.41'},{...p,expectedHash});
+  assert.equal(changed.written,true);assert.deepEqual(fs.readFileSync(changed.backup),before);
+  const after=fs.readFileSync(saved.file);assert.equal(JSON.parse(after).television.ip,'10.36.2.41');
+  assert.throws(()=>setup.saveSettings(p.settings,{...p,expectedHash}),/changed in another window/);
+  assert.deepEqual(fs.readFileSync(saved.file),after);
+  assert.equal(fs.existsSync(path.join(path.dirname(saved.file),'.settings-save.lock')),false);
+ }finally{fs.rmSync(base,{recursive:true,force:true})}
+});
+
+test('a pending settings save is never overridden and a missing confirmed file is not recreated',{skip:onlyWindows},()=>{
+ const base=temp();try{
+  const p=create(base),saved=setup.saveSettings(p.settings,p),before=fs.readFileSync(saved.file);
+  const expectedHash=crypto.createHash('sha256').update(before).digest('hex');
+  const lock=path.join(path.dirname(saved.file),'.settings-save.lock');fs.writeFileSync(lock,'other owner');
+  assert.throws(()=>setup.saveSettings(p.settings,{...p,expectedHash}),/EEXIST/);
+  assert.equal(fs.readFileSync(lock,'utf8'),'other owner');assert.deepEqual(fs.readFileSync(saved.file),before);
+  fs.unlinkSync(lock);fs.unlinkSync(saved.file);
+  assert.throws(()=>setup.saveSettings(p.settings,{...p,expectedHash}),/removed/);
+  assert.equal(fs.existsSync(saved.file),false);
  }finally{fs.rmSync(base,{recursive:true,force:true})}
 });
 test('a supplied user profile path inside the source checkout is refused', {skip:onlyWindows},()=>{

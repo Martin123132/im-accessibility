@@ -51,21 +51,49 @@ function safeFolder(folder){
  return true;
 }
 function saveSettings(candidate,{env=process.env,networkInterfaces=os.networkInterfaces(),
- existsFile=f=>{try{return fs.statSync(f).isFile()}catch{return false}}}={}){
+ existsFile=f=>{try{return fs.statSync(f).isFile()}catch{return false}},expectedHash=null}={}){
  // Validating BEFORE writing prevents malformed settings and accidental extra keys.
  const {values,selected}=buildCandidate(candidate,{networkInterfaces,existsFile});
  const {folder,file}=settingsFile(env);
- if(fs.existsSync(file))fail('Settings already exist. No overwrite; back up and remove them manually before reconfiguring.');
  safeFolder(folder);
+ if(expectedHash!==null&&(typeof expectedHash!=='string'||!/^[a-f0-9]{64}$/.test(expectedHash)))fail('Invalid saved-settings confirmation');
  const bytes=Buffer.from(JSON.stringify(values,null,2)+'\n');
  if(bytes.length>config.MAX_BYTES)fail('Settings too large');
  const temp=path.join(folder,'.settings-'+process.pid+'-'+crypto.randomBytes(6).toString('hex')+'.tmp');
+ const lock=path.join(folder,'.settings-save.lock');
+ let locked=false,backup=null;
  try{
+  // Both first save and explicit GUI reselection cooperate on one short-lived lock.
+  // Never clear another process's lock or replace settings the owner has not reviewed.
+  fs.writeFileSync(lock,String(process.pid),{flag:'wx',mode:0o600});locked=true;
+  let previous=null;
+  if(fs.existsSync(file)){
+   if(expectedHash===null)fail('Settings already exist. Use the app to confirm your TV selection.');
+   const stat=fs.lstatSync(file);
+   if(!stat.isFile()||stat.isSymbolicLink()||stat.size<2||stat.size>config.MAX_BYTES)fail('Saved settings cannot be safely updated');
+   previous=fs.readFileSync(file);
+   if(crypto.createHash('sha256').update(previous).digest('hex')!==expectedHash)
+    fail('Settings changed in another window. Close and reopen the app before saving.');
+   // Reconfirming the same TV after reinstall/DHCP is read-only. Keep the original
+   // bytes, adapter pin and all prior settings instead of rewriting a valid lease.
+   try{
+    const old=config.validateCurrentLease(JSON.parse(previous),{networkInterfaces,existsFile});
+    if(JSON.stringify(old)===JSON.stringify(selected))
+     return {written:false,unchanged:true,file,summary:config.safeSummary(selected)};
+   }catch{}
+  }else if(expectedHash!==null)fail('Saved settings were removed. Close and reopen the app before saving.');
   fs.writeFileSync(temp,bytes,{flag:'wx',mode:0o600});
-  // Exclusive copy prevents a race from overwriting another owner process.
-  fs.copyFileSync(temp,file,fs.constants.COPYFILE_EXCL);
- }finally{if(fs.existsSync(temp))fs.unlinkSync(temp)}
- return {written:true,file,summary:config.safeSummary(selected)};
+  if(previous){
+   backup=path.join(folder,'settings-before-selection-'+Date.now()+'-'+crypto.randomBytes(6).toString('hex')+'.json');
+   fs.writeFileSync(backup,previous,{flag:'wx',mode:0o600});
+   if(!fs.readFileSync(file).equals(previous))fail('Settings changed while saving; the original backup was kept. Reopen the app.');
+   fs.renameSync(temp,file);
+  }else fs.copyFileSync(temp,file,fs.constants.COPYFILE_EXCL);
+ }finally{
+  if(fs.existsSync(temp))fs.unlinkSync(temp);
+  if(locked)fs.unlinkSync(lock);
+ }
+ return {written:true,file,backup,summary:config.safeSummary(selected)};
 }
 function validateInstalled({env=process.env,networkInterfaces=os.networkInterfaces(),
  existsFile=f=>{try{return fs.statSync(f).isFile()}catch{return false}}}={}){

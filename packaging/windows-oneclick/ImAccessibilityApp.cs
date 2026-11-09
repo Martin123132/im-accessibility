@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using System.Web.Script.Serialization;
 using System.Net;
 using System.Threading.Tasks;
+using System.Security.Cryptography;
 
 namespace ImAccessibilityDesktop {
  static class Engine {
@@ -22,6 +23,10 @@ namespace ImAccessibilityDesktop {
    return String.IsNullOrWhiteSpace(v)?Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData):v;
   }}
   public static string Settings {get{return Path.Combine(LocalData,"ImAccessibility","settings.json");}}
+  public static string SettingsHash(){
+   if(!File.Exists(Settings))return null;
+   using(var sha=SHA256.Create())return BitConverter.ToString(sha.ComputeHash(File.ReadAllBytes(Settings))).Replace("-","").ToLowerInvariant();
+  }
   public static string Quote(string s){return "\""+s.Replace("\"","\\\"")+"\"";}
   public static string Run(string op,string input,bool audio) {
    if(!File.Exists(Node)||!File.Exists(Bridge))throw new IOException("Bundled Node or app controller is missing.");
@@ -86,12 +91,13 @@ if(op=="start"&&File.Exists(encoderProfile)){
   CheckBox confirm=new CheckBox(),sound=new CheckBox();
   Button find=new Button(),save=new Button(),start=new Button(),stop=new Button(),status=new Button(),uninstall=new Button();
   Label state=new Label();
-   bool scanning=false,allowClose=false;
+   bool scanning=false,allowClose=false,editingSetup=false,initializing=false,setupIdle=true;
+   string previousSettingsHash;
    readonly System.Windows.Forms.Timer presentationPoll=new System.Windows.Forms.Timer();
    int presentationTries;bool presentationBusy,commandBusy;
    readonly System.Windows.Forms.Timer healthPoll=new System.Windows.Forms.Timer();
   public MainWindow(){
-   Text="I'm-accessibility - Recovery 1 Private Preview";Font=new Font("Segoe UI",10);
+   Text="I'm-accessibility - Recovery 2.1 Private Preview";Font=new Font("Segoe UI",10);
    BackColor=Color.FromArgb(247,249,250);ForeColor=Color.FromArgb(28,42,56);
    Size=new Size(780,830);MinimumSize=new Size(700,570);
    StartPosition=FormStartPosition.CenterScreen;AutoScaleMode=AutoScaleMode.Font;
@@ -111,6 +117,7 @@ if(op=="start"&&File.Exists(encoderProfile)){
    tvIP.Text="Select a TV above";Controls.Add(tvIP);
    AddLabel("Finds many brands. Tested TV: LG OLED55CX6LA.",375,429,341,44);
    confirm.SetBounds(155,475,540,31);confirm.Text="I confirm this is my television.";confirm.Enabled=false;Controls.Add(confirm);
+   confirm.CheckedChanged+=(s,e)=>{save.Enabled=confirm.Enabled&&confirm.Checked&&!commandBusy&&!scanning&&setupIdle;};
    save.Text="Save selected TV";save.SetBounds(155,518,203,43);Primary(save);
    save.Enabled=false;save.Click+=(s,e)=>Save();Controls.Add(save);
    state.SetBounds(366,491,350,85);state.Text="Checking setup...";Controls.Add(state);
@@ -127,9 +134,10 @@ if(op=="start"&&File.Exists(encoderProfile)){
    uninstall.Click+=(s,e)=>Uninstall();
    find.Click+=(s,e)=>FindTVs();televisions.SelectedIndexChanged+=(s,e)=>SelectTV();
    adapters.SelectedIndexChanged+=(s,e)=>{
-    if(scanning)return;
+    if(initializing)return;
     televisions.Items.Clear();tvIP.Text="Select a TV above";confirm.Checked=false;
-    confirm.Enabled=false;save.Enabled=false;state.Text="Choose Find TVs to scan this network.";
+    confirm.Enabled=false;save.Enabled=false;editingSetup=true;start.Enabled=false;
+    state.Text="Choose Find TVs to scan this network.";
    };
    log.SetBounds(30,738,691,60);log.Multiline=true;log.ReadOnly=true;log.ScrollBars=ScrollBars.Vertical;
    log.Anchor=AnchorStyles.Left|AnchorStyles.Right|AnchorStyles.Top;
@@ -197,7 +205,9 @@ if(op=="start"&&File.Exists(encoderProfile)){
    b.FlatStyle=FlatStyle.Flat;b.FlatAppearance.BorderSize=0;b.Font=new Font("Segoe UI",10,FontStyle.Bold);}
   void Log(string message){log.AppendText("\r\n"+DateTime.Now.ToString("HH:mm:ss")+"  "+message);}
   void Initialize(){
+   initializing=true;
    try{
+    previousSettingsHash=Engine.SettingsHash();
     var d=Engine.Parse(Engine.Run("doctor",null,false));
     var list=d["adapters"] as ArrayList;
     if(list!=null)foreach(object item in list){
@@ -227,12 +237,13 @@ if(op=="start"&&File.Exists(encoderProfile)){
     }else{state.Text="Connect your PC to a local network, then retry.";find.Enabled=false;}
     Status();
    }catch(Exception ex){Log("Setup check: "+ex.Message);start.Enabled=false;save.Enabled=false;}
+   finally{initializing=false;}
   }
   async void FindTVs(){
    var selected=adapters.SelectedItem as Adapter;
-   if(scanning)return;
+   if(scanning||commandBusy||!setupIdle)return;
    if(selected==null){state.Text="Choose a PC network first.";return;}
-   scanning=true;find.Enabled=false;televisions.Enabled=false;
+   scanning=true;editingSetup=true;start.Enabled=false;find.Enabled=false;adapters.Enabled=false;televisions.Enabled=false;
    televisions.Items.Clear();tvIP.Text="Searching...";confirm.Checked=false;
    confirm.Enabled=false;save.Enabled=false;state.Text="Searching TVs on your Wi-Fi...";
    try{
@@ -260,43 +271,54 @@ if(op=="start"&&File.Exists(encoderProfile)){
     if(televisions.Items.Count==0)Log("No TV announced itself; some networks block discovery even when TVs are online.");
     else Log("Found "+televisions.Items.Count+" TV/receiver device(s). Select from the list.");
    }catch(Exception ex){state.Text="TV discovery unavailable.";Log("Find TVs: "+ex.Message);}
-   finally{scanning=false;if(!IsDisposed){find.Enabled=true;televisions.Enabled=true;}}
+   finally{scanning=false;if(!IsDisposed){find.Enabled=setupIdle;adapters.Enabled=setupIdle;televisions.Enabled=setupIdle;}}
   }
   void SelectTV(){
-   if(scanning||File.Exists(Engine.Settings))return;
+   if(scanning||commandBusy)return;
+   editingSetup=true;start.Enabled=false;
    var chosen=televisions.SelectedItem as FoundTV;
    confirm.Checked=false;
-   confirm.Enabled=chosen!=null&&chosen.IsLG;
-   save.Enabled=chosen!=null&&chosen.IsLG;
+   confirm.Enabled=chosen!=null&&chosen.IsLG&&setupIdle&&!commandBusy;
+   save.Enabled=false;
    tvIP.Text=chosen==null?"Select a TV above":chosen.IP;
    if(chosen==null)return;
    state.Text=chosen.IsLG?"LG found. Confirm and Save.":"Found; desktop viewing is not supported for "+chosen.Brand+".";
    if(!chosen.IsLG)Log("This TV is discoverable; desktop viewing currently supports only tested LG webOS.");
   }
-  void Save(){
+  async void Save(){
+   if(commandBusy||scanning||!setupIdle)return;
    var a=adapters.SelectedItem as Adapter;
    var chosen=televisions.SelectedItem as FoundTV;
    if(a==null||chosen==null||!chosen.IsLG||chosen.IP!=tvIP.Text){
     Log("Select an LG webOS TV from the Find TVs results first.");return;
    }
    if(!confirm.Checked){Log("Confirm this is your own television before saving.");return;}
+   if(previousSettingsHash!=null&&MessageBox.Show(this,
+    "Use "+chosen.Name+" ("+chosen.IP+") on "+a.Name+"?\r\nIf this changes your saved setup, the previous settings will be backed up. Nothing starts streaming until you press Start.",
+    "Confirm saved TV selection",MessageBoxButtons.YesNo,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)!=DialogResult.Yes)return;
+   commandBusy=true;start.Enabled=false;find.Enabled=false;adapters.Enabled=false;televisions.Enabled=false;save.Enabled=false;
    try{
     var data=new Dictionary<string,object>{{"adapterName",a.Name},{"localIp",a.IP},
      {"tvIp",chosen.IP},{"nodeExe",Engine.Node},{"ffmpegExe",Engine.Ffmpeg}};
-    Engine.Run("save",new JavaScriptSerializer().Serialize(data),false);
-    state.Text="TV setup saved.";save.Enabled=false;find.Enabled=false;adapters.Enabled=false;
-    televisions.Enabled=false;confirm.Enabled=false;
-    Log("LG TV selected. Press Start, then approve the connection on your TV using its remote. Only OLED55CX6LA is currently supported.");Status();
+    if(previousSettingsHash!=null)data.Add("previousHash",previousSettingsHash);
+    string input=new JavaScriptSerializer().Serialize(data);
+    var result=Engine.Parse(await Task.Run(()=>Engine.Run("save",input,false)));
+    previousSettingsHash=Engine.SettingsHash();editingSetup=false;
+    state.Text="TV setup saved.";confirm.Checked=false;confirm.Enabled=false;
+    if(!String.IsNullOrWhiteSpace(Engine.Field(result,"backup")))Log("Previous settings backed up: "+Engine.Field(result,"backup"));
+    Log("LG TV selected. Press Start, then approve the connection on your TV using its remote. Only OLED55CX6LA is currently supported.");
    }catch(Exception ex){Log("Setup refused: "+ex.Message);}
+   finally{commandBusy=false;Status();}
   }
   async void StartTV(){
-   if(commandBusy)return;
+   if(commandBusy||scanning||editingSetup)return;
    if(!File.Exists(Engine.Settings)){Log("Select and save your LG TV first.");return;}
    string s="Open the Windows desktop stream on your selected LG TV?\r\n"+
      (sound.Checked?"TV audio will be enabled. Allow this app to register its per-user audio restoration task? It runs only on demand, with no automatic startup.":"TV audio will stay disabled.")+
      "\r\nWindows mouse control will remain OFF until you enable it on the TV.";
    if(MessageBox.Show(this,s,"Confirm TV start",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
    commandBusy=true;start.Enabled=false;
+   find.Enabled=false;adapters.Enabled=false;televisions.Enabled=false;confirm.Enabled=false;save.Enabled=false;
    bool audio=sound.Checked;
    try{
       await Task.Run(()=>Engine.Run("validate",null,false));
@@ -312,6 +334,7 @@ if(op=="start"&&File.Exists(encoderProfile)){
    if(MessageBox.Show(this,"Stop this TV stream only?","Confirm stop",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
        presentationPoll.Stop();
     commandBusy=true;
+    find.Enabled=false;adapters.Enabled=false;televisions.Enabled=false;confirm.Enabled=false;save.Enabled=false;
     try{await StopAndWait();}catch(Exception ex){Log("Stop needs attention: "+ex.Message);}
     finally{commandBusy=false;Status();}
   }
@@ -373,13 +396,19 @@ if(op=="start"&&File.Exists(encoderProfile)){
    statusBusy=true;
    try{
     var d=Engine.Parse(await Task.Run(()=>Engine.Run("status",null,false)));
-    if(IsDisposed)return;
+    if(IsDisposed||commandBusy)return;
     string mode=Engine.Field(d,"state"),message=Engine.Field(d,"message");
     bool idle=mode=="not-started"||mode=="stopped"||mode=="stale";
     bool audioPending=d.ContainsKey("audioPending")&&d["audioPending"] is bool&&(bool)d["audioPending"];
-    start.Enabled=idle&&(!audioPending||mode=="stale")&&File.Exists(Engine.Settings);
+    setupIdle=Engine.ReadyToClose(d);
+    adapters.Enabled=setupIdle&&!scanning;find.Enabled=setupIdle&&!scanning&&adapters.Items.Count>0;
+    televisions.Enabled=setupIdle&&!scanning;
+    var chosen=televisions.SelectedItem as FoundTV;
+    confirm.Enabled=editingSetup&&setupIdle&&!scanning&&chosen!=null&&chosen.IsLG;
+    save.Enabled=confirm.Enabled&&confirm.Checked;
+    start.Enabled=!editingSetup&&!scanning&&idle&&(!audioPending||mode=="stale")&&File.Exists(Engine.Settings);
     stop.Enabled=!idle||audioPending;
-    state.Text=message;
+    if(!editingSetup&&!scanning||!idle)state.Text=message;
     if(message!=lastStatus){Log(message);lastStatus=message;}
    }catch(Exception ex){if(!IsDisposed){start.Enabled=false;stop.Enabled=true;Log("Status: "+ex.Message);}}
    finally{statusBusy=false;}

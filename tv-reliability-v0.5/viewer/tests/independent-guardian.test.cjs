@@ -33,6 +33,28 @@ test('PowerShell registration and Node audio recovery derive the same installed 
   assert.equal(r.status,0,r.stderr);assert.equal(r.stdout.trim(),taskNameFor(x.dir,true));
  }finally{x.clean()}
 });
+
+test('installed audio guardian Status works in the inherited GUI PowerShell environment',{skip:process.platform!=='win32'},()=>{
+ const x=temp();try{
+  const crypto=require('node:crypto'),cp=require('node:child_process');
+  const script=path.join(x.dir,'audio-guard-task.ps1');
+  fs.copyFileSync(path.resolve(__dirname,'../../../packaging/windows-oneclick/audio-guard-task.ps1'),script);
+  const node='Runtime/node.exe',watch='tv-reliability-v0.5/viewer/speaker-route-watch.cjs';
+  for(const file of [node,watch]){fs.mkdirSync(path.dirname(path.join(x.dir,file)),{recursive:true});fs.writeFileSync(path.join(x.dir,file),'synthetic fixture; never executed');}
+  const files=[node,watch].map(file=>({path:file,sha256:crypto.createHash('sha256').update(fs.readFileSync(path.join(x.dir,file))).digest('hex')}));
+  for(let i=0;i<78;i++)files.push({path:'fixture-'+i,sha256:'0'.repeat(64)});
+  fs.writeFileSync(path.join(x.dir,'installer-manifest.json'),JSON.stringify({product:'ImAccessibility',version:'v0.3.21-independent-audio-guard-private-preview',files}));
+  const windowsPs=path.join(process.env.SystemRoot,'System32/WindowsPowerShell/v1.0/powershell.exe');
+  const run=()=>cp.spawnSync(windowsPs,['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',script,'-Action','Status'],{
+   env:{...process.env},encoding:'utf8',windowsHide:true,timeout:12000
+  });
+  const status=run();assert.equal(status.status,0,status.stdout+status.stderr);
+  const result=JSON.parse(status.stdout);assert.equal(result.installed,false);assert.equal(result.startsTv,false);
+  assert.equal(result.task,taskNameFor(x.dir,true));
+  fs.appendFileSync(path.join(x.dir,watch),'modified');
+  const modified=run();assert.equal(modified.status,1);assert.match(modified.stderr,/watcher differs from installed manifest/);
+ }finally{x.clean()}
+});
 test('Task-guard start is narrow, checks exact session heartbeat and does not register a task',()=>{
  const x=temp(),now=250000,invocations=[];
  try{

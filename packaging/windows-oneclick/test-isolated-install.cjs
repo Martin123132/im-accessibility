@@ -30,6 +30,8 @@ function main(setup,output){
   assert.equal(self.ffmpeg,true);assert.equal(self.settingsPresent,false);
   const a11y=JSON.parse(gui(path.join(app,'ImAccessibility.exe'),'--accessibility-selftest','accessibility',/"allNamed":true/));
   assert.equal(a11y.tabOrderValid,true);assert.equal(a11y.allTabStops,true);
+  const guardianStatus=node(`const cp=require('node:child_process'),path=require('node:path');const r=cp.spawnSync(path.join(process.env.SystemRoot,'System32/WindowsPowerShell/v1.0/powershell.exe'),['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',${JSON.stringify(path.join(app,'audio-guard-task.ps1'))},'-Action','Status'],{encoding:'utf8',windowsHide:true,timeout:12000});if(r.status!==0)throw Error(r.stderr);console.log(r.stdout);`);
+  assert.equal(JSON.parse(guardianStatus).installed,false);checks.push('packaged-audio-guardian-status');
   const first=path.join(app,'first-run.cjs');
   const setupCode=`const f=require(${JSON.stringify(first)});const path=require('node:path');const root=${JSON.stringify(app)};const interfaces={WiFi:[{family:'IPv4',internal:false,address:'192.168.50.36',netmask:'255.255.255.0',mac:'12:34:56:78:90:ab'}]};f.saveSettings({adapterName:'WiFi',localIp:'192.168.50.36',tvIp:'192.168.50.27',nodeExe:path.join(root,'Runtime','node.exe'),ffmpegExe:path.join(root,'Runtime','ffmpeg.exe')},{networkInterfaces:interfaces});interfaces.WiFi[0].address='192.168.50.152';if(f.validateInstalled({networkInterfaces:interfaces}).summary.localIp!=='192.168.50.152')throw Error('DHCP failed');console.log('PASS');`;
   assert.match(node(setupCode),/PASS/);checks.push('packaged-dhcp-validation');
@@ -50,6 +52,8 @@ function main(setup,output){
   gui(external,'--verify','junction-refused',/^INVALID: .*Linked/);fs.unlinkSync(link);assert.equal(fs.readFileSync(path.join(target,'keep.txt'),'utf8'),'keep');
   gui(external,'--test-uninstall','uninstall',/^SUCCESS /);assert.equal(fs.existsSync(app),false);assert.deepEqual(fs.readFileSync(env.IM_ACCESSIBILITY_CONFIG_PATH),saved);
   gui(setup,'--test-install','reinstall-preserving-settings',/^SUCCESS /);assert.deepEqual(fs.readFileSync(env.IM_ACCESSIBILITY_CONFIG_PATH),saved);
+  const reconfirm=`const fs=require('node:fs'),crypto=require('node:crypto'),f=require(${JSON.stringify(first)});const file=process.env.IM_ACCESSIBILITY_CONFIG_PATH,before=fs.readFileSync(file),v=JSON.parse(before);const interfaces={WiFi:[{family:'IPv4',internal:false,address:'192.168.50.152',netmask:'255.255.255.0',mac:'12:34:56:78:90:ab'}]};const result=f.saveSettings({adapterName:'WiFi',localIp:'192.168.50.152',tvIp:v.television.ip,...v.executables},{networkInterfaces:interfaces,expectedHash:crypto.createHash('sha256').update(before).digest('hex')});if(!result.unchanged||!before.equals(fs.readFileSync(file)))throw Error('Reinstall TV selection failed');console.log('PASS');`;
+  assert.match(node(reconfirm),/PASS/);checks.push('reinstalled-tv-reselection-preserves-settings');
   gui(setup,'--test-install','overwrite-refused',/^FAILED .*already installed/s);
   gui(setup,'--test-existing','existing-app-verified-without-overwrite',/^SUCCESS .*ImAccessibility.exe/);
   const appExe=path.join(app,'ImAccessibility.exe'),appBytes=fs.readFileSync(appExe);

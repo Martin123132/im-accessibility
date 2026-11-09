@@ -39,6 +39,7 @@ const packageTests=[
  'packaging/tests/stale-session-recovery.test.cjs',
  'packaging/tests/session-health.test.cjs',
  'packaging/tests/windows-gui.test.cjs',
+ 'packaging/tests/gui-save-guard.test.cjs',
  'packaging/windows-oneclick/discover-setup.test.cjs',
  'packaging/windows-oneclick/installer-source.test.cjs',
  'packaging/windows-oneclick/audit-release.test.cjs',

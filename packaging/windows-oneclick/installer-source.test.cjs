@@ -44,7 +44,7 @@ test('installed app asks before starting or stopping TV and uses a local, narrow
  assert.match(ui,/Engine\.Run\("start",null,audio\)/);
  assert.match(ui,/Engine\.Run\("stop",null,false\)/);
  assert.match(bridge,/Only the installed verified runtimes are permitted/);
- assert.match(bridge,/first\.saveSettings\(v\)/);
+ assert.match(bridge,/first\.saveSettings\(v,\{expectedHash:v\.previousHash\?\?null\}\)/);
  assert.match(bridge,/launch\.main\(\['--start'\]\)/);
  assert.match(bridge,/stop\.stop\(\)/);
  assert.doesNotMatch(bridge,/eval\(|execSync\(/);
