@@ -30,7 +30,7 @@ test('source verifier compiles into isolated dir and rejects non-compiler-metada
 });
 test('private setup builder requires native provenance before accepting package payload',()=>{
  const build=fs.readFileSync(path.join(root,'build-oneclick.ps1'),'utf8');
- const copy=build.indexOf("Copy-Item -Path (Join-Path $from '*')");
+ const copy=build.indexOf("Copy-Item -LiteralPath (Join-Path $from $relative.Replace");
  const verify=build.indexOf("verify-native-source.ps1");
  const bundle=build.indexOf("ImAccessibilityEmbeddedPayload.zip");
  assert.ok(copy>=0&&verify>copy&&bundle>verify);

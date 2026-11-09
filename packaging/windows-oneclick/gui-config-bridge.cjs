@@ -44,12 +44,22 @@ async function main(){
     const v=first.validateInstalled();return output(v.summary);
   }
   if(command==='status'){
-    return output(status.status());
+    return output(await status.status());
   }
   if(command==='start'){
     const audio=process.env.IM_ACCESSIBILITY_TV_AUDIO;
     if(audio!=='0'&&audio!=='1')throw Error('Explicit audio setting required');
-    return output(launch.main(['--start']));
+    return output(await launch.main(['--start']));
+  }
+  if(command==='prepare-audio'){
+    // Only reached after the GUI explicitly explains and confirms registration.
+    const cp=require('node:child_process');
+    const script=path.join(__dirname,'audio-guard-task.ps1');
+    const powershell=path.join(process.env.SystemRoot,'System32','WindowsPowerShell','v1.0','powershell.exe');
+    const r=cp.spawnSync(powershell,['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',script,'-Action','Enable','-OwnerConsent','YES'],
+      {encoding:'utf8',windowsHide:true,timeout:12000,maxBuffer:8192});
+    if(r.error||r.status!==0)throw Error('Audio safety setup failed; no stream started. '+String(r.stderr||r.error?.message||'Unknown failure').slice(0,180));
+    return output({ready:true,note:'Audio restoration enabled on demand; no automatic triggers.'});
   }
   if(command==='stop'){return output(stop.stop())}
   throw Error('Unsupported local GUI command');

@@ -60,13 +60,16 @@ function adapters(interfaces){
   for(const entry of entries){
    if(!entry||!(entry.family==='IPv4'||entry.family===4)||entry.internal===true)continue;
    if(!isPrivate(entry.address)||maskBits(entry.netmask)===null||!usableHost(entry.address,entry.netmask))continue;
-   result.push({name,ip:entry.address,mask:entry.netmask});
+   result.push({name,ip:entry.address,mask:entry.netmask,
+    ...(/^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$/i.test(entry.mac||'')&&entry.mac!=='00:00:00:00:00:00'?{mac:entry.mac.toLowerCase()}:{})});
   }
  }
  return result;
 }
 function chooseAdapter(selection,interfaces){
- keys(selection,['adapterName','localIp'],'network');
+ keys(selection,['adapterName','localIp','adapterMac','netmask'],'network');
+ if(selection.adapterMac!==undefined&&!/^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$/.test(selection.adapterMac))throw Error('Invalid saved adapter identity');
+ if(selection.netmask!==undefined&&maskBits(selection.netmask)===null)throw Error('Invalid saved network mask');
  if(selection.adapterName!==undefined&&(typeof selection.adapterName!=='string'||!selection.adapterName.trim()||selection.adapterName.length>120))
   throw Error('network.adapterName must name an actual local adapter');
  if(selection.localIp!==undefined&&!isPrivate(selection.localIp))
@@ -74,7 +77,9 @@ function chooseAdapter(selection,interfaces){
  if(!selection.adapterName&&!selection.localIp)throw Error('Select network.adapterName or network.localIp explicitly');
  const matches=adapters(interfaces).filter(a=>
    (selection.adapterName===undefined||a.name===selection.adapterName)&&
-   (selection.localIp===undefined||a.ip===selection.localIp));
+   (selection.localIp===undefined||a.ip===selection.localIp)&&
+   (selection.adapterMac===undefined||a.mac===selection.adapterMac)&&
+   (selection.netmask===undefined||a.mask===selection.netmask));
  if(matches.length===0)throw Error('No matching physical private-LAN adapter; check Windows Network Settings');
  if(matches.length>1)throw Error('Multiple matching network interfaces; specify both adapterName and localIp');
  return Object.freeze(matches[0]);
@@ -121,7 +126,7 @@ function validateCurrentLease(config,{networkInterfaces=os.networkInterfaces(),e
      !isPrivate(old.localIp)||!television||!isPrivate(television.ip)||
      old.localIp===television.ip)throw error;
   let current;
-  try{current=chooseAdapter({adapterName:old.adapterName},networkInterfaces)}
+  try{current=chooseAdapter({adapterName:old.adapterName,adapterMac:old.adapterMac,netmask:old.netmask},networkInterfaces)}
   catch{throw error;}
   if(old.localIp===current.ip||!subnet(old.localIp,current.ip,current.mask)||
      !usableHost(old.localIp,current.mask)||

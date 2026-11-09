@@ -113,7 +113,8 @@ function mdnsReply(packet) {
             const suffix='.'+service;
             const name=clean(instance.toLowerCase().endsWith(suffix)?
               instance.slice(0,-suffix.length):instance);
-            result={brand,protocol,name:name||brand+' device',method:'mDNS'};
+            const lg=/\[LG\]|\bwebos\b/i.test(name);
+            result={brand:lg?'LG':brand,protocol:lg?'lg-webos':protocol,name:name||brand+' device',method:'mDNS'};
             break;
           }
         }
@@ -143,7 +144,7 @@ function merge(found,network) {
   for(const device of found) {
     if(!device||!validIp(device.ip,network))continue;
     const earlier=unique.get(device.ip);
-    const better=earlier&&earlier.brand!=='DIAL'&&earlier.brand!=='DLNA'?earlier:device;
+    const better=device.brand==='LG'?device:earlier&&earlier.brand!=='DIAL'&&earlier.brand!=='DLNA'?earlier:device;
     const methods=[...new Set([...(earlier?.methods||[]),device.method])];
     unique.set(device.ip,{ip:device.ip,brand:better.brand,protocol:better.protocol,
       name:clean(better.name)||better.brand+' device',methods,...capability(better.brand)});
@@ -154,7 +155,7 @@ function listen(mode,network,onHit,{durationMs=4200,socketFactory=()=>dgram.crea
   return new Promise(resolve=>{
     const sock=socketFactory();
     let done=false;
-    const finish=()=>{if(done)return;done=true;clearTimeout(timer);try{sock.close()}catch{}resolve();};
+    const finish=(error)=>{if(done)return;done=true;clearTimeout(timer);try{sock.close()}catch{}resolve(error?mode+": discovery unavailable on the selected network":null);};
     const timer=setTimeout(finish,durationMs);
     sock.on('error',finish);
     sock.on('message',(raw,remote)=>{
@@ -165,21 +166,21 @@ function listen(mode,network,onHit,{durationMs=4200,socketFactory=()=>dgram.crea
     try{
       sock.bind(0,network.ip,()=>{
         if(done)return;
-        try{sock.setMulticastInterface(network.ip);}catch{}
+        try{sock.setMulticastInterface(network.ip);}catch(e){finish(e);return;}
         if(mode==='SSDP'){
           for(const st of ['ssdp:all','urn:schemas-upnp-org:device:MediaRenderer:1',
                            'urn:dial-multiscreen-org:service:dial:1']){
             const msg=['M-SEARCH * HTTP/1.1','HOST: 239.255.255.250:1900',
                        'MAN: "ssdp:discover"','MX: 2','ST: '+st,'',''].join('\r\n');
-            try{sock.send(Buffer.from(msg),1900,'239.255.255.250',()=>{});}catch{}
+            try{sock.send(Buffer.from(msg),1900,'239.255.255.250',error=>{if(error)finish(error)});}catch(e){finish(e);}
           }
         }else{
           for(const [service] of SERVICES){
-            try{sock.send(question(service),5353,'224.0.0.251',()=>{});}catch{}
+            try{sock.send(question(service),5353,'224.0.0.251',error=>{if(error)finish(error)});}catch(e){finish(e);}
           }
         }
       });
-    }catch{finish();}
+    }catch(e){finish(e);}
   });
 }
 async function scan(selection,{adaptersFn, durationMs=4200,socketFactory}={}) {
@@ -187,9 +188,10 @@ async function scan(selection,{adaptersFn, durationMs=4200,socketFactory}={}) {
     throw Error('Invalid discovery duration');
   const network=adapter(selection,{adaptersFn});
   const found=[];
-  await Promise.all(['SSDP','mDNS'].map(mode=>
-    listen(mode,network,row=>found.push(row),{durationMs,socketFactory})));
+  const warnings=(await Promise.all(['SSDP','mDNS'].map(mode=>
+    listen(mode,network,row=>found.push(row),{durationMs,socketFactory})))).filter(Boolean);
+  if(warnings.length===2)throw Error("Discovery could not use the selected network. Check its connection and firewall permissions, then retry.");
   const devices=merge(found,network);
-  return {ok:true,readOnly:true,network:network.name,count:devices.length,devices};
+  return {ok:true,readOnly:true,network:network.name,count:devices.length,devices,warnings};
 }
 module.exports={adapter,capability,ssdpReply,mdnsReply,question,validIp,merge,scan};

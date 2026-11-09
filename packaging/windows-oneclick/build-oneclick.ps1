@@ -44,7 +44,15 @@ foreach($entry in $preview.files){
   throw ('TV package checksum mismatch: '+$rel)
  }
 }
-Copy-Item -Path (Join-Path $from '*') -Destination $stage -Recurse -ErrorAction Stop
+# Copy only verified manifest entries, never unlisted files beside the payload.
+$seen=New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
+foreach($entry in $preview.files){
+ $relative=[string]$entry.path
+ if(!$seen.Add($relative)){throw 'Duplicate preview manifest path'}
+ $destination=Join-Path $stage $relative.Replace('/','\')
+ [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($destination))|Out-Null
+ Copy-Item -LiteralPath (Join-Path $from $relative.Replace('/','\')) -Destination $destination -ErrorAction Stop
+}
 # Compile all three native helpers from checked-in source into an isolated
 # evidence folder; verify shipped EXEs differ only by CSC-generated metadata.
 # Never execute a helper or replace the working TV's binaries.
@@ -75,10 +83,19 @@ if($ffmpegHash -eq $lgplPin){
  [IO.File]::WriteAllText((Join-Path $stage 'encoder-profile.txt'),"h264_mf" + [Environment]::NewLine,(New-Object Text.UTF8Encoding($false)))
  Write-Output 'Pinned LGPL FFmpeg: Windows Media Foundation H264 selected for HLS; fast MSE unverified, HLS kept.'
 }
+# Record the actual shipped runtimes AND licence hashes. This inventory is
+# integrity evidence only; it never represents source/licence clearance.
+$runtimeInventory=[pscustomobject]@{
+ schema=1;redistributionApproved=$false
+ node=[pscustomobject]@{version=$nodeVersion;sha256=(Get-FileHash -LiteralPath $NodeExe -Algorithm SHA256).Hash.ToLowerInvariant();license='THIRD_PARTY/Node-LICENSE.txt';licenseSHA256=(Get-FileHash -LiteralPath $NodeLicense -Algorithm SHA256).Hash.ToLowerInvariant()}
+ ffmpeg=[pscustomobject]@{version=$ffmpegVersion;sha256=$ffmpegHash;license='THIRD_PARTY/FFmpeg-LICENSE.txt';licenseSHA256=(Get-FileHash -LiteralPath $FFmpegLicense -Algorithm SHA256).Hash.ToLowerInvariant();correspondingSourceComplete=$false}
+}
+[IO.File]::WriteAllText((Join-Path $third 'bundled-runtimes.json'),($runtimeInventory|ConvertTo-Json -Depth 5)+[Environment]::NewLine,(New-Object Text.UTF8Encoding($false)))
 function Compile-Exe([string]$sourceFile,[string]$outputName,[string[]]$references){
  $argsList=@('/nologo','/target:winexe','/platform:x64',('/out:'+(Join-Path $stage $outputName)))
  foreach($ref in $references){$argsList+=('/reference:'+$ref)}
  $argsList+=(Join-Path $source $sourceFile)
+ if($sourceFile -eq 'ImAccessibilityUninstall.cs'){$argsList+=(Join-Path $source 'InstallSafety.cs')}
  & $csc @argsList
  if($LASTEXITCODE -ne 0){throw ('C# failed to compile '+$sourceFile)}
 }
@@ -124,6 +141,7 @@ foreach($ref in @('System.Windows.Forms.dll','System.Drawing.dll','System.Web.Ex
 }
 $compilerArgs+=('/resource:'+$zip+',ImAccessibilityInstallerPayload')
 $compilerArgs+=(Join-Path $source 'ImAccessibilitySetup.cs')
+$compilerArgs+=(Join-Path $source 'InstallSafety.cs')
 & $csc @compilerArgs
 if($LASTEXITCODE -ne 0){throw 'Windows installer EXE compiler failed'}
 # Never mistake a successfully built private EXE for a cleared public release.

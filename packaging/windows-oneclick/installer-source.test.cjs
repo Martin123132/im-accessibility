@@ -41,13 +41,15 @@ test('installed app asks before starting or stopping TV and uses a local, narrow
  const bridge=read('gui-config-bridge.cjs');
  assert.match(ui,/MessageBox\.Show\(this,s,"Confirm TV start"/);
  assert.match(ui,/MessageBox\.Show\(this,"Stop this TV stream only\?"/);
- assert.match(ui,/Engine\.Run\("start",null,sound\.Checked\)/);
+ assert.match(ui,/Engine\.Run\("start",null,audio\)/);
  assert.match(ui,/Engine\.Run\("stop",null,false\)/);
  assert.match(bridge,/Only the installed verified runtimes are permitted/);
  assert.match(bridge,/first\.saveSettings\(v\)/);
  assert.match(bridge,/launch\.main\(\['--start'\]\)/);
  assert.match(bridge,/stop\.stop\(\)/);
- assert.doesNotMatch(bridge,/eval\(|execSync\(|child_process/);
+ assert.doesNotMatch(bridge,/eval\(|execSync\(/);
+ assert.match(bridge,/command==='prepare-audio'/);
+ assert.match(bridge,/'Enable','-OwnerConsent','YES'/);
 });
 
 test('uninstaller keeps settings, checks every installed file hash and refuses active sessions',()=>{
@@ -84,7 +86,7 @@ test('uninstall confirmation defaults No, remains keyboard accessible and has no
  assert.match(code,/if\(ConfirmUninstall\(\)!=DialogResult\.Yes\)return;/);
  assert.match(code,/--dialog-selftest/);
  assert.match(code,/UseShellExecute=false/);
- assert.match(code,/GUI test is limited to the disposable test area/);
+ assert.match(read('InstallSafety.cs'),/GUI test is limited to the disposable test area/);
 });
 
 test('offline Windows builder takes explicit third-party licences and creates no public release',()=>{
@@ -112,4 +114,14 @@ test('first-run TV discovery is packaged and limited to local owner-selected ada
  assert.match(bridge,/finder\.scan\(v,\{durationMs:4200\}\)/);
  assert.match(builder,/TVFinder\.cjs/);
  assert.doesNotMatch(bridge,/eval\(|execSync\(/);
+});
+
+test('both GUIs use shared live health; emergency Stop survives encoder configuration damage',()=>{
+ const ui=read('ImAccessibilityApp.cs');
+ const panel=fs.readFileSync(path.join(__dirname,'../windows-control-panel/TVControls.cs'),'utf8');
+ assert.doesNotMatch(panel,/ReadLocalIp|network\["localIp"\]|http:\/\//);
+ assert.match(panel,/status-session\.cjs/);assert.match(panel,/receiverConfirmed/);
+ assert.match(ui,/adapters.Items.Count==1/);assert.doesNotMatch(ui,/int preferred|name.Contains\("wi-fi"\)/);
+ assert.match(ui,/op!="stop"&&op!="status"/);assert.match(ui,/op=="start"&&File.Exists\(encoderProfile\)/);
+ assert.match(ui,/ReadToEndAsync/);assert.match(ui,/healthPoll.Stop/);
 });

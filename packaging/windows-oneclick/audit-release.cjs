@@ -7,6 +7,7 @@ const TEMPLATE_SHA='2159d4e54dc38e3626a95f496a2e6c2f071b541bd07e2e0657c8acbbcdd9
 const VENDOR=require('./ffmpeg-9.0.1-source-inventory.json');
 const NATIVE=require('./native-source-pins.json');
 const REQUIRED=['THIRD_PARTY/Node-LICENSE.txt','THIRD_PARTY/FFmpeg-LICENSE.txt',
+ 'THIRD_PARTY/bundled-runtimes.json',
  'THIRD_PARTY/FFmpeg-README.txt','tv-reliability-v0.5/cast/node_modules/lgtv2/LICENSE',
  'tv-reliability-v0.5/cast/node_modules/ws/LICENSE'];
 const PRIVATE=/(^|\/)(?:\.env(?:\..*)?|settings\.json|session\.json|private-access\.json|client-key(?:\..*)?|credentials?(?:\.json)?|secrets?(?:\.json)?|[^/]+\.pfx|[^/]+\.pem|[^/]+\.sqlite|[^/]+\.jsonl)$/i;
@@ -55,6 +56,19 @@ function audit(stage,installer){
   !fswitches.has('--enable-gpl')&&!fswitches.has('--enable-nonfree')&&
   ff.includes('--disable-libx264')&&ff.includes('--disable-libx265');
  const acceptedFFmpeg=exactVendorMatch||lgplPinned;
+ // LGPL evidence must not inherit counts or source completeness from the
+ // unrelated Gyan GPL inventory. Neither candidate has distribution clearance.
+ let runtimeInventoryVerified=false;
+ try{
+  const inventory=JSON.parse(fs.readFileSync(path.join(stage,'THIRD_PARTY','bundled-runtimes.json'),'utf8'));
+  runtimeInventoryVerified=inventory.schema===1&&inventory.redistributionApproved===false&&
+   inventory.node.sha256===hash(node)&&inventory.node.version===nodeVersion&&
+   inventory.ffmpeg.sha256===ffmpegSHA256&&
+   inventory.node.license==='THIRD_PARTY/Node-LICENSE.txt'&&inventory.ffmpeg.license==='THIRD_PARTY/FFmpeg-LICENSE.txt'&&
+   inventory.node.licenseSHA256===hash(path.join(stage,'THIRD_PARTY','Node-LICENSE.txt'))&&
+   inventory.ffmpeg.licenseSHA256===hash(path.join(stage,'THIRD_PARTY','FFmpeg-LICENSE.txt'));
+ }catch{}
+ if(!runtimeInventoryVerified)failures.push('Bundled runtime/licence inventory is missing or mismatched');
  // Binary changes require a new independent upstream-source and vendor archive audit.
  if(!acceptedFFmpeg)failures.push('Runtime/ffmpeg.exe differs from approved, pinned vendor binaries');
  const packages={};
@@ -85,9 +99,12 @@ function audit(stage,installer){
   files:meta.files.length,integrity:{failures,passed:meta.files.length-failures.length},
   privacy:{flaggedPaths:privatePaths,upstreamPairingTemplate:byPath.get('tv-reliability-v0.5/cast/node_modules/lgtv2/pairing.json')?.sha256===TEMPLATE_SHA},
   runtimes:{nodeVersion,nodeSha256:hash(node),ffmpegVersion,ffmpegSha256:ffmpegSHA256,
+   runtimeInventoryVerified,
    vendorMatch:acceptedFFmpeg,lgplPinned,ffmpegUpstreamCoreCommit:lgplPinned?'d4070a14ce':VENDOR.coreSourceCommit,
    vendorArchiveSha256:lgplPinned?'7a347fb3220968b63fc7e025ed78370588726e0d0bf2bd0445d3f8f2387c36db':VENDOR.vendorZIPsha256,
-   externalLibraryCount:VENDOR.externalLibraryCount,archivedExternalSourceCount,verifiedExternalBuildRecipeCount,correspondingSourceComplete:VENDOR.correspondingSourceComplete,
+   externalLibraryCount:lgplPinned?null:VENDOR.externalLibraryCount,
+   archivedExternalSourceCount:lgplPinned?0:archivedExternalSourceCount,
+   verifiedExternalBuildRecipeCount:lgplPinned?0:verifiedExternalBuildRecipeCount,correspondingSourceComplete:false,
    ffmpegFlags:{gpl:fswitches.has('--enable-gpl'),version3:fswitches.has('--enable-version3'),
     nonfree:fswitches.has('--enable-nonfree'),x264:fswitches.has('--enable-libx264'),x265:fswitches.has('--enable-libx265')}},
   packages,missingNotices,nativeSourceGaps,nativeSourceAndBinaryPinsVerified:nativePinsVerified,installerSignature:signature,

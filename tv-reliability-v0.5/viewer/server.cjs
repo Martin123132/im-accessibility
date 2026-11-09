@@ -13,6 +13,7 @@ const VIEWING=require('../viewing-policy.cjs');
 const speakerRouter=new SpeakerRouter();
 const SETTINGS=process.env.IM_ACCESSIBILITY_CONFIG_PATH!==undefined
  ?require('../release-config.cjs').readUserSettings():null;
+const playback=new (require('./playback-health.cjs').PlaybackHealth)(SETTINGS?SETTINGS.television.ip:null);
 const ROOT=__dirname,LAN=SETTINGS?SETTINGS.network.ip:'192.168.4.36',PORT=43198;
 const ORIGIN='http://'+LAN+':'+PORT,UPSTREAM_DIR=path.resolve(ROOT,'../cast');
 const SOURCE_FILE=path.join(UPSTREAM_DIR,'runtime','private-access.json');
@@ -159,7 +160,8 @@ function createServer(){
    const u=new URL(req.url,ORIGIN);
    if(u.search)return json(res,404,{error:'Not found'});
    const route=u.pathname;
-   if(req.method==='GET'&&route==='/health')return json(res,200,{service:'interactive-tv',build:'tv-resume-v0.5',ready:active(),sourceReady:state().sourceReady});
+   if(req.method==='GET'&&route==='/health')return json(res,200,{service:'interactive-tv',build:'tv-resume-v0.5',runId:process.env.IM_ACCESSIBILITY_RUN_ID||null,ready:active(),sourceReady:state().sourceReady,playback:playback.state()});
+   if(req.method==='GET'&&route==='/playback-health.js')return asset(res,'playback-health.js','text/javascript; charset=utf-8');
    if(req.method==='GET'&&route==='/tv/'+token){
     if(!active())return json(res,410,{error:'Session expired'});
     return asset(res,'viewer.html','text/html; charset=utf-8');
@@ -212,6 +214,10 @@ function createServer(){
    if(req.headers.origin&&req.headers.origin!==ORIGIN)return json(res,403,{error:'Origin denied'});
    if(req.headers['sec-fetch-site']==='cross-site')return json(res,403,{error:'Cross-site request denied'});
    const input=await getBody(req);
+   if(route==='/api/playback-health'){
+    playback.report(req.socket.remoteAddress,input);
+    return json(res,200,{ok:true});
+   }
    if(route==='/api/audio-route'){
     if(!input||Object.keys(input).length!==1||typeof input.mode!=='string')
      throw Error('One explicit audio destination is required');
@@ -255,7 +261,7 @@ function createServer(){
    }
    if(route==='/api/end'){
     if(!input||Object.keys(input).join(',')!=='confirm'||input.confirm!==true)throw Error('Explicit end-session confirmation required');
-    fs.writeFileSync(STOP_SIGNAL,JSON.stringify({reason:'owner-pressed-stop',requestedAtUtc:new Date().toISOString()})+'\n',{flag:'wx'});
+    fs.writeFileSync(STOP_SIGNAL,JSON.stringify({runId:process.env.IM_ACCESSIBILITY_RUN_ID||null,reason:'owner-pressed-stop',requestedAtUtc:new Date().toISOString()})+'\n',{flag:'wx'});
     enabled=false;speakerRouter.restore();return json(res,200,{accepted:true,message:'PC Bridge TV session stopping'});
    }
    if(route==='/api/mouse'){

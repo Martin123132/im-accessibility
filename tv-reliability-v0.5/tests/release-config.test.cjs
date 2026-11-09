@@ -185,3 +185,11 @@ test('DHCP rebind never changes adapter, subnet, device or trust conditions',()=
  const wrongModel=make();wrongModel.television.model='Unapproved';
  assert.throws(()=>c.validateCurrentLease(wrongModel,{networkInterfaces:{Ethernet:[adapter('192.168.4.152')]},existsFile}),/model not on/);
 });
+
+test('new adapter pins reject changed hardware or subnet mask even on the same named interface',()=>{
+ const v=settings();v.network.adapterMac='12:34:56:78:90:ab';v.network.netmask='255.255.255.0';
+ const check=(mac,netmask='255.255.255.0')=>c.validateCurrentLease(v,{networkInterfaces:{Ethernet:[{...adapter('192.168.4.152'),mac,netmask}]},existsFile});
+ assert.equal(check(v.network.adapterMac).network.ip,'192.168.4.152');
+ assert.throws(()=>check('12:34:56:78:90:ac'),/No matching/);
+ assert.throws(()=>check(v.network.adapterMac,'255.255.254.0'),/No matching/);
+});

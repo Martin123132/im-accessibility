@@ -24,7 +24,8 @@ namespace ImAccessibilityDesktop {
   public static string Settings {get{return Path.Combine(LocalData,"ImAccessibility","settings.json");}}
   public static string Quote(string s){return "\""+s.Replace("\"","\\\"")+"\"";}
   public static string Run(string op,string input,bool audio) {
-   if(!File.Exists(Node)||!File.Exists(Ffmpeg)||!File.Exists(Bridge))throw new IOException("Bundled Node, FFmpeg or app controller is missing.");
+   if(!File.Exists(Node)||!File.Exists(Bridge))throw new IOException("Bundled Node or app controller is missing.");
+   if(op!="stop"&&op!="status"&&!File.Exists(Ffmpeg))throw new IOException("Bundled FFmpeg is missing.");
    var si=new ProcessStartInfo(Node,Quote(Bridge)+" "+op);
    si.WorkingDirectory=Root;si.UseShellExecute=false;si.CreateNoWindow=true;
    si.RedirectStandardInput=true;si.RedirectStandardOutput=true;si.RedirectStandardError=true;
@@ -35,7 +36,7 @@ namespace ImAccessibilityDesktop {
 // An independently verified LGPL preview includes a pinned encoder profile.
 // Legacy owner builds omit this file and retain the x264 argument sequence.
 string encoderProfile=Path.Combine(Root,"encoder-profile.txt");
-if(File.Exists(encoderProfile)){
+if(op=="start"&&File.Exists(encoderProfile)){
  string choice=File.ReadAllText(encoderProfile,Encoding.UTF8).Trim();
  if(choice!="h264_mf"&&choice!="libopenh264")
   throw new IOException("Unrecognised installed video encoder profile.");
@@ -45,8 +46,9 @@ if(File.Exists(encoderProfile)){
     p.StartInfo=si;p.Start();
     if(input!=null)p.StandardInput.Write(input);
     p.StandardInput.Close();
-    string output=p.StandardOutput.ReadToEnd(),error=p.StandardError.ReadToEnd();
-    if(!p.WaitForExit(15000)){try{p.Kill();}catch{}throw new Exception("Local "+op+" timed out.");}
+    var outputTask=p.StandardOutput.ReadToEndAsync();var errorTask=p.StandardError.ReadToEndAsync();
+    if(!p.WaitForExit(15000)){try{p.Kill();p.WaitForExit(2000);}catch{}throw new Exception("Local "+op+" timed out.");}
+    string output=outputTask.Result,error=errorTask.Result;
     if(p.ExitCode!=0)throw new Exception(String.IsNullOrWhiteSpace(error)?output.Trim():error.Trim());
     return output.Trim();
    }
@@ -72,7 +74,8 @@ if(File.Exists(encoderProfile)){
   Label state=new Label();
    bool scanning=false;
    readonly System.Windows.Forms.Timer presentationPoll=new System.Windows.Forms.Timer();
-   int presentationTries;bool presentationBusy;
+   int presentationTries;bool presentationBusy,commandBusy;
+   readonly System.Windows.Forms.Timer healthPoll=new System.Windows.Forms.Timer();
   public MainWindow(){
    Text="I'm-accessibility - Find TVs on your Wi-Fi";Font=new Font("Segoe UI",10);
    BackColor=Color.FromArgb(247,249,250);ForeColor=Color.FromArgb(28,42,56);
@@ -92,17 +95,17 @@ if(File.Exists(encoderProfile)){
    AddLabel("Selected TV",30,437,117,26);
    tvIP.SetBounds(156,431,205,32);tvIP.MaxLength=22;tvIP.ReadOnly=true;
    tvIP.Text="Select a TV above";Controls.Add(tvIP);
-   AddLabel("Finds many brands. Desktop viewing currently supports LG webOS.",375,429,341,44);
+   AddLabel("Finds many brands. Tested TV: LG OLED55CX6LA.",375,429,341,44);
    confirm.SetBounds(155,475,540,31);confirm.Text="I confirm this is my television.";confirm.Enabled=false;Controls.Add(confirm);
    save.Text="Save selected TV";save.SetBounds(155,518,203,43);Primary(save);
    save.Enabled=false;save.Click+=(s,e)=>Save();Controls.Add(save);
-   state.SetBounds(366,515,350,44);state.Text="Checking setup...";Controls.Add(state);
+   state.SetBounds(366,491,350,85);state.Text="Checking setup...";Controls.Add(state);
    Panel second=new Panel{Left=28,Top=582,Width=694,Height=2,BackColor=Color.Silver};Controls.Add(second);
    AddLabel("2   USE YOUR TV",28,599,675,28,11,true);
    sound.SetBounds(29,635,675,29);
    sound.Text="Enable TV speaker sound (may temporarily mute laptop speakers)";
    Controls.Add(sound);
-   start.Text="Start desktop on TV";start.SetBounds(30,677,223,44);Primary(start);Controls.Add(start);
+   start.Enabled=false;start.Text="Start desktop on TV";start.SetBounds(30,677,223,44);Primary(start);Controls.Add(start);
    stop.Text="Stop TV stream";stop.SetBounds(265,677,181,44);Controls.Add(stop);
    status.Text="Refresh status";status.SetBounds(457,677,149,44);Controls.Add(status);
    uninstall.Text="Uninstall";uninstall.SetBounds(617,677,104,44);Controls.Add(uninstall);
@@ -110,7 +113,7 @@ if(File.Exists(encoderProfile)){
    uninstall.Click+=(s,e)=>Uninstall();
    find.Click+=(s,e)=>FindTVs();televisions.SelectedIndexChanged+=(s,e)=>SelectTV();
    adapters.SelectedIndexChanged+=(s,e)=>{
-    if(File.Exists(Engine.Settings)||scanning)return;
+    if(scanning)return;
     televisions.Items.Clear();tvIP.Text="Select a TV above";confirm.Checked=false;
     confirm.Enabled=false;save.Enabled=false;state.Text="Choose Find TVs to scan this network.";
    };
@@ -145,7 +148,9 @@ if(File.Exists(encoderProfile)){
    state.AccessibleName="LG television setup status";
        presentationPoll.Interval=1800;
     presentationPoll.Tick+=(sender,e)=>ProbeDesktopReady();
-    Load+=(s,e)=>Initialize();
+    healthPoll.Interval=4000;healthPoll.Tick+=(s,e)=>Status();
+    Load+=(s,e)=>{Initialize();healthPoll.Start();};
+    FormClosed+=(s,e)=>{presentationPoll.Stop();presentationPoll.Dispose();healthPoll.Stop();healthPoll.Dispose();};
   }
   public object AccessibilityReport(){
    Control[] ordered={adapters,find,televisions,tvIP,confirm,save,sound,start,stop,status,uninstall,log};
@@ -181,35 +186,33 @@ if(File.Exists(encoderProfile)){
      var map=item as Dictionary<string,object>;if(map==null)continue;
      adapters.Items.Add(new Adapter{Name=Engine.Field(map,"name"),IP=Engine.Field(map,"ip"),Mask=Engine.Field(map,"mask")});
     }
-    if(adapters.Items.Count>0){
-     int preferred=0;
-     for(int i=0;i<adapters.Items.Count;i++){
-      string name=((Adapter)adapters.Items[i]).Name.ToLowerInvariant();
-      if(name.Contains("wi-fi")||name.Contains("wifi")||name.Contains("wireless")){preferred=i;break;}
-     }
-     adapters.SelectedIndex=preferred;
-    }
+    // Multiple private NICs always require an explicit choice, never prefer Wi-Fi.
+    if(adapters.Items.Count==1)adapters.SelectedIndex=0;
     if(File.Exists(Engine.Settings)){
      state.Text="Configuration already saved.";
-     find.Enabled=false;save.Enabled=false;confirm.Enabled=false;tvIP.ReadOnly=true;
-     adapters.Enabled=false;televisions.Enabled=false;
+     save.Enabled=false;confirm.Enabled=false;tvIP.ReadOnly=true;
+     televisions.Enabled=true;
      try{
       var settings=Engine.Parse(File.ReadAllText(Engine.Settings,Encoding.UTF8));
       tvIP.Text=Engine.Field(settings["television"] as Dictionary<string,object>,"ip");
-      string ip=Engine.Field(settings["network"] as Dictionary<string,object>,"localIp");
+      var current=Engine.Parse(Engine.Run("validate",null,false));
+      string ip=Engine.Field(current,"localIp");
+      adapters.SelectedIndex=-1;
       for(int i=0;i<adapters.Items.Count;i++)
        if(((Adapter)adapters.Items[i]).IP==ip)adapters.SelectedIndex=i;
-     }catch{Log("Existing TV settings need inspection before Start.");}
-    }else if(adapters.Items.Count>0){
+     }catch{adapters.SelectedIndex=-1;Log("Saved network unavailable. Choose a network explicitly for discovery. Start still uses your saved TV and network.");}
+    }else if(adapters.Items.Count==1){
      state.Text="Ready to find TVs...";
      BeginInvoke(new Action(()=>FindTVs()));
+    }else if(adapters.Items.Count>1){
+     state.Text="Choose your PC network, then Find TVs.";
     }else{state.Text="Connect your PC to a local network, then retry.";find.Enabled=false;}
     Status();
    }catch(Exception ex){Log("Setup check: "+ex.Message);start.Enabled=false;save.Enabled=false;}
   }
   async void FindTVs(){
    var selected=adapters.SelectedItem as Adapter;
-   if(scanning||File.Exists(Engine.Settings))return;
+   if(scanning)return;
    if(selected==null){state.Text="Choose a PC network first.";return;}
    scanning=true;find.Enabled=false;televisions.Enabled=false;
    televisions.Items.Clear();tvIP.Text="Searching...";confirm.Checked=false;
@@ -221,6 +224,8 @@ if(File.Exists(encoderProfile)){
     if(Disposing||IsDisposed)return;
     if(adapters.SelectedItem!=selected){state.Text="Network changed. Scan again.";return;}
     var reply=Engine.Parse(raw);
+    var warnings=reply.ContainsKey("warnings")?reply["warnings"] as ArrayList:null;
+    if(warnings!=null)foreach(object warning in warnings)Log(Convert.ToString(warning));
     var rows=reply.ContainsKey("devices")?reply["devices"] as ArrayList:null;
     if(rows!=null)foreach(object value in rows){
      var device=value as Dictionary<string,object>;if(device==null)continue;
@@ -237,7 +242,7 @@ if(File.Exists(encoderProfile)){
     if(televisions.Items.Count==0)Log("No TV announced itself; some networks block discovery even when TVs are online.");
     else Log("Found "+televisions.Items.Count+" TV/receiver device(s). Select from the list.");
    }catch(Exception ex){state.Text="TV discovery unavailable.";Log("Find TVs: "+ex.Message);}
-   finally{scanning=false;if(!IsDisposed){find.Enabled=!File.Exists(Engine.Settings);televisions.Enabled=true;}}
+   finally{scanning=false;if(!IsDisposed){find.Enabled=true;televisions.Enabled=true;}}
   }
   void SelectTV(){
    if(scanning||File.Exists(Engine.Settings))return;
@@ -263,26 +268,34 @@ if(File.Exists(encoderProfile)){
     Engine.Run("save",new JavaScriptSerializer().Serialize(data),false);
     state.Text="TV setup saved.";save.Enabled=false;find.Enabled=false;adapters.Enabled=false;
     televisions.Enabled=false;confirm.Enabled=false;
-    Log("LG TV selected. The hardware model is checked when the connection starts.");
+    Log("LG TV selected. Press Start, then approve the connection on your TV using its remote. Only OLED55CX6LA is currently supported.");Status();
    }catch(Exception ex){Log("Setup refused: "+ex.Message);}
   }
-  void StartTV(){
+  async void StartTV(){
+   if(commandBusy)return;
    if(!File.Exists(Engine.Settings)){Log("Select and save your LG TV first.");return;}
    string s="Open the Windows desktop stream on your selected LG TV?\r\n"+
-     (sound.Checked?"TV audio will be enabled.":"TV audio will stay disabled.")+
+     (sound.Checked?"TV audio will be enabled. Allow this app to register its per-user audio restoration task? It runs only on demand, with no automatic startup.":"TV audio will stay disabled.")+
      "\r\nWindows mouse control will remain OFF until you enable it on the TV.";
    if(MessageBox.Show(this,s,"Confirm TV start",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
+   commandBusy=true;start.Enabled=false;
+   bool audio=sound.Checked;
    try{
-      Engine.Run("validate",null,false);
-      Log(Engine.Run("start",null,sound.Checked));
+      await Task.Run(()=>Engine.Run("validate",null,false));
+      if(audio)await Task.Run(()=>Engine.Run("prepare-audio",null,true));
+      Log(await Task.Run(()=>Engine.Run("start",null,audio)));
       presentationTries=0;presentationBusy=false;presentationPoll.Start();
     }
    catch(Exception ex){Log("Start refused: "+ex.Message);}
+   finally{commandBusy=false;Status();}
   }
-  void StopTV(){
+  async void StopTV(){
+   if(commandBusy)return;
    if(MessageBox.Show(this,"Stop this TV stream only?","Confirm stop",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
        presentationPoll.Stop();
-    try{Log(Engine.Run("stop",null,false));}catch(Exception ex){Log("Stop failed: "+ex.Message);}
+    commandBusy=true;
+    try{Log(await Task.Run(()=>Engine.Run("stop",null,false)));}catch(Exception ex){Log("Stop failed: "+ex.Message);}
+    finally{commandBusy=false;Status();}
   }
      // Presentation only: after receiver and source are confirmed ready, minimise
    // this controls window. Never launch or manipulate another Windows app.
@@ -293,8 +306,7 @@ if(File.Exists(encoderProfile)){
       bool connected=false;
       try{
         var data=Engine.Parse(Engine.Run("status",null,false));
-        connected=Engine.Field(data,"viewer")=="ready"&&
-          Engine.Field(data,"lg")=="opened"&&Engine.Field(data,"stream")=="ready";
+        connected=data.ContainsKey("receiverConfirmed")&&data["receiverConfirmed"] is bool&&(bool)data["receiverConfirmed"];
       }catch{}
       if(IsDisposed||!IsHandleCreated)return;
       try{BeginInvoke((Action)delegate{
@@ -310,11 +322,23 @@ if(File.Exists(encoderProfile)){
         }
       });}catch(InvalidOperationException){}
     });
-   }   void Status(){
-   try{var d=Engine.Parse(Engine.Run("status",null,false));
-    Log("State "+Engine.Field(d,"state")+" | video "+Engine.Field(d,"stream")+
-     " | viewer "+Engine.Field(d,"viewer")+" | LG "+Engine.Field(d,"lg"));
-   }catch(Exception ex){Log("Status: "+ex.Message);}
+   }
+  bool statusBusy;string lastStatus="";
+  async void Status(){
+   if(statusBusy||commandBusy||IsDisposed)return;
+   statusBusy=true;
+   try{
+    var d=Engine.Parse(await Task.Run(()=>Engine.Run("status",null,false)));
+    if(IsDisposed)return;
+    string mode=Engine.Field(d,"state"),message=Engine.Field(d,"message");
+    bool idle=mode=="not-started"||mode=="stopped"||mode=="stale";
+    bool audioPending=d.ContainsKey("audioPending")&&d["audioPending"] is bool&&(bool)d["audioPending"];
+    start.Enabled=idle&&(!audioPending||mode=="stale")&&File.Exists(Engine.Settings);
+    stop.Enabled=!idle||audioPending;
+    state.Text=message;
+    if(message!=lastStatus){Log(message);lastStatus=message;}
+   }catch(Exception ex){if(!IsDisposed){start.Enabled=false;stop.Enabled=true;Log("Status: "+ex.Message);}}
+   finally{statusBusy=false;}
   }
   void Uninstall(){
    var target=Path.Combine(Engine.Root,"ImAccessibility-Uninstall.exe");

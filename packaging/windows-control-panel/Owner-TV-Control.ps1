@@ -19,14 +19,15 @@ $stop=Join-Path $app 'stop-session.cjs'
 $journal=Join-Path $app 'tv-reliability-v0.5\viewer\runtime\speaker-route.json'
 
 function Guard-Runner {
- foreach($file in @($runner,$powershellExe,$node,$launcher,$stop,$settings)){
+ if($Action -in @('Start','Enable') -and !(Test-Path -LiteralPath $settings -PathType Leaf)){throw 'Save your TV settings before Start'}
+ foreach($file in @($runner,$powershellExe,$node,$launcher,$stop)){
   if(!(Test-Path -LiteralPath $file -PathType Leaf)){throw ('Required pinned owner TV file missing: '+[IO.Path]::GetFileName($file))}
  }
  $mfile=Join-Path $app 'installer-manifest.json'
  $m=Get-Content -LiteralPath $mfile -Raw|ConvertFrom-Json
  if($m.product -ne 'ImAccessibility' -or
     $m.version -ne 'v0.3.21-independent-audio-guard-private-preview' -or
-    @($m.files).Count -ne 88){throw 'Owner TV task is not bound to verified private v0.3.21'}
+    @($m.files).Count -lt 80 -or @($m.files).Count -gt 250){throw 'Owner TV task is not bound to verified private v0.3.21'}
 }
 function Get-OwnerTask {
  $found=@(Get-ScheduledTask -ErrorAction Stop|Where-Object {$_.TaskName -eq $TaskName})

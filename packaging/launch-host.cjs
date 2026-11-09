@@ -52,7 +52,7 @@ function preflight({env=process.env,networkInterfaces=os.networkInterfaces(),
 function recoverStaleAudio({runNativeFn=cp.spawnSync}={}){
  // A dead owner supervisor does not prove its video descendants stopped.
  // Verify BOTH private service ports are unoccupied before restoring a speaker.
- const ports=runNativeFn('netstat.exe',['-ano','-p','TCP'],{
+ const ports=runNativeFn('netstat.exe',['-ano'],{
   encoding:'utf8',windowsHide:true,timeout:4500,maxBuffer:3*1024*1024});
  if(ports.error||ports.status!==0||typeof ports.stdout!=='string')
   fail('Cannot verify TV ports; refusing recovery');
@@ -65,9 +65,13 @@ function recoverStaleAudio({runNativeFn=cp.spawnSync}={}){
  if(!restored.recovered)fail('Original Windows audio requires inspection: '+restored.reason);
  return restored;
 }
-function launch({spawnFn=cp.spawn,preflightFn=preflight,recoverFn=recoverStaleAudio}={}){
+function launch({spawnFn=cp.spawn,preflightFn=preflight,recoverFn=recoverStaleAudio,
+ portsFn=()=>require(path.join(tvRoot,'session-guard.cjs')).assertPortsAvailable(),fsApi=fs,
+ journalPath=path.join(tvRoot,'viewer','runtime','speaker-route.json')}={}){
  const valid=preflightFn();
+ portsFn();
  if(valid.stale===true)recoverFn();
+ if(fsApi.existsSync(journalPath))fail('Laptop audio restoration is pending. Close the previous session before starting another.');
  const child=spawnFn(valid.config.executables.nodeExe,[valid.hostFile],{
   cwd:path.dirname(valid.hostFile),
   windowsHide:true,
@@ -77,9 +81,21 @@ function launch({spawnFn=cp.spawn,preflightFn=preflight,recoverFn=recoverStaleAu
  });
  if(!child||!Number.isInteger(child.pid)||child.pid<1)fail('Windows did not create the TV supervisor');
  if(typeof child.unref==='function')child.unref();
- return {requested:true,pid:child.pid,note:'Startup requested; check Status.cmd. Mouse remains off until owner enables it.'};
+ return {requested:true,pid:child.pid,note:'Startup requested. Approve the pairing prompt on your selected LG TV. Check status for playback confirmation.'};
 }
-function main(args=process.argv.slice(2)){
+async function awaitStartup(pid,{fsApi=fs,statePath=stateFile,now=()=>Date.now(),delay=ms=>new Promise(r=>setTimeout(r,ms))}={}){
+ const until=now()+5000;
+ while(now()<until){
+  let record;try{record=JSON.parse(fsApi.readFileSync(statePath,'utf8'))}catch{}
+  if(record?.supervisorPid===pid){
+   if(record.state==='stopped')fail('Startup failed: '+String(record.stopReason||'TV stopped').slice(0,220));
+   if(['starting-video','starting-viewer','ready'].includes(record.state))return;
+  }
+  await delay(150);
+ }
+ fail('The TV host did not confirm startup. Check the network and video ports, then retry.');
+}
+async function main(args=process.argv.slice(2)){
  if(args.length!==1||!['--check','--start'].includes(args[0]))fail('Use --check or --start');
  if(args[0]==='--check'){
   const valid=preflight();
@@ -87,10 +103,9 @@ function main(args=process.argv.slice(2)){
    tvModel:valid.config.television.model,selectedTv:true,
    note:'Read-only check. No TV was contacted and nothing started.'};
  }
- return launch();
+ const requested=launch();await awaitStartup(requested.pid);return requested;
 }
 if(require.main===module){
- try{console.log(JSON.stringify(main(),null,2));}
- catch(e){console.error(String(e.message||e).slice(0,300));process.exitCode=1}
+ main().then(r=>console.log(JSON.stringify(r,null,2))).catch(e=>{console.error(String(e.message||e).slice(0,300));process.exitCode=1});
 }
-module.exports={checkState,preflight,launch,main,pidAlive,recoverStaleAudio};
+module.exports={checkState,preflight,launch,main,awaitStartup,pidAlive,recoverStaleAudio};

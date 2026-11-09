@@ -32,13 +32,13 @@ test('startup never ignores unresolved laptop audio and never starts two streams
   settingsFile:'C:\\PrivateApp\\settings.json'
  };
  const mockSpawn=()=>{launches++;return {pid:23456,unref(){unrefs++}}};
- assert.throws(()=>launcher.launch({
+ assert.throws(()=>launcher.launch({portsFn:()=>{},fsApi:{existsSync:()=>false},
   preflightFn:()=>source,
   recoverFn:()=>{throw Error('Speaker recovery refused')},
   spawnFn:mockSpawn
  }),/Speaker recovery refused/);
  assert.equal(launches,0,'No TV stream started after failed restoration');
- const result=launcher.launch({
+ const result=launcher.launch({portsFn:()=>{},fsApi:{existsSync:()=>false},
   preflightFn:()=>source,
   recoverFn:()=>{recoveries++},
   spawnFn:mockSpawn

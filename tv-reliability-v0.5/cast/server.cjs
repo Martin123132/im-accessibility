@@ -316,7 +316,7 @@ function makeServer(){
    const route=u.pathname;
    if(req.method==='GET'&&route==='/health'){
     const h=status();
-    return send(res,200,{ok:true,mode:'LAN TV receiver',build:'tv-resume-v0.5',
+    return send(res,200,{ok:true,mode:'LAN TV receiver',build:'tv-resume-v0.5',runId:process.env.IM_ACCESSIBILITY_RUN_ID||null,
      stream:h.state,streamReady:h.streamReady,streamAgeMs:h.streamAgeMs,
      recoveryCount:h.recoveryCount,qualityMode:h.qualityMode,qualityVersion:h.qualityVersion,lastRecoveryUtc:h.lastRecoveryUtc,
      audioEnabled:h.audioEnabled&&h.streamReady,audioState:h.audioState,audioDeviceIdHash:h.audioDeviceIdHash});

@@ -15,6 +15,7 @@ const RUN=crypto.randomBytes(8).toString('hex'),START=Date.now(),END=VIEWING.dea
 const logPath=path.join(RUNTIME,'host-'+RUN+'.log');
 const childProcs=[],delay=ms=>new Promise(r=>setTimeout(r,ms));
 let status={runId:RUN,supervisorPid:process.pid,state:'starting',createdUtc:new Date(START).toISOString(),expectedEndUtc:VIEWING.iso(END),viewingMode:VIEWING.MODE,
+ localIp:LAN,adapterName:SETTINGS?SETTINGS.network.name:null,tvIp:SETTINGS?SETTINGS.television.ip:null,
  stream:'starting',viewer:'waiting',lg:'not-attempted',mouseLeaseMinutes:10,videoSessionHours:MAX_MS===null?null:4},stopping=false,reason='';
 fs.mkdirSync(RUNTIME,{recursive:true});
 function log(msg){
@@ -45,7 +46,7 @@ async function reachable(port){
 function spawnService(dir,name){
  const file=path.join(dir,'server.cjs'),stream=path.join(RUNTIME,name+'-'+RUN+'.log'),fd=fs.openSync(stream,'a');
  let child;
- try{child=cp.spawn(NODE,[file],{cwd:dir,windowsHide:true,stdio:['ignore',fd,fd],env:process.env})}
+ try{child=cp.spawn(NODE,[file],{cwd:dir,windowsHide:true,stdio:['ignore',fd,fd],env:{...process.env,IM_ACCESSIBILITY_RUN_ID:RUN}})}
  finally{fs.closeSync(fd)}
  if(!child.pid)throw Error('Could not launch '+name);
  childProcs.push({child,name});
@@ -132,6 +133,7 @@ async function launch(){
  log('Private TV video ready until owner Stop or service failure');
  try{
   const {open}=require('./lg-pair.cjs');
+  update({lg:'pairing'});
   const pair=await open({onEvent:e=>log('LG '+e.stage+' '+(e.ip||''))});
   update({lg:pair.opened?'opened':'needs-tv',lgIp:pair.opened?pair.host:null});
   log(pair.opened?'LG browser requested to open':'LG not available; session remains live for manual connection');
@@ -175,27 +177,37 @@ async function cleanup(why){
  log('Closing only owner session: '+why);
  update({state:'stopping',stopReason:why,lg:'closed'});
  for(const child of childProcs.slice().reverse())await killChild(child);
- restoreAudioAfterViewerExit();
+ const audioRestored=restoreAudioAfterViewerExit();
  try{fs.unlinkSync(path.join(VIEWER,'runtime','session.json'))}catch{}
  try{fs.unlinkSync(path.join(CAST,'runtime','private-access.json'))}catch{}
  try{fs.unlinkSync(STOP)}catch{}
- update({state:'stopped',closedAtUtc:new Date().toISOString(),stopReason:why,viewer:'stopped',stream:'stopped'});
+ update({state:'stopped',closedAtUtc:new Date().toISOString(),stopReason:why,viewer:'stopped',stream:'stopped',audioRestored});
 }
 process.once('SIGTERM',()=>{reason='Windows task stop';});
 process.once('SIGINT',()=>{reason='Owner interrupted launcher';});
 async function main(){
+ // Check every listener, including non-HTTP/unrelated programs, before touching
+ // any session metadata. An exclusive lock serializes simultaneous GUI starts.
+ const guard=require('./session-guard.cjs');
+ guard.assertPortsAvailable();
+ const releaseLock=await guard.acquireLock(RUNTIME);
+ try{guard.assertPortsAvailable()}catch(e){await releaseLock();throw e}
  log('Starting owner-controlled private TV session '+RUN);
  try{
   await launch();
   while(!reason&&VIEWING.active(END)){
-   if(fs.existsSync(STOP)){reason='Owner selected End TV session';break;}
+   if(fs.existsSync(STOP)){
+    const request=JSON.parse(fs.readFileSync(STOP,'utf8'));
+    if(request.runId!==RUN)throw Error('Stop request belongs to another session');
+    reason='Owner selected End TV session';break;
+   }
    const exited=childProcs.find(x=>!x.optional&&x.child.exitCode!==null);
    if(exited){reason=exited.name+' exited unexpectedly';break;}
    await delay(800);
   }
   if(!reason)reason='Legacy four-hour session expired normally';
  }catch(e){reason='Start failure: '+String(e.message||e).slice(0,200);log(reason)}
- finally{await cleanup(reason)}
+ finally{try{await cleanup(reason)}finally{await releaseLock()}}
 }
 if(require.main===module){
  if(process.env.IM_ACCESSIBILITY_CONFIG_PATH===undefined){
