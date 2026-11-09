@@ -122,7 +122,7 @@ test('isolated launch injects exact verified Node path and never invokes an unre
  const selected={config:{executables:{nodeExe:'C:\\Verified\\node.exe'}},
   hostFile:'C:\\ImAccessibility\\tv-reliability-v0.5\\resume-host.cjs',
   settingsFile:'C:\\Profile\\ImAccessibility\\settings.json'};
- const result=launcher.launch({
+ const result=launcher.launch({portsFn:()=>{},fsApi:{existsSync:()=>false},
   preflightFn:()=>selected,
   spawnFn:(exe,args,options)=>{
    called++;seen={exe,args,options};
@@ -160,5 +160,20 @@ test('importing setup / launcher and read-only help never contacts TV, starts a 
    {encoding:'utf8',timeout:4000,windowsHide:true,env});
   assert.equal(help.status,0);
   assert.equal(fs.existsSync(path.join(p.local,'ImAccessibility')),false);
+ }finally{fs.rmSync(base,{recursive:true,force:true})}
+});
+
+test('validate installed settings and launcher both survive same-LAN DHCP without rewriting saved settings',{skip:onlyWindows},()=>{
+ const base=temp();try{
+  const p=create(base);setup.saveSettings(p.settings,p);
+  const file=setup.settingsFile(p.env).file,before=fs.readFileSync(file,'utf8');
+  const networkInterfaces={Ethernet:[{family:'IPv4',internal:false,address:'10.36.2.152',netmask:'255.255.255.0'}]};
+  assert.equal(setup.validateInstalled({...p,networkInterfaces}).summary.localIp,'10.36.2.152');
+  const host=path.join(base,'resume-host.cjs');fs.writeFileSync(host,'fixture');
+  const result=launcher.preflight({env:p.env,networkInterfaces,hostPath:host,statePath:path.join(base,'state.json'),stopPath:path.join(base,'stop.json')});
+  assert.equal(result.config.network.ip,'10.36.2.152');assert.equal(result.config.television.ip,'10.36.2.40');
+  assert.equal(fs.readFileSync(file,'utf8'),before);
+  const wrong={Ethernet:[{family:'IPv4',internal:false,address:'10.36.3.152',netmask:'255.255.255.0'}]};
+  assert.throws(()=>setup.validateInstalled({...p,networkInterfaces:wrong}),/No matching/);
  }finally{fs.rmSync(base,{recursive:true,force:true})}
 });

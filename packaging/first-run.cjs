@@ -23,6 +23,10 @@ function buildCandidate({adapterName,localIp,tvIp,nodeExe,ffmpegExe},options={})
   television:{model:config.SUPPORTED_MODEL,ip:tvIp||null},
   executables:{nodeExe,ffmpegExe}};
  const selected=config.validate(values,options);
+ // New settings pin the adapter hardware address (when reported by Windows)
+ // and subnet mask. Legacy settings remain readable and are never rewritten.
+ values.network.netmask=selected.network.mask;
+ if(selected.network.mac)values.network.adapterMac=selected.network.mac;
  return {values,selected};
 }
 function settingsFile(env=process.env){
@@ -71,7 +75,7 @@ function validateInstalled({env=process.env,networkInterfaces=os.networkInterfac
  if(content.length<2||content.length>config.MAX_BYTES)fail('Invalid settings size');
  let parsed;
  try{parsed=JSON.parse(content.toString('utf8'))}catch{fail('Settings JSON is invalid')}
- return {file,summary:config.safeSummary(config.validate(parsed,{networkInterfaces,existsFile}))};
+ return {file,summary:config.safeSummary(config.validateCurrentLease(parsed,{networkInterfaces,existsFile}))};
 }
 function doctor({networkInterfaces=os.networkInterfaces(),nodeExe=process.execPath,
  ffmpegExe=process.env.PC_BRIDGE_FFMPEG_EXE||''}={}){

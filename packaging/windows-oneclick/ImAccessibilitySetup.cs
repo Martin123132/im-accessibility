@@ -72,12 +72,8 @@ namespace ImAccessibilityInstaller {
   }
   public static string Install(bool test, Action<string> progress){
    string root=Destination;
-   if(test){
-    string expected=@"D:\ImAccessibility-ClickInstaller-20261024\tests\";
-    string local=Path.GetFullPath(LocalData);
-    if(!local.StartsWith(expected,StringComparison.OrdinalIgnoreCase))
-     throw new Exception("Test mode permits only the disposable installer test profile.");
-   }
+   if(test)ImAccessibilitySafety.InstallSafety.CheckTestProfile(LocalData);
+   ImAccessibilitySafety.InstallSafety.NoLinks(root);
    if(Directory.Exists(root)||File.Exists(root))
     throw new Exception("I'm-accessibility is already installed at "+root+". No overwrite was performed.");
    string parent=Path.GetDirectoryName(root);

@@ -101,3 +101,20 @@ test('First run discovers without saved settings, connections or TV actions',asy
   assert.equal(sockets,2);
   assert.equal(closes,2);
 });
+
+test('discovery socket failure is an error, not an empty successful TV list',async()=>{
+ let closes=0;
+ const socketFactory=()=>{
+  const socket=new EventEmitter();socket.bind=()=>process.nextTick(()=>socket.emit('error',Error('network gone')));
+  socket.close=()=>{closes++};return socket;
+ };
+ await assert.rejects(finder.scan(selection,{adaptersFn,durationMs:20,socketFactory}),/Discovery could not use/);
+ assert.equal(closes,2);
+});
+
+test('LG AirPlay advertisement is discoverable as LG before any saved setup',()=>{
+ const lg=finder.mdnsReply(mdnsPacket('_airplay._tcp.local','[LG] webOS TV OLED55CX6LA'));
+ assert.equal(lg.brand,'LG');assert.equal(lg.protocol,'lg-webos');
+ const rows=finder.merge([{ip:'10.44.2.45',brand:'Apple AirPlay',name:'AirPlay',method:'mDNS'},{ip:'10.44.2.45',...lg}],adapter);
+ assert.equal(rows.length,1);assert.equal(rows[0].brand,'LG');assert.match(rows[0].status,/check model/);
+});

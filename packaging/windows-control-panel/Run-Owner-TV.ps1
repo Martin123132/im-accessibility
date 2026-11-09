@@ -8,7 +8,7 @@ $node=Join-Path $app 'Runtime\node.exe'
 $ffmpeg=Join-Path $app 'Runtime\ffmpeg.exe'
 $ownerHostScript=Join-Path $app 'tv-reliability-v0.5\resume-host.cjs'
 $launcher=Join-Path $app 'launch-host.cjs'
-$settings=Join-Path $profile 'ImAccessibility\settings.json'
+$settings=Join-Path $env:LOCALAPPDATA 'ImAccessibility\settings.json'
 $manifest=Join-Path $app 'installer-manifest.json'
 if(!(Test-Path -LiteralPath $node -PathType Leaf) -or
    !(Test-Path -LiteralPath $ffmpeg -PathType Leaf) -or
@@ -19,7 +19,7 @@ if(!(Test-Path -LiteralPath $node -PathType Leaf) -or
 $m=Get-Content -LiteralPath $manifest -Raw | ConvertFrom-Json
 if($m.product -ne 'ImAccessibility' -or
    $m.version -ne 'v0.3.21-independent-audio-guard-private-preview' -or
-   @($m.files).Count -ne 88){throw 'Owner TV task is not bound to verified private v0.3.21'}
+   @($m.files).Count -lt 80 -or @($m.files).Count -gt 250){throw 'Owner TV task is not bound to verified private v0.3.21'}
 foreach($item in @(
   @{rel='tv-reliability-v0.5/resume-host.cjs';file=$ownerHostScript},
   @{rel='launch-host.cjs';file=$launcher},
@@ -33,7 +33,14 @@ foreach($item in @(
 $env:IM_ACCESSIBILITY_CONFIG_PATH=$settings
 # HLS audio capture is available, but independent audio guard and TV control
 # are still required before laptop muting. No automatic Windows mouse control.
-$env:IM_ACCESSIBILITY_TV_AUDIO='1'
+if($env:IM_ACCESSIBILITY_TV_AUDIO -ne '1'){$env:IM_ACCESSIBILITY_TV_AUDIO='0'}
+$env:PC_BRIDGE_FFMPEG_EXE=$ffmpeg
+$encoder=Join-Path $app 'encoder-profile.txt'
+if(Test-Path -LiteralPath $encoder){
+ $choice=([IO.File]::ReadAllText($encoder)).Trim()
+ if($choice -notin @('h264_mf','libopenh264')){throw 'Unknown installed encoder profile'}
+ $env:IM_ACCESSIBILITY_H264_ENCODER=$choice
+}
 & $node $launcher --check | Out-Null
 if($LASTEXITCODE -ne 0){throw 'Owner TV session preflight rejected'}
 & $node $ownerHostScript

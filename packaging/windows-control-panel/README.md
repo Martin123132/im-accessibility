@@ -8,7 +8,7 @@ The panel provides a taskbar/notification-area **IA** icon, read-only **TV ON / 
 
 **Find TVs** sends bounded, read-only SSDP and DNS-SD/mDNS discovery queries over the selected private LAN. It recognises advertised services associated with LG/webOS, Samsung, Sony/BRAVIA, Roku, Google Cast, Android/Google TV, Apple AirPlay/Apple TV, Amazon Fire TV, DIAL/DLNA, and some other manufacturers.
 
-Discovery is not casting compatibility. **Only the owner-verified LG webOS connection is presently implemented.** Other devices are labelled *discovered — connection not yet supported*. The current saved LG TV is always kept as the supported/selected device. A device can appear more than once across discovery protocols; results are deduplicated by LAN IP. Multicast-disabled networks may return no devices.
+Discovery is not casting compatibility. **Only the owner-verified LG webOS connection is presently implemented.** Other devices are labelled *discovered — connection not yet supported*. A saved TV is labelled as a saved address; discovery does not establish its identity or connection. A different brand at that address retains its advertised brand. A device can appear more than once across discovery protocols; results are deduplicated by LAN IP. Multicast-disabled networks may return no devices.
 
 The finder **never** pairs, opens a TV app, changes the saved TV, scans ports, changes audio, grants mouse access, or starts streaming.
 
@@ -56,3 +56,7 @@ node --test packaging/windows-control-panel/TVFinder.test.cjs
 ```
 
 The main `npm test` also includes these tests. All source and bundled-code rights remain governed by the repository's existing licence. The unsigned Windows binaries and GPL-configured FFmpeg redistribution requirements remain **release blockers**.
+
+### 9 November status and discovery update
+
+The panel uses the parent installation's `status-session.cjs` and bundled Node runtime for live status. It no longer probes the saved IP itself. Healthy status requires the owned task and matching live service/run identity, with advancing video reported by the selected TV. Find TVs includes a network picker and never silently falls back from an invalid saved network. Discovery alone does not prove connection or playback. See [hardening review](../../docs/SOURCE_HARDENING_2026-11-09.md).

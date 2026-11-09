@@ -60,13 +60,16 @@ function adapters(interfaces){
   for(const entry of entries){
    if(!entry||!(entry.family==='IPv4'||entry.family===4)||entry.internal===true)continue;
    if(!isPrivate(entry.address)||maskBits(entry.netmask)===null||!usableHost(entry.address,entry.netmask))continue;
-   result.push({name,ip:entry.address,mask:entry.netmask});
+   result.push({name,ip:entry.address,mask:entry.netmask,
+    ...(/^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$/i.test(entry.mac||'')&&entry.mac!=='00:00:00:00:00:00'?{mac:entry.mac.toLowerCase()}:{})});
   }
  }
  return result;
 }
 function chooseAdapter(selection,interfaces){
- keys(selection,['adapterName','localIp'],'network');
+ keys(selection,['adapterName','localIp','adapterMac','netmask'],'network');
+ if(selection.adapterMac!==undefined&&!/^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$/.test(selection.adapterMac))throw Error('Invalid saved adapter identity');
+ if(selection.netmask!==undefined&&maskBits(selection.netmask)===null)throw Error('Invalid saved network mask');
  if(selection.adapterName!==undefined&&(typeof selection.adapterName!=='string'||!selection.adapterName.trim()||selection.adapterName.length>120))
   throw Error('network.adapterName must name an actual local adapter');
  if(selection.localIp!==undefined&&!isPrivate(selection.localIp))
@@ -74,7 +77,9 @@ function chooseAdapter(selection,interfaces){
  if(!selection.adapterName&&!selection.localIp)throw Error('Select network.adapterName or network.localIp explicitly');
  const matches=adapters(interfaces).filter(a=>
    (selection.adapterName===undefined||a.name===selection.adapterName)&&
-   (selection.localIp===undefined||a.ip===selection.localIp));
+   (selection.localIp===undefined||a.ip===selection.localIp)&&
+   (selection.adapterMac===undefined||a.mac===selection.adapterMac)&&
+   (selection.netmask===undefined||a.mask===selection.netmask));
  if(matches.length===0)throw Error('No matching physical private-LAN adapter; check Windows Network Settings');
  if(matches.length>1)throw Error('Multiple matching network interfaces; specify both adapterName and localIp');
  return Object.freeze(matches[0]);
@@ -108,6 +113,31 @@ function validate(config,{networkInterfaces=os.networkInterfaces(),existsFile=(f
   executables:Object.freeze({nodeExe,ffmpegExe}),taskName:TASK_NAME
  });
 }
+// A DHCP lease can change this PC's address without changing the approved LAN
+// or TV. Rebind only on the same named physical adapter and same subnet; do not
+// rewrite settings, discover a new TV, or silently select another interface.
+// Explicit setup validation remains strict (validate() never guesses an IP).
+function validateCurrentLease(config,{networkInterfaces=os.networkInterfaces(),existsFile}={}){
+ try{return validate(config,{networkInterfaces,existsFile})}
+ catch(error){
+  if(!/^No matching physical private-LAN adapter\b/.test(String(error.message)))throw error;
+  const old=config?.network,television=config?.television;
+  if(!old||typeof old.adapterName!=='string'||!old.adapterName.trim()||
+     !isPrivate(old.localIp)||!television||!isPrivate(television.ip)||
+     old.localIp===television.ip)throw error;
+  let current;
+  try{current=chooseAdapter({adapterName:old.adapterName,adapterMac:old.adapterMac,netmask:old.netmask},networkInterfaces)}
+  catch{throw error;}
+  if(old.localIp===current.ip||!subnet(old.localIp,current.ip,current.mask)||
+     !usableHost(old.localIp,current.mask)||
+     !subnet(television.ip,current.ip,current.mask)||
+     !usableHost(television.ip,current.mask)||television.ip===current.ip)
+   throw error;
+  return validate({...config,network:{...old,localIp:current.ip}},
+    {networkInterfaces,existsFile});
+ }
+}
+
 function configPath({env=process.env,platform=process.platform,repoRoot=path.resolve(__dirname,'..')}={}){
  if(platform!=='win32')throw Error('Windows is required for this release configuration');
  const dest=env[SETTINGS_ENV]||(
@@ -130,7 +160,7 @@ function readUserSettings({env=process.env,platform=process.platform,repoRoot=pa
  if(!stat.isFile()||stat.size<2||stat.size>MAX_BYTES)throw Error('Invalid or oversized settings.json (maximum 8 KiB)');
  let json;
  try{json=JSON.parse(fsApi.readFileSync(file,'utf8'))}catch{throw Error('settings.json is not valid JSON')}
- return validate(json,{networkInterfaces,existsFile:(f)=>{try{return fsApi.statSync(f).isFile()}catch{return false}}});
+ return validateCurrentLease(json,{networkInterfaces,existsFile:(f)=>{try{return fsApi.statSync(f).isFile()}catch{return false}}});
 }
 function safeSummary(config){
  return {valid:true,schema:config.schema,adapter:config.network.name,
@@ -148,4 +178,4 @@ if(require.main===module){
  }
 }
 module.exports={SETTINGS_ENV,TASK_NAME,MAX_BYTES,SUPPORTED_MODEL,uintIp,maskBits,isPrivate,subnet,usableHost,
- adapters,chooseAdapter,validate,configPath,readUserSettings,safeSummary};
+ adapters,chooseAdapter,validate,validateCurrentLease,configPath,readUserSettings,safeSummary};

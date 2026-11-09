@@ -24,8 +24,8 @@ namespace ImAccessibilityControls
 
     internal sealed class ControlPanel : Form
     {
-        private const string TaskName = "ImAccessibility-TV-v1";
-        private static readonly string SettingsFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ImAccessibility", "settings.json");
+
+        private static readonly string AppRoot = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".."));
         private readonly string controlScript;
         private readonly Label status = new Label();
         private readonly Label detail = new Label();
@@ -40,9 +40,9 @@ namespace ImAccessibilityControls
 
         internal ControlPanel(bool minimized)
         {
-            controlScript = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "Owner-TV-Control.ps1"));
+            controlScript = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Owner-TV-Control.ps1"));
             Text = "I'm Accessibility - status";
-            ClientSize = new Size(385, 259);
+            ClientSize = new Size(425, 310);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             StartPosition = FormStartPosition.CenterScreen;
@@ -77,32 +77,32 @@ namespace ImAccessibilityControls
             detail.ForeColor = Color.DimGray;
             detail.Font = new Font("Segoe UI", 9f);
             detail.Location = new Point(20, 118);
-            detail.Size = new Size(350, 29);
+            detail.Size = new Size(385, 65);
             Controls.Add(detail);
 
-            start.Text = "Start TV";
-            start.Location = new Point(19, 158);
+            start.Text = "&Start TV"; start.AccessibleName = "Start selected TV"; start.TabIndex = 0;
+            start.Location = new Point(19, 198);
             start.Size = new Size(108, 35);
             start.Enabled = false;
             start.Click += delegate { RequestControl("Start"); };
             Controls.Add(start);
 
-            stop.Text = "Stop TV";
-            stop.Location = new Point(138, 158);
+            stop.Text = "S&top TV"; stop.AccessibleName = "Stop this TV session"; stop.TabIndex = 1;
+            stop.Location = new Point(138, 198);
             stop.Size = new Size(108, 35);
             stop.Enabled = false;
             stop.Click += delegate { RequestControl("Stop"); };
             Controls.Add(stop);
 
-            refresh.Text = "Refresh";
-            refresh.Location = new Point(257, 158);
+            refresh.Text = "&Refresh"; refresh.AccessibleName = "Refresh live TV status"; refresh.TabIndex = 2;
+            refresh.Location = new Point(257, 198);
             refresh.Size = new Size(108, 35);
             refresh.Click += delegate { RefreshStatus(); };
             Controls.Add(refresh);
 
             var findTvs = new Button();
-            findTvs.Text = "Find TVs";
-            findTvs.Location = new Point(19, 205);
+            findTvs.Text = "&Find TVs"; findTvs.AccessibleName = "Find TVs on a selected network"; findTvs.TabIndex = 3;
+            findTvs.Location = new Point(19, 245);
             findTvs.Size = new Size(346, 36);
             findTvs.Click += delegate { OpenFinder(); };
             Controls.Add(findTvs);
@@ -215,10 +215,9 @@ namespace ImAccessibilityControls
                     }
                     else if (result.Running)
                     {
-                        status.Text = result.VideoReady ? "TV session: ON" : "TV session: STARTING / CHECK";
+                        status.Text = result.VideoReady ? "TV session: ON" : "TV session: CHECK";
                         status.ForeColor = result.VideoReady ? Color.DarkGreen : Color.DarkOrange;
-                        detail.Text = result.VideoReady ? "Video services are responding." :
-                            "Windows task is running; video unconfirmed.";
+                        detail.Text = result.Note;
                         Text = result.VideoReady ? "I'm Accessibility - TV ON" : "I'm Accessibility - checking video";
                         tray.Text = result.VideoReady ? "I'm Accessibility - TV ON" : "I'm Accessibility - video unconfirmed";
                     }
@@ -226,7 +225,7 @@ namespace ImAccessibilityControls
                     {
                         status.Text = "TV session: OFF";
                         status.ForeColor = Color.Black;
-                        detail.Text = "Choose Start TV to connect.";
+                        detail.Text = String.IsNullOrWhiteSpace(result.Note)?"Choose Start TV to connect.":result.Note;
                         Text = "I'm Accessibility - TV OFF";
                         tray.Text = "I'm Accessibility - TV OFF";
                     }
@@ -244,6 +243,8 @@ namespace ImAccessibilityControls
                 "End the TV viewing session? This will disconnect the picture.",
                 "Stop TV viewing", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
+            if (action == "Start" && MessageBox.Show(this, "Start desktop video on your saved LG TV?",
+                "Start TV viewing", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) != DialogResult.Yes) return;
             actionInProgress = true;
             status.Text = action == "Start" ? "Requesting TV start..." : "Requesting TV stop...";
             detail.Text = "Sending your request to the existing TV controller.";
@@ -294,14 +295,16 @@ namespace ImAccessibilityControls
                 info.RedirectStandardError = true;
                 using (Process process = Process.Start(info))
                 {
+                    var output = process.StandardOutput.ReadToEndAsync();
+                    var errors = process.StandardError.ReadToEndAsync();
                     if (!process.WaitForExit(25000))
                     {
                         try { process.Kill(); } catch { }
                         stderr = "Windows TV control timed out.";
                         return false;
                     }
-                    stdout = process.StandardOutput.ReadToEnd();
-                    stderr = process.StandardError.ReadToEnd();
+                    stdout = output.Result;
+                    stderr = errors.Result;
                     return process.ExitCode == 0;
                 }
             }
@@ -317,73 +320,38 @@ namespace ImAccessibilityControls
             var result = new TvStatus();
             try
             {
-                Type type = Type.GetTypeFromProgID("Schedule.Service");
-                if (type == null) throw new Exception("Task Scheduler unavailable");
-                dynamic scheduler = Activator.CreateInstance(type);
-                scheduler.Connect();
-                dynamic folder = scheduler.GetFolder("\\");
-                dynamic task = folder.GetTask(TaskName);
-                int state = Convert.ToInt32(task.State);
-                // 4=running, 3=ready, 2=queued, 1=disabled, 0=unknown.
-                result.Known = (state >= 1 && state <= 4);
-                result.Running = (state == 4);
-                if (!result.Known) result.Note = "Unexpected Windows task state.";
-                if (result.Running)
+                string stdout, stderr;
+                if (!RunOwnerAction("Status", out stdout, out stderr))
+                    throw new Exception(Short(stderr, 200));
+                var task = new JavaScriptSerializer().DeserializeObject(stdout) as Dictionary<string, object>;
+                result.Known = task != null && Yes(task, "registered");
+                result.Running = result.Known && (Convert.ToString(task["state"]) == "Running" || Convert.ToString(task["state"]) == "Queued");
+                if (!result.Known) { result.Note = "This installation has no verified TV task."; return result; }
+                var info = new ProcessStartInfo(Path.Combine(AppRoot, "Runtime", "node.exe"),
+                    "\"" + Path.Combine(AppRoot, "status-session.cjs") + "\"");
+                info.UseShellExecute = false; info.CreateNoWindow = true;
+                info.RedirectStandardOutput = true; info.RedirectStandardError = true;
+                using (var process = Process.Start(info))
                 {
-                    string ip = ReadLocalIp();
-                    result.VideoReady = Health(ip, 43196, true) && Health(ip, 43198, false);
+                    var output = process.StandardOutput.ReadToEndAsync();
+                    var error = process.StandardError.ReadToEndAsync();
+                    if (!process.WaitForExit(8000)) { process.Kill(); process.WaitForExit(2000); throw new Exception("Video status timed out."); }
+                    if (process.ExitCode != 0) throw new Exception(Short(error.Result, 200));
+                    var data = new JavaScriptSerializer().DeserializeObject(output.Result) as Dictionary<string, object>;
+                    result.VideoReady = data != null && Yes(data, "receiverConfirmed");
+                    result.Note = data != null && data.ContainsKey("message") ? Convert.ToString(data["message"]) : "Video status unavailable.";
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                result.Note = "Windows task status could not be read.";
+                result.Note = "TV status: " + Short(ex.Message, 200);
             }
             return result;
-        }
-
-        private static string ReadLocalIp()
-        {
-            try
-            {
-                var json = new JavaScriptSerializer();
-                var cfg = json.DeserializeObject(File.ReadAllText(SettingsFile)) as Dictionary<string, object>;
-                if (cfg == null || !cfg.ContainsKey("network")) return null;
-                var network = cfg["network"] as Dictionary<string, object>;
-                if (network == null || !network.ContainsKey("localIp")) return null;
-                return Convert.ToString(network["localIp"]);
-            }
-            catch { return null; }
         }
 
         private static bool Yes(Dictionary<string, object> j, string key)
         {
             return j.ContainsKey(key) && j[key] is bool && (bool)j[key];
-        }
-
-        private static bool Health(string ip, int port, bool cast)
-        {
-            if (String.IsNullOrWhiteSpace(ip)) return false;
-            IPAddress parsed;
-            if (!IPAddress.TryParse(ip, out parsed) || parsed.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork)
-                return false;
-            try
-            {
-                var request = (HttpWebRequest)WebRequest.Create("http://" + parsed + ":" + port + "/health");
-                request.Timeout = 1200;
-                request.ReadWriteTimeout = 1200;
-                request.Proxy = null;
-                using (var response = (HttpWebResponse)request.GetResponse())
-                using (var reader = new StreamReader(response.GetResponseStream()))
-                {
-                    if (response.StatusCode != HttpStatusCode.OK) return false;
-                    var json = new JavaScriptSerializer();
-                    var data = json.DeserializeObject(reader.ReadToEnd()) as Dictionary<string, object>;
-                    if (data == null) return false;
-                    return cast ? Yes(data, "streamReady") && Convert.ToString(data["stream"]) == "running"
-                        : Yes(data, "ready") && Yes(data, "sourceReady");
-                }
-            }
-            catch { return false; }
         }
     }
 

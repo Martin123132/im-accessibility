@@ -2,7 +2,7 @@
 # Does NOT start a TV stream and never registers without explicit -OwnerConsent YES.
 [CmdletBinding()]
 param(
- [ValidateSet('Status','Enable','Disable')][string]$Action='Status',
+ [ValidateSet('Status','Enable','Disable','DisableIfOwned')][string]$Action='Status',
  [ValidateSet('NO','YES')][string]$OwnerConsent='NO'
 )
 $ErrorActionPreference='Stop'
@@ -26,6 +26,8 @@ function Check-PinnedFiles {
  if($bound.Count -ne 1){throw 'Independent watcher not bound in the installed manifest'}
  $digest=(Get-FileHash -LiteralPath $watch -Algorithm SHA256).Hash.ToLowerInvariant()
  if($digest -ne $bound[0].sha256){throw 'Independent watcher differs from installed manifest'}
+ $runtime=@($info.files|Where-Object{$_.path -eq 'Runtime/node.exe'})
+ if($runtime.Count -ne 1 -or (Get-FileHash -LiteralPath $node -Algorithm SHA256).Hash.ToLowerInvariant() -ne $runtime[0].sha256){throw 'Bundled Node differs from installed manifest'}
 }
 function Get-Task {
  # Windows writes an error stream for Get-ScheduledTask -TaskName when absent.
@@ -83,7 +85,14 @@ if($Action -eq 'Enable'){
  Write-Output 'ENABLED_CURRENT_USER_NO_TV_LAUNCH'
  return
 }
-if($Action -eq 'Disable'){
+if($Action -eq 'Disable' -or $Action -eq 'DisableIfOwned'){
+ if($Action -eq 'DisableIfOwned' -and $null -ne $existing){
+  # Removing this installation never removes a task bound to another app copy.
+  if(@($existing.Actions).Count -ne 1 -or
+     $existing.Actions[0].Execute -ine $node -or $existing.Actions[0].Arguments -cne $arguments){
+   Write-Output 'OTHER_INSTALLATION_TASK_PRESERVED';return
+  }
+ }
  if(Test-Path -LiteralPath $journal){throw 'Cannot disable audio restoration while the app owns a playback device'}
  if($null -eq $existing){Write-Output 'ALREADY_DISABLED';return}
  [void](Assert-OwnedTask $existing)

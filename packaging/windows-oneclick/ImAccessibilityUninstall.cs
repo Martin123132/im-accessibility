@@ -33,6 +33,18 @@ namespace ImAccessibilityDesktop {
   static void Verify(string root){
    if(!String.Equals(Path.GetFullPath(root).TrimEnd('\\'),Expected().TrimEnd('\\'),StringComparison.OrdinalIgnoreCase))
     throw new Exception("Unexpected installation location.");
+   ImAccessibilitySafety.InstallSafety.NoTreeLinks(root);
+   foreach(string pending in new[]{"tv-reliability-v0.5/viewer/runtime/speaker-route.json","tv-reliability-v0.5/runtime/host-lock.json","tv-reliability-v0.5/runtime/stop-request.json"})
+    if(File.Exists(Path.Combine(root,Normalize(pending))))throw new Exception("TV shutdown or laptop audio restoration is pending. No files deleted.");
+   foreach(var process in Process.GetProcesses()){
+    try{
+     if(process.Id==Process.GetCurrentProcess().Id)continue;
+     string exe=process.MainModule.FileName;
+     if(exe.StartsWith(root+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase))
+      throw new IOException("Close the installed TV app and its session before uninstalling.");
+    }catch(IOException){throw;}catch(System.ComponentModel.Win32Exception){}catch(InvalidOperationException){}
+    finally{process.Dispose();}
+   }
    if(!File.Exists(Receipt(root)))throw new Exception("Verified installer receipt is missing.");
    var json=new JavaScriptSerializer().Deserialize<Dictionary<string,object>>(File.ReadAllText(Receipt(root)));
    if(Convert.ToString(json["product"])!="ImAccessibility")throw new Exception("Unrecognised installation receipt.");
@@ -87,11 +99,21 @@ namespace ImAccessibilityDesktop {
   }
   static void DoUninstall(string root){
    Verify(root);
+   string powershell=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),@"System32\WindowsPowerShell\v1.0\powershell.exe");
+   var si=new ProcessStartInfo(powershell,"-NoProfile -NonInteractive -ExecutionPolicy Bypass -File \""+Path.Combine(root,"audio-guard-task.ps1")+"\" -Action DisableIfOwned -OwnerConsent YES");
+   si.UseShellExecute=false;si.CreateNoWindow=true;si.RedirectStandardOutput=true;si.RedirectStandardError=true;
+   using(var p=Process.Start(si)){
+    var output=p.StandardOutput.ReadToEndAsync();var error=p.StandardError.ReadToEndAsync();
+    if(!p.WaitForExit(12000)){p.Kill();p.WaitForExit(2000);throw new Exception("Audio safety task removal timed out. No files deleted.");}
+    if(p.ExitCode!=0)throw new Exception("Audio safety task still needs attention. No files deleted. "+error.Result);
+   }
    Directory.Delete(root,true);
    RemoveShortcuts(root);
    try{
     using(var key=Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall",true)){
-     if(key!=null)key.DeleteSubKeyTree("ImAccessibility",false);
+     if(key!=null)using(var app=key.OpenSubKey("ImAccessibility")){
+      if(app!=null&&String.Equals(Convert.ToString(app.GetValue("InstallLocation")),root,StringComparison.OrdinalIgnoreCase))key.DeleteSubKeyTree("ImAccessibility",false);
+     }
     }
    }catch{}
   }
@@ -106,9 +128,7 @@ namespace ImAccessibilityDesktop {
   [STAThread] static void Main(string[] args){
    if(args.Length==2&&args[0]=="--dialog-selftest"){
     try{
-     string profile=Path.GetFullPath(Local()).TrimEnd(Path.DirectorySeparatorChar)+Path.DirectorySeparatorChar;
-     if(!profile.StartsWith(@"D:\ImAccessibility-ClickInstaller-20261024\tests\",StringComparison.OrdinalIgnoreCase))
-      throw new Exception("GUI test is limited to the disposable test area.");
+     ImAccessibilitySafety.InstallSafety.CheckTestProfile(Local());
      var reply=ConfirmUninstall();
      File.WriteAllText(args[1],reply.ToString()+"\r\n",Encoding.UTF8);
     }catch(Exception ex){
@@ -118,9 +138,7 @@ namespace ImAccessibilityDesktop {
    }
    if(args.Length==2&&args[0]=="--test-uninstall"){
     try{
-     string profile=Path.GetFullPath(Local()).TrimEnd(Path.DirectorySeparatorChar)+Path.DirectorySeparatorChar;
-     if(!profile.StartsWith(@"D:\ImAccessibility-ClickInstaller-20261024\tests\",StringComparison.OrdinalIgnoreCase))
-      throw new Exception("Uninstall test is restricted to the disposable test area.");
+     ImAccessibilitySafety.InstallSafety.CheckTestProfile(Local());
      string target=Expected();Verify(target);Directory.Delete(target,true);
      if(Directory.Exists(target))throw new Exception("Test uninstall left application files.");
      File.WriteAllText(args[1],"SUCCESS Removed disposable test installation.\r\n",Encoding.UTF8);

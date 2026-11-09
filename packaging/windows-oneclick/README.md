@@ -21,7 +21,7 @@ This does **not** establish full Windows 11 compatibility, signed-download trust
 ## Source components
 
 - `ImAccessibilitySetup.cs`: the one-file GUI installer that embeds an authenticated file inventory and checks every unpacked SHA-256 before completing a per-user installation. It creates desktop and Start Menu shortcuts and an uninstall entry after installation.
-- `ImAccessibilityApp.cs`: Windows Forms app for selecting a LAN adapter, entering the owner's LG address, saving first-run settings and requesting an explicitly confirmed TV Start or Stop.
+- `ImAccessibilityApp.cs`: Windows Forms app for explicitly selecting a LAN adapter and discovered LG TV, saving first-run settings and requesting an explicitly confirmed TV Start or Stop.
 - `ImAccessibilityUninstall.cs`: per-user uninstaller, with owner-settings preservation and refusal if a TV session is active, if unknown files are present, or if installed payload hashes differ from the receipt.
 - `gui-config-bridge.cjs`: a narrow allowlisted local interface that delegates to the existing validated Node setup, launch, status and stop modules. No arbitrary command/shell bridge.
 - `build-oneclick.ps1`: source-backed, locally reproducible builder that takes an existing checksum-verified TV preview bundle and explicitly supplied, separately licensed runtimes. **It never fetches tools or publishes a release automatically.**
@@ -45,7 +45,7 @@ The result is `out\ImAccessibility-Setup-v0.3.17-PRIVATE-PREVIEW.exe`. Keep this
 
 ## Multi-brand first-run discovery
 
-The graphical Windows app now offers **Find TVs** using bounded, read-only SSDP/mDNS scans on the user-selected trusted network. It works **without saved TV settings**, detects multiple TV and receiver families, and includes manual TV-address entry if multicast discovery is unavailable. The scanner does not pair, stream, open applications or change network settings.
+The graphical Windows app now offers **Find TVs** using bounded, read-only SSDP/mDNS scans on the user-selected trusted network. It works **without saved TV settings**, detects multiple TV and receiver families, and explains when multicast discovery is unavailable. The scanner does not pair, stream, open applications or change network settings.
 
 **Detection does not imply connection support.** The owner-tested direct connection remains LG OLED55CX6LA. Samsung, Sony, Google Cast/Chromecast, Android/Google TV, Roku, Apple AirPlay, Amazon Fire TV and other receivers can be discovered, but their connection adapters have not yet been implemented and validated. The setup app labels them accordingly and refuses to route them through the LG connector.
 
@@ -60,3 +60,9 @@ The multibrand scanner source is `discover-setup.cjs` with regression tests in `
 5. **Signing and delivery:** choose a genuine code-signing approach, give Windows users a readable version and publisher, and publish a verified, checksum-backed release asset only after owner approval. Test installation, stopping and uninstallation in the intended target environment.
 
 All examples and source files are generic. Do not store personal `settings.json`, pairing keys, runtime tokens or connected-account data in Git.
+
+## 9 November source hardening
+
+Both Windows GUIs now consume the same current-lease, live-session status. First-run setup requires explicit choice when several physical private NICs are present, and the GUI can opt into the on-demand audio-restoration task with an explained confirmation. Existing settings are preserved.
+
+See [source hardening evidence and release gates](../../docs/SOURCE_HARDENING_2026-11-09.md). The reproducible disposable-profile test is `test-isolated-install.cjs`; it never uses the owner installation's tree and does not register real tasks, shortcuts or registry entries. This remains a private binary preview pending the listed distribution and physical acceptance gates.

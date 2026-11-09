@@ -7,6 +7,7 @@ const {LAN_IP,PORT,isLocalIp}=require('./lan.cjs');
 const {discover}=require('./tv-discovery.cjs');
 const {launchTv}=require('./lg-launch.cjs');
 const SOUND=require('./sound.cjs');
+const ENCODER_FALLBACK=require('./encoder-fallback.cjs');
 const VIEWING=require('../viewing-policy.cjs');
 const ROOT=__dirname,RUNTIME=path.join(ROOT,'runtime'),SEGMENTS=path.join(RUNTIME,'stream');
 const FFMPEG=process.env.IM_ACCESSIBILITY_CONFIG_PATH!==undefined
@@ -26,6 +27,8 @@ const MAX_MANIFEST_AGE_MS=8500,STARTUP_GRACE_MS=14000,RECOVERY_WINDOW_MS=120000;
 let nextSegment=0,pendingRestart=null,recoveries=[],recoveryCount=0,
  lastRecoveryReason=null,lastRecoveryUtc=null,captureFormat=null;
 let qualityMode='interactive',qualityVersion=0,lastQualityAt=0;
+const CONFIGURED_VIDEO_ENCODER=SOUND.encoderKind();
+let videoEncoder=CONFIGURED_VIDEO_ENCODER,encoderFallbackUsed=false,encoderFallbackReason=null;
 fs.mkdirSync(SEGMENTS,{recursive:true});
 function atomic(file,obj){
  const temp=file+'.'+process.pid+'.tmp';
@@ -49,6 +52,7 @@ function status(){
  return {mode:'LAN-direct-TV-receiver',source:'Windows desktop',state:captureState,pid:capturePid,
    captureStarted,streamReady:exists&&captureState==='running'&&streamAgeMs!==null&&streamAgeMs<8000,lastManifestModified:lastModified,
    streamAgeMs:streamAgeMs===null?null:Math.round(streamAgeMs),recoveryCount,lastRecoveryUtc,lastRecoveryReason,
+   videoEncoder,encoderFallbackUsed,encoderFallbackReason,
    segments:segmentCount,resolution:qualityMode==='cinema'?'1920 x 1080':'1280 x 720',
     targetFps:qualityMode==='cinema'?30:15,qualityMode,qualityVersion,watchHits,lastWatchAt,phoneIndependent:true,
    expiresAt:VIEWING.iso(expiresAt),viewingMode:VIEWING.MODE,lgState,lastDeviceIp,LAN_IP,port:PORT,receiverUrl:ctrlOrigin+'/tv/'+watchKey,
@@ -71,13 +75,13 @@ function safeEndAudio(child){
 function spawnCapture(format=null){
  captureState='starting';captureError=null;captureStarted=new Date().toISOString();
  captureFormat=format;
- const args=SOUND.argsFor(SEGMENTS,format,nextSegment,qualityMode);
+ const args=SOUND.argsFor(SEGMENTS,format,nextSegment,qualityMode,videoEncoder);
  const ff=cp.spawn(FFMPEG,args,{cwd:ROOT,windowsHide:true,
   stdio:format?['ignore','ignore','pipe','pipe']:['ignore','ignore','pipe']});
  capture=ff;capturePid=ff.pid||null;captureState='running';
  audioState=format?'active':WANT_AUDIO?(audioError?'fallback':'unavailable'):'off';
  audioDeviceIdHash=format?format.deviceIdHash:null;
- let errors='',thisAudio=null;
+ let errors='',thisAudio=null,spawnError=false;
  ff.stderr.on('data',b=>{errors=(errors+String(b)).slice(-1200)});
  function fallback(message){
   if(ownerStopped||pendingRestart||capture!==ff||!format||recoveryTried)return;
@@ -86,6 +90,7 @@ function spawnCapture(format=null){
   try{ff.kill('SIGTERM')}catch{}
  }
  ff.once('error',err=>{
+  spawnError=true;
   captureError=String(err.message).slice(0,160);
   if(format)fallback('Audio/video encoder launch failure');
   else captureState='failed';
@@ -120,6 +125,37 @@ function spawnCapture(format=null){
    },350);
    return;
   }
+  // A bounded one-time software fallback is allowed only after Media
+  // Foundation fails before the first HLS playlist. No user stop, audio
+  // failure, intentional quality restart or missing executable can trigger it.
+  const early=ENCODER_FALLBACK.next({
+   encoder:videoEncoder,alreadyUsed:encoderFallbackUsed,ownerStopped,
+   pendingRestart:!!watchRecovery,recoveryTried,spawnError,
+   hadManifest:fs.existsSync(path.join(SEGMENTS,'index.m3u8')),
+   sinceStartMs:Date.now()-Date.parse(captureStarted),exitCode:code,signal
+  },'early-exit');
+  const recent=Date.now();
+  recoveries=recoveries.filter(t=>recent-t<RECOVERY_WINDOW_MS);
+  if(early.switchIt&&recoveries.length<4&&!ownerStopped&&VIEWING.active(expiresAt)){
+   videoEncoder=early.encoder;encoderFallbackUsed=true;
+   encoderFallbackReason=early.reason;lastRecoveryReason=early.reason;
+   lastRecoveryUtc=new Date(recent).toISOString();
+   recoveries.push(recent);recoveryCount++;
+   captureState='recovering';captureError=null;
+   setTimeout(()=>{
+    if(ownerStopped||capture||!VIEWING.active(expiresAt))return;
+    try{clearSegments();spawnCapture(format)}
+    catch{captureState='failed';captureError='OpenH264 fallback could not start'}
+   },450);
+   return;
+  }
+  // Once the one permitted software fallback has been attempted, a second
+  // startup failure must be reported, not hidden behind more blank retries.
+  if(encoderFallbackUsed&&videoEncoder==='libopenh264'&&
+     !fs.existsSync(path.join(SEGMENTS,'index.m3u8'))&&!ownerStopped){
+   captureState='failed';captureError='OpenH264 fallback exited before first HLS playlist';
+   return;
+  }
   // Unexpected FFmpeg exits should recover desktop video automatically as well.
   // Bound consecutive attempts to avoid a rapid encoder crash/restart loop.
   if(!ownerStopped&&VIEWING.active(expiresAt)){
@@ -152,6 +188,7 @@ function startCapture(){
  if(captureAlive())return status();
  if(!fs.existsSync(FFMPEG))throw Error('Pinned FFmpeg executable is missing');
  ownerStopped=false;recoveryTried=false;
+ videoEncoder=CONFIGURED_VIDEO_ENCODER;encoderFallbackUsed=false;encoderFallbackReason=null;
  let format=null;audioError=null;
  if(WANT_AUDIO){
   try{format=SOUND.probe()}
@@ -188,6 +225,43 @@ function watchdogTick(now=Date.now()){
  if(ownerStopped||captureState!=='running'||pendingRestart||!captureAlive())return false;
  const ageMs=manifestAgeMs(SEGMENTS,now);
  const sinceStartMs=now-Date.parse(captureStarted);
+ // A Media Foundation process can remain alive without creating a first HLS
+ // playlist. Without this guard, the existing stale-playlist test never fires.
+ const firstPlaylist=fs.existsSync(path.join(SEGMENTS,'index.m3u8'));
+ const stalled=ENCODER_FALLBACK.next({
+  encoder:videoEncoder,alreadyUsed:encoderFallbackUsed,ownerStopped,
+  pendingRestart:!!pendingRestart,recoveryTried,
+  hadManifest:firstPlaylist,captureAlive:true,sinceStartMs
+ },'missing-playlist');
+ if(stalled.switchIt){
+  recoveries=recoveries.filter(t=>now-t<RECOVERY_WINDOW_MS);
+  if(recoveries.length>=4){captureError='Encoder recovery limit reached';return false;}
+  const original=videoEncoder;
+  videoEncoder=stalled.encoder;encoderFallbackUsed=true;
+  encoderFallbackReason=stalled.reason;
+  pendingRestart={format:captureFormat};captureState='recovering';
+  try{
+   if(!capture.kill('SIGTERM'))throw Error('Encoder did not stop');
+  }catch{
+   videoEncoder=original;encoderFallbackUsed=false;encoderFallbackReason=null;
+   pendingRestart=null;captureState='running';
+   captureError='Could not stop the stalled hardware encoder';
+   return false;
+  }
+  recoveries.push(now);recoveryCount++;lastRecoveryUtc=new Date(now).toISOString();
+  lastRecoveryReason=stalled.reason;
+  safeEndAudio(audioChild);
+  return true;
+ }
+ // No endless blank stream if the one permitted software fallback also stalls.
+ if(encoderFallbackUsed&&videoEncoder==='libopenh264'&&!firstPlaylist&&
+    Number.isFinite(sinceStartMs)&&sinceStartMs>ENCODER_FALLBACK.STARTUP_GRACE_MS){
+  ownerStopped=true;captureState='failed';
+  captureError='No HLS playlist after OpenH264 fallback';
+  safeEndAudio(audioChild);
+  try{capture.kill('SIGTERM')}catch{}
+  return true;
+ }
  if(!shouldRecover({alive:true,ageMs,sinceStartMs}))return false;
  recoveries=recoveries.filter(t=>now-t<RECOVERY_WINDOW_MS);
  if(recoveries.length>=4){
@@ -242,7 +316,7 @@ function makeServer(){
    const route=u.pathname;
    if(req.method==='GET'&&route==='/health'){
     const h=status();
-    return send(res,200,{ok:true,mode:'LAN TV receiver',build:'tv-resume-v0.5',
+    return send(res,200,{ok:true,mode:'LAN TV receiver',build:'tv-resume-v0.5',runId:process.env.IM_ACCESSIBILITY_RUN_ID||null,
      stream:h.state,streamReady:h.streamReady,streamAgeMs:h.streamAgeMs,
      recoveryCount:h.recoveryCount,qualityMode:h.qualityMode,qualityVersion:h.qualityVersion,lastRecoveryUtc:h.lastRecoveryUtc,
      audioEnabled:h.audioEnabled&&h.streamReady,audioState:h.audioState,audioDeviceIdHash:h.audioDeviceIdHash});

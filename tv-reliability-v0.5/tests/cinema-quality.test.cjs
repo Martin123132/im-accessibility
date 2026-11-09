@@ -40,7 +40,7 @@ test('Cinema switches the existing capture without opening a second encoder',()=
  const cast=read('cast/server.cjs');
  assert.match(cast,/pendingRestart=\{format:captureFormat\}/);
  assert.match(cast,/capture\.kill\('SIGTERM'\)/);
- assert.match(cast,/SOUND\.argsFor\(SEGMENTS,format,nextSegment,qualityMode\)/);
+ assert.match(cast,/SOUND\.argsFor\(SEGMENTS,format,nextSegment,qualityMode,videoEncoder\)/);
  assert.match(cast,/SOUND\.qualityProfile\(mode\)/);
  assert.match(cast,/now-lastQualityAt<5000/);
  assert.match(cast,/peer!==LAN_IP/);

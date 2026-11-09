@@ -27,14 +27,21 @@ function probe(binary=BINARY,spawnSync=cp.spawnSync){
  });
 }
 const QUALITY_PROFILES=Object.freeze({
- interactive:Object.freeze({fps:'15',scale:'scale=1280:-2',preset:'veryfast',crf:'28',profile:'main',level:'3.1',gop:'15',segment:'1',list:'4',bitrate:'128k'}),
- cinema:Object.freeze({fps:'30',scale:'scale=1920:-2',preset:'veryfast',crf:'18',profile:'high',level:'4.1',gop:'60',segment:'2',list:'18',bitrate:'192k'})
+ interactive:Object.freeze({fps:'15',scale:'scale=1280:-2',preset:'veryfast',crf:'28',profile:'main',level:'3.1',gop:'15',segment:'1',list:'4',bitrate:'128k',videoBitrate:'2000k'}),
+ cinema:Object.freeze({fps:'30',scale:'scale=1920:-2',preset:'veryfast',crf:'18',profile:'high',level:'4.1',gop:'60',segment:'2',list:'18',bitrate:'192k',videoBitrate:'5000k'})
 });
 function qualityProfile(mode){
  if(!Object.prototype.hasOwnProperty.call(QUALITY_PROFILES,mode))throw Error('Unsupported display quality mode');
  return QUALITY_PROFILES[mode];
 }
-function argsFor(streamDir,format=null,startNumber=0,qualityMode='interactive'){
+// Legacy source fixtures and the owner-verified pipeline remain libx264 by default.
+// The separately built LGPL Windows preview selects Media Foundation explicitly.
+function encoderKind(value=process.env.IM_ACCESSIBILITY_H264_ENCODER){
+ if(value===undefined||value===''||value==='libx264')return 'libx264';
+ if(value==='h264_mf'||value==='libopenh264')return value;
+ throw Error('Unsupported H.264 encoder selection');
+}
+function argsFor(streamDir,format=null,startNumber=0,qualityMode='interactive',encoderOverride=undefined){
  const q=qualityProfile(qualityMode);
  if(!Number.isSafeInteger(startNumber)||startNumber<0||startNumber>999999)throw Error('Invalid bounded HLS media start number');
  const args=['-hide_banner','-loglevel','warning','-nostdin','-f','gdigrab','-framerate',q.fps,'-draw_mouse','1','-i','desktop'];
@@ -48,10 +55,18 @@ function argsFor(streamDir,format=null,startNumber=0,qualityMode='interactive'){
  args.push('-vf',q.scale,'-map','0:v:0');
  if(format)args.push('-map','1:a:0');
  else args.push('-an');
- args.push('-c:v','libx264','-preset',q.preset);
- if(qualityMode==='interactive')args.push('-tune','zerolatency');
- args.push('-crf',q.crf,'-pix_fmt','yuv420p','-profile:v',q.profile,'-level',q.level,
-   '-g',q.gop,'-keyint_min',q.gop,'-sc_threshold','0');
+ const codec=encoderOverride===undefined?encoderKind():encoderKind(encoderOverride);
+ if(codec==='libx264'){
+  args.push('-c:v','libx264','-preset',q.preset);
+  if(qualityMode==='interactive')args.push('-tune','zerolatency');
+  args.push('-crf',q.crf,'-pix_fmt','yuv420p','-profile:v',q.profile,'-level',q.level,
+    '-g',q.gop,'-keyint_min',q.gop,'-sc_threshold','0');
+ }else{
+  args.push('-c:v',codec);
+  if(codec==='h264_mf')args.push('-scenario','live_streaming');
+  args.push('-b:v',q.videoBitrate,'-pix_fmt','yuv420p',
+    '-g',q.gop,'-keyint_min',q.gop,'-sc_threshold','0');
+ }
  if(format)args.push('-c:a','aac','-ac','2','-ar','48000','-b:a',q.bitrate,
    '-af','aresample=async=1:first_pts=0');
  args.push('-f','hls','-hls_time',q.segment,'-hls_list_size',q.list,'-hls_delete_threshold','3',
@@ -62,4 +77,4 @@ function argsFor(streamDir,format=null,startNumber=0,qualityMode='interactive'){
    path.join(streamDir,'index.m3u8'));
  return args;
 }
-module.exports={BINARY,isAudioOptIn,validFormat,probe,argsFor,qualityProfile,QUALITY_PROFILES};
+module.exports={BINARY,isAudioOptIn,validFormat,probe,argsFor,encoderKind,qualityProfile,QUALITY_PROFILES};

@@ -15,7 +15,7 @@ function findReleaseConfig(){
 }
 // Installed builds use the standard per-user settings in LOCALAPPDATA.
 // Source tests can supply IM_ACCESSIBILITY_CONFIG_PATH explicitly.
-const {readUserSettings,isPrivate,subnet,usableHost,chooseAdapter,SUPPORTED_MODEL}=require(findReleaseConfig());
+const {readUserSettings,isPrivate,subnet,usableHost,chooseAdapter,adapters:lanAdapters,SUPPORTED_MODEL}=require(findReleaseConfig());
 const SERVICES=[
  ['_googlecast._tcp.local','Google Cast','Cast receiver'],
  ['_airplay._tcp.local','Apple AirPlay','AirPlay receiver'],
@@ -131,14 +131,14 @@ function mergeRows(found,verified){
  for(const h of found){
   if(!h||!validLan(h.ip,verified.network))continue;
   const old=rows.get(h.ip);
-  const isCurrent=h.ip===verified.television.ip;
+  const isCurrent=h.ip===verified.television.ip&&h.brand==='LG';
   const recognizedLg=h.brand==='LG';
   const item={ip:h.ip,brand:isCurrent?'LG':clean(h.brand,40),
    name:isCurrent?'LG webOS TV ('+verified.television.model+')':clean(h.name),
    kind:isCurrent?'Smart TV':clean(h.kind,60),
    methods:old?[...new Set([...old.methods,h.method])]:[h.method],found:true,
    current:isCurrent,
-   connection:isCurrent?'Current supported LG TV':recognizedLg?
+   connection:isCurrent?'Saved LG address - identity checked at connection':recognizedLg?
     'LG webOS found - model verified at connection':'Discovered - connection not yet supported'};
   if(old&&((old.brand==='LG'&&item.brand!=='LG')||
     (old.methods.includes('mDNS')&&h.method==='SSDP'&&item.brand!=='LG'))){
@@ -149,15 +149,16 @@ function mergeRows(found,verified){
  if(verified.television.ip&&!rows.has(verified.television.ip)){
   rows.set(verified.television.ip,{ip:verified.television.ip,brand:'LG',
    name:'Saved LG TV',kind:'Smart TV',methods:[],found:false,current:true,
-   connection:'Saved - not detected this scan'});
+   connection:'Saved - not detected this scan; connection unconfirmed'});
  }
  return [...rows.values()].sort((a,b)=>Number(b.current)-Number(a.current)||
   Number(b.found)-Number(a.found)||a.name.localeCompare(b.name)).slice(0,28);
 }
 function scanUdp(mode,network,onHit,durationMs){
  return new Promise(resolve=>{
-  const sock=dgram.createSocket('udp4',{reuseAddr:true});let ended=false;
-  const finish=()=>{if(ended)return;ended=true;try{sock.close()}catch{}resolve()};
+  const sock=dgram.createSocket({type:'udp4',reuseAddr:true});let ended=false;
+  const finish=(error)=>{if(ended)return;ended=true;clearTimeout(timer);try{sock.close()}catch{}resolve(error?mode+": discovery unavailable on the selected network":null)};
+  const timer=setTimeout(finish,durationMs);
   sock.on('error',finish);
   sock.on('message',(buf,remote)=>{
    if(!validLan(remote.address,network))return;
@@ -165,35 +166,57 @@ function scanUdp(mode,network,onHit,durationMs){
    if(hit)onHit({ip:remote.address,...hit});
   });
   sock.bind(0,network.ip,()=>{
-   try{sock.setMulticastInterface(network.ip)}catch{}
+   try{sock.setMulticastInterface(network.ip)}catch(e){finish(e);return}
    if(mode==='ssdp'){
     for(const st of ['ssdp:all','roku:ecp','urn:dial-multiscreen-org:service:dial:1',
       'urn:schemas-upnp-org:device:MediaRenderer:1']){
      const msg=['M-SEARCH * HTTP/1.1','HOST: 239.255.255.250:1900','MAN: "ssdp:discover"',
       'MX: 2','ST: '+st,'',''].join('\r\n');
-     try{sock.send(Buffer.from(msg),1900,'239.255.255.250',()=>{})}catch{}
+     try{sock.send(Buffer.from(msg),1900,'239.255.255.250',error=>{if(error)finish(error)})}catch(e){finish(e)}
     }
    }else{
-    for(const [service] of SERVICES)try{sock.send(question(service),5353,'224.0.0.251',()=>{})}catch{}
+    for(const [service] of SERVICES)try{sock.send(question(service),5353,'224.0.0.251',error=>{if(error)finish(error)})}catch(e){finish(e)}
    }
   });
-  setTimeout(finish,durationMs);
+
  });
 }
+// Device discovery is independent of saved start/pairing settings. A changed
+// DHCP lease, first-run setup or stale settings must not disable Find TVs.
+// Without an explicitly selected adapter, only ONE physical private LAN may be
+// scanned. Ambiguous or virtual interfaces are never chosen automatically.
+function discoveryContext({adapter=null,interfaces=os.networkInterfaces(),readSettings=readUserSettings}={}){
+ if(adapter!==null)return {network:chooseAdapter(adapter,interfaces),
+  television:{ip:null,model:SUPPORTED_MODEL}};
+ try{return readSettings()}
+ catch(error){
+  if(!/Per-user settings.json is missing/.test(error.message))throw Error('Saved network unavailable. Select a network explicitly to find TVs.');
+  const available=lanAdapters(interfaces);
+  if(available.length!==1)throw Error('Select one physical private network to find TVs');
+  return {network:available[0],television:{ip:null,model:SUPPORTED_MODEL}};
+ }
+}
 async function scan({durationMs=4200,adapter=null}={}){
- // Initial setup has no saved settings; restrict discovery to the actual selected LAN adapter.
- const network=adapter?chooseAdapter(adapter,os.networkInterfaces()):null;
- const verified=network?{network,television:{ip:null,model:SUPPORTED_MODEL}}:readUserSettings();
+ const verified=discoveryContext({adapter});
  const found=[];
- await Promise.all(['ssdp','mdns'].map(mode=>scanUdp(mode,verified.network,x=>found.push(x),durationMs)));
+ const warnings=(await Promise.all(['ssdp','mdns'].map(mode=>scanUdp(mode,verified.network,x=>found.push(x),durationMs)))).filter(Boolean);
+ if(warnings.length===2)throw Error("Discovery could not use the selected network. Check the connection and firewall permissions.");
  const devices=mergeRows(found,verified);
- return {ok:true,readOnly:true,network:verified.network.name||'Local Wi-Fi',currentIp:verified.television.ip,count:devices.length,devices};
+ return {ok:true,readOnly:true,warnings,network:verified.network.name||'Local Wi-Fi',currentIp:verified.television.ip,count:devices.length,devices};
 }
 if(require.main===module){
- if(process.argv.length!==3||process.argv[2]!=='--scan'){
-  process.stderr.write('Usage: TVFinder.cjs --scan (read-only)\n');process.exitCode=2;
- }else scan().then(result=>process.stdout.write(JSON.stringify(result)+'\n')).catch(e=>{
+ const main=async()=>{
+  if(process.argv.length!==3)throw Error('Expected one read-only operation');
+  if(process.argv[2]==='--networks'){
+   let selected=null;try{selected=readUserSettings().network}catch{}
+   return {adapters:lanAdapters(os.networkInterfaces()),selected};
+  }
+  if(process.argv[2]!=='--scan')throw Error('Expected --networks or --scan');
+  let input='';for await(const chunk of process.stdin){input+=chunk;if(input.length>1024)throw Error('Network selection too large')}
+  return scan({adapter:input.trim()?JSON.parse(input):null});
+ };
+ main().then(result=>process.stdout.write(JSON.stringify(result)+'\n')).catch(e=>{
   process.stderr.write('TV_DISCOVERY_UNAVAILABLE '+String(e.message||e).slice(0,180)+'\n');process.exitCode=1;
  });
 }
-module.exports={validLan,recognizeSsdp,mdnsRecords,recognizeMdns,question,mergeRows,scan};
+module.exports={validLan,recognizeSsdp,mdnsRecords,recognizeMdns,question,mergeRows,discoveryContext,scan};

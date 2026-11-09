@@ -6,14 +6,14 @@ const core=require('./package-core.cjs');
 const repo=path.resolve(__dirname,'..');
 const version='v0.3.21-independent-audio-guard-private-preview';
 const tv=[
- 'lg-pair.cjs','lg-active-view.cjs','cinema-start.cjs','release-config.cjs','viewing-policy.cjs','resume.cjs','resume-host.cjs',
+ 'lg-pair.cjs','lg-active-view.cjs','cinema-start.cjs','release-config.cjs','session-guard.cjs','viewing-policy.cjs','resume.cjs','resume-host.cjs',
  'cast/lan.cjs','cast/lg-launch.cjs','cast/package.json','cast/package-lock.json',
- 'cast/server.cjs','cast/sound.cjs','cast/native/LoopbackCapture.cs.txt',
+ 'cast/server.cjs','cast/sound.cjs','cast/encoder-fallback.cjs','cast/native/LoopbackCapture.cs.txt',
  'cast/native/LoopbackCapture.exe','cast/native/SpeakerEndpoint.cs.txt',
  'cast/native/SpeakerEndpoint.exe','cast/tv-discovery.cjs',
  'cast/web/controller.html','cast/web/controller.js','cast/web/style.css',
  'cast/web/tv.html','cast/web/tv.js',
- 'viewer/server.cjs','viewer/snapshot.cjs','viewer/fast-video.cjs','viewer/speaker-routing.cjs',
+ 'viewer/server.cjs','viewer/playback-health.cjs','viewer/web/playback-health.js','viewer/snapshot.cjs','viewer/fast-video.cjs','viewer/speaker-routing.cjs',
  'viewer/speaker-route-watch.cjs','viewer/native/TvPointer.cs',
  'viewer/native/TvPointer.exe','viewer/web/style.css','viewer/web/viewer.html',
  'viewer/web/immersive.html','viewer/web/immersive.css','viewer/web/immersive.js',

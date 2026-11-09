@@ -156,3 +156,40 @@ test('pure module exposes no action for pairing, commands, or storing secrets',(
  assert.doesNotMatch(code,/\.writeFileSync\(|\.spawn\(|\.execSync\(|\.listen\(/);
  assert.ok(!('pair' in c) && !('send' in c) && !('launch' in c));
 });
+
+test('read-only runtime accepts DHCP lease change on the same named NIC and subnet',()=>{
+ const old=settings(),serial=JSON.stringify(old);
+ const live={Ethernet:[adapter('192.168.4.152')]};
+ assert.throws(()=>go(old,live),/No matching physical/); // explicit settings validator stays strict
+ const result=c.validateCurrentLease(old,{networkInterfaces:live,existsFile});
+ assert.equal(result.network.ip,'192.168.4.152');
+ assert.equal(result.network.name,'Ethernet');
+ assert.equal(result.television.ip,'192.168.4.27');
+ assert.equal(JSON.stringify(old),serial,'saved values must not change');
+ const file='C:\\Users\\Owner\\AppData\\Local\\ImAccessibility\\settings.json';
+ const loaded=c.readUserSettings({
+  env:{IM_ACCESSIBILITY_CONFIG_PATH:file},platform:'win32',repoRoot:'D:\\release',
+  fsApi:pretendFs(file,serial),networkInterfaces:live
+ });
+ assert.equal(loaded.network.ip,'192.168.4.152');
+});
+test('DHCP rebind never changes adapter, subnet, device or trust conditions',()=>{
+ const make=()=>settings();
+ const v=make(),f=ni=>c.validateCurrentLease(v,{networkInterfaces:ni,existsFile});
+ assert.throws(()=>f({WiFi:[adapter('192.168.4.152')]}),/No matching physical/);
+ assert.throws(()=>f({Ethernet:[adapter('192.168.5.152')]}),/No matching physical/);
+ assert.throws(()=>f({Ethernet:[adapter('192.168.4.152'),adapter('192.168.4.153')]}),/No matching physical/);
+ assert.throws(()=>f({'vEthernet Switch':[adapter('192.168.4.152')]}),/No matching physical/);
+ const rogue=make();rogue.television.ip='192.168.5.20';
+ assert.throws(()=>c.validateCurrentLease(rogue,{networkInterfaces:{Ethernet:[adapter('192.168.4.152')]},existsFile}),/No matching physical/);
+ const wrongModel=make();wrongModel.television.model='Unapproved';
+ assert.throws(()=>c.validateCurrentLease(wrongModel,{networkInterfaces:{Ethernet:[adapter('192.168.4.152')]},existsFile}),/model not on/);
+});
+
+test('new adapter pins reject changed hardware or subnet mask even on the same named interface',()=>{
+ const v=settings();v.network.adapterMac='12:34:56:78:90:ab';v.network.netmask='255.255.255.0';
+ const check=(mac,netmask='255.255.255.0')=>c.validateCurrentLease(v,{networkInterfaces:{Ethernet:[{...adapter('192.168.4.152'),mac,netmask}]},existsFile});
+ assert.equal(check(v.network.adapterMac).network.ip,'192.168.4.152');
+ assert.throws(()=>check('12:34:56:78:90:ac'),/No matching/);
+ assert.throws(()=>check(v.network.adapterMac,'255.255.254.0'),/No matching/);
+});
