@@ -6,7 +6,10 @@ const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),cp=r
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function verify({scheduled=false,appExe=null,nodeExe=process.execPath,reportFile=null}={}){
  assert.equal(process.platform,'win32');
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'ImAccessibility-Guardian-QA-'));
+ // Match the long installation path used by Node's module loader and Windows
+ // PowerShell even when the Windows runner exposes TEMP through a short alias.
+ const tempRoot=fs.realpathSync.native(os.tmpdir());
+ const dir=fs.mkdtempSync(path.join(tempRoot,'ImAccessibility-Guardian-QA-'));
  const app=path.join(dir,'ImAccessibility.exe'),watch='tv-reliability-v0.5/viewer/speaker-route-watch.cjs';
  const marker=path.join(dir,'tv-reliability-v0.5/viewer/fixture-ready.json');
  const stop=path.join(dir,'tv-reliability-v0.5/viewer/fixture-stop');
@@ -78,7 +81,7 @@ setTimeout(()=>process.exit(3),60000).unref();`);
    taskAction('Disable');assert.equal(JSON.parse(taskAction('Status')).installed,false);
   }else if(child&&!finished){await Promise.race([exit,pause(6000)]);}
   if(!child||child.exitCode!==null||finished){
-   assert.equal(path.dirname(dir),os.tmpdir());assert.match(path.basename(dir),/^ImAccessibility-Guardian-QA-/);
+   assert.equal(path.dirname(dir),tempRoot);assert.match(path.basename(dir),/^ImAccessibility-Guardian-QA-/);
    fs.rmSync(dir,{recursive:true,force:true});
   }
  }

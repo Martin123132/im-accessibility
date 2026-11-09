@@ -7,7 +7,9 @@ const {SpeakerRouter,guardianReady,startIndependentGuard,TASK_NAME,taskNameFor}=
 const {serviceTick}=require('../speaker-route-watch.cjs');
 const TAG='a'.repeat(32),DEVICE='b'.repeat(64);
 function temp(){
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'imacc-independent-audio-'));
+ // CI may expose TEMP through a DOS short alias. Loaded Node modules and
+ // Windows PowerShell GetFullPath use the long path for installation identity.
+ const dir=fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()),'imacc-independent-audio-'));
  return {dir,journal:path.join(dir,'speaker-route.json'),
   marker:path.join(dir,'audio-guard-ready.json'),clean(){fs.rmSync(dir,{recursive:true,force:true})}};
 }

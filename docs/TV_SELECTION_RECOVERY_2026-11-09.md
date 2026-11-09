@@ -35,3 +35,5 @@ Normal owner-profile **Recovery 2.1 uninstall also passed**: application, owned 
 No genuine separate Windows account/VM was available. The prior rights, complete corresponding-source/dependency notices, signing/SmartScreen, Windows 11 and human screen-reader distribution gates remain open. Physical DHCP renewal was not forced; the guarded source regressions cover it. The legacy application and both legacy scheduled tasks remain protected.
 
 At completion of private acceptance, these recovery commits were still local. The owner subsequently authorised bringing GitHub up to date and merging the source after verification. That source integration does not publish or approve the private installer for public distribution, and does not change the owner's installed app.
+
+The first GitHub Windows run found two fixture-only task-name mismatches: Windows PowerShell expands a DOS short path in `TEMP`, while the fixture hashed its short spelling. The audio fixtures now resolve their temporary root to the long path used by loaded Node modules and Windows PowerShell. No application or installer behavior changed for this CI correction.
