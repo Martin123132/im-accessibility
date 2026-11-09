@@ -6,6 +6,7 @@ const TEMPLATE_SHA='2159d4e54dc38e3626a95f496a2e6c2f071b541bd07e2e0657c8acbbcdd9
 // Exact Gyan 9.0.1 full-build provenance is pinned separately from the customer payload.
 const VENDOR=require('./ffmpeg-9.0.1-source-inventory.json');
 const NATIVE=require('./native-source-pins.json');
+const NOTICE_PINS=require('./third-party-notices/pins.json');
 const REQUIRED=['THIRD_PARTY/Node-LICENSE.txt','THIRD_PARTY/FFmpeg-LICENSE.txt',
  'THIRD_PARTY/bundled-runtimes.json',
  'THIRD_PARTY/FFmpeg-README.txt','tv-reliability-v0.5/cast/node_modules/lgtv2/LICENSE',
@@ -15,6 +16,11 @@ function hash(p){return crypto.createHash('sha256').update(fs.readFileSync(p)).d
 function safe(p){return typeof p==='string'&&/^[A-Za-z0-9._/-]+$/.test(p)&&!p.startsWith('/')&&!p.includes('\\')&&!p.split('/').some(x=>x==='.'||x==='..'||!x)}
 function privateFile(e){if(e.path==='tv-reliability-v0.5/cast/node_modules/lgtv2/pairing.json')return e.sha256!==TEMPLATE_SHA;return PRIVATE.test(e.path)}
 function flags(v){return new Set(v.match(/--enable-[A-Za-z0-9_-]+/g)||[])}
+function knownNoticeGaps(entries,ffmpegSHA256){
+ if(ffmpegSHA256!==NOTICE_PINS.ffmpegSHA256)return [];
+ return NOTICE_PINS.notices.filter(n=>entries.get('THIRD_PARTY/'+n.file)?.sha256!==n.sha256)
+  .map(n=>'THIRD_PARTY/'+n.file);
+}
 function execute(program,args){const r=spawnSync(program,args,{encoding:'utf8',windowsHide:true,timeout:6000,maxBuffer:3000000});if(r.error||r.status!==0)throw Error('Metadata command failed: '+path.basename(program));return (r.stdout||'')+'\n'+(r.stderr||'')}
 function sign(exe){
  if(!exe||!fs.existsSync(exe))return 'not-provided';
@@ -56,6 +62,7 @@ function audit(stage,installer){
   !fswitches.has('--enable-gpl')&&!fswitches.has('--enable-nonfree')&&
   ff.includes('--disable-libx264')&&ff.includes('--disable-libx265');
  const acceptedFFmpeg=exactVendorMatch||lgplPinned;
+ missingNotices.push(...knownNoticeGaps(byPath,ffmpegSHA256));
  // LGPL evidence must not inherit counts or source completeness from the
  // unrelated Gyan GPL inventory. Neither candidate has distribution clearance.
  let runtimeInventoryVerified=false;
@@ -87,13 +94,13 @@ function audit(stage,installer){
  if(!acceptedFFmpeg)blockers.push('FFmpeg executable requires renewed vendor provenance before packaging');
  if(!lgplPinned&&!VENDOR.correspondingSourceComplete)blockers.push('Exact FFmpeg external-library source evidence incomplete: '+archivedExternalSourceCount+'/'+VENDOR.externalLibraryCount+' upstream snapshots archived; '+verifiedExternalBuildRecipeCount+'/'+VENDOR.externalLibraryCount+' exact build recipes verified');
  if(fswitches.has('--enable-gpl'))blockers.push('GPL-enabled FFmpeg exact corresponding sources, build recipes and codec components not evidenced');
- else if(lgplPinned)blockers.push('Pinned LGPL FFmpeg corresponding-source/build-recipe and transitive notices need independent review before customer distribution');
+ else if(lgplPinned)blockers.push('Pinned LGPL FFmpeg dependency sources, build inputs and notices are incomplete');
  else blockers.push('LGPL-mode FFmpeg source and notices still need review');
  const signature=sign(installer);
  if(signature!=='Valid')blockers.push('Trusted publisher signing not established');
- blockers.push('Native helper code provenance verified at pinned build; project redistribution rights still need owner review');
- blockers.push('Noncommercial repository licence and intended customer distribution rights need owner approval');
- blockers.push('Owner release/licence approval outstanding');
+ // Report concrete package evidence separately from the owner's publication
+ // decision. Original project terms and third-party package obligations differ.
+ blockers.push('Public binary publication is not authorised');
  blockers.push('Human Narrator/NVDA speech and Windows 11 compatibility not accepted');
  return {schema:1,product:'ImAccessibility',version:meta.version,createdUtc:new Date().toISOString(),
   files:meta.files.length,integrity:{failures,passed:meta.files.length-failures.length},
@@ -108,6 +115,7 @@ function audit(stage,installer){
    ffmpegFlags:{gpl:fswitches.has('--enable-gpl'),version3:fswitches.has('--enable-version3'),
     nonfree:fswitches.has('--enable-nonfree'),x264:fswitches.has('--enable-libx264'),x265:fswitches.has('--enable-libx265')}},
   packages,missingNotices,nativeSourceGaps,nativeSourceAndBinaryPinsVerified:nativePinsVerified,installerSignature:signature,
+  projectLicense:{file:'LICENSE',notice:'NOTICE.md',thirdPartyTermsRemainSeparate:true},
   readyForPublicDistribution:false,blockers};
 }
 function main(args){
@@ -121,4 +129,4 @@ function main(args){
  if(r.integrity.failures.length||r.privacy.flaggedPaths.length)process.exitCode=3;
 }
 if(require.main===module)try{main(process.argv.slice(2))}catch(e){console.error('RELEASE_AUDIT_ERROR '+e.message);process.exitCode=1}
-module.exports={audit,safe,privateFile,flags,TEMPLATE_SHA};
+module.exports={audit,safe,privateFile,flags,knownNoticeGaps,TEMPLATE_SHA};

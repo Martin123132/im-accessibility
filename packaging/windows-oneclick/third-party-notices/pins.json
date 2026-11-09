@@ -1,0 +1,18 @@
+{
+  "ffmpegSHA256": "71ac0a64a4e3e0caaf7a8c25c7e73d161ac1b269cca930d207e89e1b23959dfb",
+  "completeDependencyInventory": false,
+  "notices": [
+    {
+      "file": "OpenH264-LICENSE.txt",
+      "sha256": "dd5c1c9668512530fa5a96e4c29ac4033d70a7eeb0eed7a42fddb6dd794ebdbb",
+      "url": "https://raw.githubusercontent.com/cisco/openh264/1bca62311e447fd9c39fc93de2c4b96cd5ce971c/LICENSE",
+      "reason": "The pinned FFmpeg builder statically includes OpenH264; its BSD binary redistribution notice must accompany the package."
+    },
+    {
+      "file": "GPL-3.0.txt",
+      "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903",
+      "url": "https://raw.githubusercontent.com/FFmpeg/FFmpeg/d4070a14cecc7e29eb278f9b6036c2284255f70d/COPYING.GPLv3",
+      "reason": "The bundled LGPLv3 text incorporates GPLv3. Include both licence texts; this does not change the FFmpeg build to GPL-only."
+    }
+  ]
+}

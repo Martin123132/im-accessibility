@@ -80,6 +80,15 @@ $ffmpegHash=(Get-FileHash -LiteralPath $FFmpegExe -Algorithm SHA256).Hash.ToLowe
 if($ffmpegHash -eq $lgplPin){
  $notice=[IO.File]::ReadAllText($FFmpegLicense)
  if($notice -notmatch 'GNU LESSER GENERAL PUBLIC LICENSE'){throw 'Pinned LGPL license notice missing'}
+ $noticeRoot=Join-Path $source 'third-party-notices'
+ $noticePins=Get-Content -LiteralPath (Join-Path $noticeRoot 'pins.json') -Raw|ConvertFrom-Json
+ if($noticePins.ffmpegSHA256 -cne $ffmpegHash){throw 'Additional licence notices do not match the FFmpeg pin'}
+ foreach($entry in $noticePins.notices){
+  if($entry.file -notmatch '^[A-Za-z0-9._-]+$'){throw 'Unsafe third-party notice filename'}
+  $noticePath=Join-Path $noticeRoot $entry.file
+  if((Get-FileHash -LiteralPath $noticePath -Algorithm SHA256).Hash.ToLowerInvariant() -cne $entry.sha256){throw ('Third-party notice differs from upstream pin: '+$entry.file)}
+  Copy-Item -LiteralPath $noticePath -Destination (Join-Path $third $entry.file) -ErrorAction Stop
+ }
  [IO.File]::WriteAllText((Join-Path $stage 'encoder-profile.txt'),"h264_mf" + [Environment]::NewLine,(New-Object Text.UTF8Encoding($false)))
  Write-Output 'Pinned LGPL FFmpeg: Windows Media Foundation H264 selected for HLS; fast MSE unverified, HLS kept.'
 }
