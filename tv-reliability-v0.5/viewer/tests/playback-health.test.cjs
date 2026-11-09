@@ -2,6 +2,15 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const {PlaybackHealth}=require('../playback-health.cjs');
 const report={currentTime:1,readyState:3,paused:false,ended:false,hidden:false,error:false};
+test('diagnostics distinguish selected TV page/media contact without claiming playback',()=>{
+ const events=[],h=new PlaybackHealth('10.1.2.3',()=>1000,event=>events.push(event));
+ assert.equal(h.diagnostic(),'none');
+ h.contact('10.1.2.4','page');h.contact('127.0.0.1','media');assert.equal(h.diagnostic(),'none');
+ h.contact('10.1.2.3','page');h.contact('10.1.2.3','page');assert.equal(h.diagnostic(),'page');
+ h.contact('::ffff:10.1.2.3','media');assert.equal(h.diagnostic(),'media');assert.equal(h.state(),'unconfirmed');
+ h.report('10.1.2.3',report);assert.equal(h.diagnostic(),'report');assert.equal(h.state(),'buffering');
+ assert.deepEqual(events,['contact=page','contact=media','contact=report','playback=buffering']);
+});
 test('only selected TV with advancing media reports playing; stalled/lost telemetry expires',()=>{
  let now=1000;const h=new PlaybackHealth('192.168.4.27',()=>now);
  assert.equal(h.state(),'unconfirmed');

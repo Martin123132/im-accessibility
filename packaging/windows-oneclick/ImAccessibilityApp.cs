@@ -55,6 +55,20 @@ if(op=="start"&&File.Exists(encoderProfile)){
   }
   public static Dictionary<string,object> Parse(string s){return new JavaScriptSerializer().Deserialize<Dictionary<string,object>>(s);}
   public static string Field(Dictionary<string,object> d,string k){return d!=null&&d.ContainsKey(k)&&d[k]!=null?Convert.ToString(d[k]):"";}
+  public static bool ReadyToClose(Dictionary<string,object> d){
+   string mode=Field(d,"state");
+   return (mode=="stopped"||mode=="not-started")&&d.ContainsKey("audioPending")&&
+    d["audioPending"] is bool&&!(bool)d["audioPending"];
+  }
+  public static async Task WaitUntilStopped(Func<Task<Dictionary<string,object>>> read,
+    Func<Task> delay,int attempts){
+   var deadline=Stopwatch.StartNew();
+   for(int i=0;i<attempts&&deadline.ElapsedMilliseconds<65000;i++){
+    if(ReadyToClose(await read()))return;
+    await delay();
+   }
+   throw new Exception("TV shutdown or laptop audio restoration has not finished. Controls remain open. Wait, then use Stop again; no files were removed.");
+  }
  }
  class Adapter {public string Name,IP,Mask;public override string ToString(){return Name+"  |  "+IP+"  ("+Mask+")";}}
  class FoundTV {
@@ -72,12 +86,12 @@ if(op=="start"&&File.Exists(encoderProfile)){
   CheckBox confirm=new CheckBox(),sound=new CheckBox();
   Button find=new Button(),save=new Button(),start=new Button(),stop=new Button(),status=new Button(),uninstall=new Button();
   Label state=new Label();
-   bool scanning=false;
+   bool scanning=false,allowClose=false;
    readonly System.Windows.Forms.Timer presentationPoll=new System.Windows.Forms.Timer();
    int presentationTries;bool presentationBusy,commandBusy;
    readonly System.Windows.Forms.Timer healthPoll=new System.Windows.Forms.Timer();
   public MainWindow(){
-   Text="I'm-accessibility - Find TVs on your Wi-Fi";Font=new Font("Segoe UI",10);
+   Text="I'm-accessibility - Recovery 1 Private Preview";Font=new Font("Segoe UI",10);
    BackColor=Color.FromArgb(247,249,250);ForeColor=Color.FromArgb(28,42,56);
    Size=new Size(780,830);MinimumSize=new Size(700,570);
    StartPosition=FormStartPosition.CenterScreen;AutoScaleMode=AutoScaleMode.Font;
@@ -151,6 +165,10 @@ if(op=="start"&&File.Exists(encoderProfile)){
     healthPoll.Interval=4000;healthPoll.Tick+=(s,e)=>Status();
     Load+=(s,e)=>{Initialize();healthPoll.Start();};
     FormClosed+=(s,e)=>{presentationPoll.Stop();presentationPoll.Dispose();healthPoll.Stop();healthPoll.Dispose();};
+    FormClosing+=(s,e)=>{
+     if(allowClose||e.CloseReason!=CloseReason.UserClosing)return;
+     e.Cancel=true;CloseSafely();
+    };
   }
   public object AccessibilityReport(){
    Control[] ordered={adapters,find,televisions,tvIP,confirm,save,sound,start,stop,status,uninstall,log};
@@ -294,8 +312,34 @@ if(op=="start"&&File.Exists(encoderProfile)){
    if(MessageBox.Show(this,"Stop this TV stream only?","Confirm stop",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
        presentationPoll.Stop();
     commandBusy=true;
-    try{Log(await Task.Run(()=>Engine.Run("stop",null,false)));}catch(Exception ex){Log("Stop failed: "+ex.Message);}
+    try{await StopAndWait();}catch(Exception ex){Log("Stop needs attention: "+ex.Message);}
     finally{commandBusy=false;Status();}
+  }
+  async Task StopAndWait(){
+   presentationPoll.Stop();start.Enabled=false;stop.Enabled=false;
+   state.Text="Stopping TV and restoring laptop sound. Please wait...";
+   Log("Stopping this session. Pairing/startup may take a moment to finish.");
+   await Task.Run(()=>Engine.Run("stop",null,false));
+   await Engine.WaitUntilStopped(async()=>Engine.Parse(await Task.Run(()=>Engine.Run("status",null,false))),
+    ()=>Task.Delay(1000),65);
+   Log("TV session stopped. No laptop audio restoration is pending.");
+  }
+  async void CloseSafely(){
+   if(commandBusy){Log("Please wait for the current action to finish. Controls stay available.");return;}
+   commandBusy=true;
+   try{
+    string runtime=Path.Combine(Engine.Root,"tv-reliability-v0.5");
+    if(!File.Exists(Path.Combine(runtime,"runtime","state.json"))&&
+      !File.Exists(Path.Combine(runtime,"viewer","runtime","speaker-route.json"))){allowClose=true;Close();return;}
+    var current=Engine.Parse(await Task.Run(()=>Engine.Run("status",null,false)));
+    if(!Engine.ReadyToClose(current)){
+     if(MessageBox.Show(this,"Stop the TV stream and restore laptop sound before closing? Choose No to keep the controls open. You can minimise this window to keep watching.",
+      "Close TV controls",MessageBoxButtons.YesNo,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)!=DialogResult.Yes)return;
+     await StopAndWait();
+    }
+    allowClose=true;Close();
+   }catch(Exception ex){Log("Controls kept open: "+ex.Message);}
+   finally{commandBusy=false;if(!IsDisposed)Status();}
   }
      // Presentation only: after receiver and source are confirmed ready, minimise
    // this controls window. Never launch or manipulate another Windows app.
@@ -340,13 +384,18 @@ if(op=="start"&&File.Exists(encoderProfile)){
    }catch(Exception ex){if(!IsDisposed){start.Enabled=false;stop.Enabled=true;Log("Status: "+ex.Message);}}
    finally{statusBusy=false;}
   }
-  void Uninstall(){
+  async void Uninstall(){
+   if(commandBusy||scanning){Log("Wait for the current action to finish before uninstalling.");return;}
    var target=Path.Combine(Engine.Root,"ImAccessibility-Uninstall.exe");
    if(!File.Exists(target)){Log("Uninstaller missing.");return;}
-   if(MessageBox.Show(this,"Open the uninstaller? It will check that the TV stream is stopped.",
-     "Uninstall",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
-   try{Process.Start(new ProcessStartInfo(target){UseShellExecute=true});Close();}
-   catch(Exception ex){Log(ex.Message);}
+   if(MessageBox.Show(this,"Stop this TV stream, restore laptop sound and open the uninstaller? Your saved TV settings will be kept.",
+     "Uninstall",MessageBoxButtons.YesNo,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)!=DialogResult.Yes)return;
+   commandBusy=true;
+   try{
+    await StopAndWait();
+    Process.Start(new ProcessStartInfo(target,"--from-app "+Process.GetCurrentProcess().Id){UseShellExecute=true});allowClose=true;Close();
+   }catch(Exception ex){Log("Uninstall not started: "+ex.Message);}
+   finally{commandBusy=false;if(!IsDisposed)Status();}
   }
  }
  static class Program{

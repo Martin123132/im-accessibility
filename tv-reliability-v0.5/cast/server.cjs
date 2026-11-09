@@ -104,6 +104,16 @@ function spawnCapture(format=null){
   thisAudio.stderr.on('data',b=>{err=(err+String(b)).slice(-500)});
   thisAudio.once('error',failure=>fallback('Speaker loopback unavailable: '+String(failure.message).slice(0,80)));
   thisAudio.once('exit',code=>fallback('Speaker loopback stopped: '+code+' '+err.slice(-80)));
+  // Killing FFmpeg for Cinema/Stop closes its PCM pipe before loopback exits.
+  // A pipe error is not a child-process error; without this listener EPIPE
+  // terminates the entire cast service. The existing fallback ignores planned
+  // restarts and old captures, and bounds recovery for a real audio failure.
+  ff.stdio[3].on('error',failure=>{
+   try{thisAudio.stdout.unpipe(ff.stdio[3])}catch{}
+   safeEndAudio(thisAudio);
+   fallback('Audio pipe closed: '+String(failure.code||failure.message).slice(0,80));
+  });
+  thisAudio.stdout.on('error',failure=>fallback('Speaker output pipe failed: '+String(failure.code||failure.message).slice(0,80)));
   thisAudio.stdout.pipe(ff.stdio[3]);
  }
  ff.once('exit',(code,signal)=>{

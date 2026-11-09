@@ -45,6 +45,17 @@ test('ready services do not claim rendered TV playback or successful pairing',as
   f.writes({lg:'needs-tv'});assert.equal((await status(f.options)).receiverConfirmed,false);
  }finally{f.close()}
 });
+
+test('missing receiver reports identify last TV contact and audio fallback without claiming acceptance',async()=>{
+ const f=fixture();try{
+  f.viewer.playback='unconfirmed';
+  for(const [contact,message] of [['none',/no TV page request/],['page',/not requested video/],['media',/requesting video/],['report',/reports stopped/]]){
+   f.viewer.receiverContact=contact;const s=await status(f.options);
+   assert.equal(s.receiverConfirmed,false);assert.match(s.message,message);
+  }
+  f.cast.audioState='fallback';assert.match((await status(f.options)).message,/TV audio is unavailable/);
+ }finally{f.close()}
+});
 test('stopped status surfaces startup errors and pending audio without probing network',async()=>{
  const f=fixture();try{
   f.writes({state:'stopped',stopReason:'Start failure: encoder did not become ready'});

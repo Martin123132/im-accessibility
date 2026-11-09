@@ -102,6 +102,8 @@ function attach(server,{lan,port,origin,token,expiresAt,ffmpegExe,sameSubnet,onD
    item.encoder=cp.spawn(ffmpegExe,argv,{windowsHide:true,stdio:['ignore','pipe','pipe','pipe']});
    item.audio=cp.spawn(SOUND.BINARY,['--capture','--device-hash',f.deviceIdHash],
      {windowsHide:true,stdio:['ignore','pipe','pipe']});
+   item.encoder.stdio[3].on('error',()=>closeStream(item,'Audio pipe closed'));
+   item.audio.stdout.on('error',()=>closeStream(item,'Speaker output pipe closed'));
    item.audio.stdout.pipe(item.encoder.stdio[3]);
    let stderr='';
    item.encoder.stderr.on('data',b=>{stderr=(stderr+String(b)).slice(-450)});

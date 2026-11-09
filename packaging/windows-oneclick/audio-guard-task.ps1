@@ -6,8 +6,14 @@ param(
  [ValidateSet('NO','YES')][string]$OwnerConsent='NO'
 )
 $ErrorActionPreference='Stop'
-$TaskName='ImAccessibility-AudioGuard-v1'
 $root=Split-Path -Parent $MyInvocation.MyCommand.Path
+# Installed previews have their own on-demand guardian. Never reuse the legacy
+# owner's task name or edit an existing task from a different installation.
+$identity=[IO.Path]::GetFullPath($root).TrimEnd('\').ToLowerInvariant()
+$hasher=[Security.Cryptography.SHA256]::Create()
+try{$digest=[BitConverter]::ToString($hasher.ComputeHash([Text.Encoding]::UTF8.GetBytes($identity))).Replace('-','').ToLowerInvariant()}
+finally{$hasher.Dispose()}
+$TaskName='ImAccessibility-AudioGuard-'+$digest.Substring(0,16)
 $node=Join-Path $root 'Runtime\node.exe'
 $watch=Join-Path $root 'tv-reliability-v0.5\viewer\speaker-route-watch.cjs'
 $journal=Join-Path $root 'tv-reliability-v0.5\viewer\runtime\speaker-route.json'

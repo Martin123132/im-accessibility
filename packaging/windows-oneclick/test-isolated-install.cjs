@@ -51,6 +51,11 @@ function main(setup,output){
   gui(external,'--test-uninstall','uninstall',/^SUCCESS /);assert.equal(fs.existsSync(app),false);assert.deepEqual(fs.readFileSync(env.IM_ACCESSIBILITY_CONFIG_PATH),saved);
   gui(setup,'--test-install','reinstall-preserving-settings',/^SUCCESS /);assert.deepEqual(fs.readFileSync(env.IM_ACCESSIBILITY_CONFIG_PATH),saved);
   gui(setup,'--test-install','overwrite-refused',/^FAILED .*already installed/s);
+  gui(setup,'--test-existing','existing-app-verified-without-overwrite',/^SUCCESS .*ImAccessibility.exe/);
+  const appExe=path.join(app,'ImAccessibility.exe'),appBytes=fs.readFileSync(appExe);
+  fs.appendFileSync(appExe,'changed');
+  gui(setup,'--test-existing','modified-existing-app-not-opened',/^FAILED .*could not be verified/s);
+  fs.writeFileSync(appExe,appBytes);assert.deepEqual(fs.readFileSync(env.IM_ACCESSIBILITY_CONFIG_PATH),saved);
   gui(external,'--test-uninstall','final-uninstall',/^SUCCESS /);assert.equal(fs.existsSync(app),false);
   assert.deepEqual(fs.readFileSync(env.IM_ACCESSIBILITY_CONFIG_PATH),saved);checks.push('settings-preserved-byte-for-byte');
   const report={passed:checks.length,checks,processes:receipts,allExited:receipts.every(r=>r.exited),applicationRemoved:!fs.existsSync(app),realWindowsUserProfile:false,registryShortcutsAndTasksExercised:false,physicalTvTested:false};
