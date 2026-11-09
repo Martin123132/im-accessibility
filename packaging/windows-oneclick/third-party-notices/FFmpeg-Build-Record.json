@@ -1,0 +1,155 @@
+{
+  "schema": 1,
+  "recoveredRun": 41222097386,
+  "recoveredJob": 124652954476,
+  "recoveredURL": "https://github.com/FFmpeg-Builds/FFmpeg-Builds/actions/runs/41222097386/job/124652954476",
+  "recipeSHA256": "a3a92819459530d94e97423b94560d2ea58fb06b1a944c8124f4f0c46eaaa421",
+  "recipeUnchanged": true,
+  "baseImageDigest": "sha256:4ef6a4084baaa415f71f1b21dda870790e8751a0ccd68201f546faf01e6f8744",
+  "packages": [
+    {
+      "name": "cc",
+      "version": "1.10.0",
+      "checksum": "86e055fa6e3e40ad6187ba25b6855eeb635d5271f8e0f0e1e9a5826b8d75bea0",
+      "requiredBy": [
+        "rav1e-post-update-build-record"
+      ],
+      "archive": "sources/cargo/cc-1.10.0.crate",
+      "bytes": 148443,
+      "url": "https://static.crates.io/crates/cc/cc-1.10.0.crate",
+      "license": "MIT OR Apache-2.0",
+      "licenseFile": null,
+      "notices": [
+        {
+          "path": "LICENSE-APACHE",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+          "bytes": 10847,
+          "retained": "notice-texts/cargo/a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2.txt"
+        },
+        {
+          "path": "LICENSE-MIT",
+          "sha256": "378f5840b258e2779c39418f3f2d7b2ba96f1c7917dd6be0713f88305dbda397",
+          "bytes": 1057,
+          "retained": "notice-texts/cargo/378f5840b258e2779c39418f3f2d7b2ba96f1c7917dd6be0713f88305dbda397.txt"
+        }
+      ]
+    },
+    {
+      "name": "find-msvc-tools",
+      "version": "0.1.15",
+      "checksum": "1c66915cc5391097de7a2b0b972e8505aa33c0df401fd3a6811dbdb32881ba48",
+      "requiredBy": [
+        "rav1e-post-update-build-record"
+      ],
+      "archive": "sources/cargo/find-msvc-tools-0.1.15.crate",
+      "bytes": 31634,
+      "url": "https://static.crates.io/crates/find-msvc-tools/find-msvc-tools-0.1.15.crate",
+      "license": "MIT OR Apache-2.0",
+      "licenseFile": null,
+      "notices": [
+        {
+          "path": "LICENSE-APACHE",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+          "bytes": 10847,
+          "retained": "notice-texts/cargo/a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2.txt"
+        },
+        {
+          "path": "LICENSE-MIT",
+          "sha256": "378f5840b258e2779c39418f3f2d7b2ba96f1c7917dd6be0713f88305dbda397",
+          "bytes": 1057,
+          "retained": "notice-texts/cargo/378f5840b258e2779c39418f3f2d7b2ba96f1c7917dd6be0713f88305dbda397.txt"
+        }
+      ]
+    },
+    {
+      "name": "shlex",
+      "version": "2.0.1",
+      "checksum": "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba",
+      "requiredBy": [
+        "rav1e-post-update-build-record"
+      ],
+      "archive": "sources/cargo/shlex-2.0.1.crate",
+      "bytes": 19332,
+      "url": "https://static.crates.io/crates/shlex/shlex-2.0.1.crate",
+      "license": "MIT OR Apache-2.0",
+      "licenseFile": null,
+      "notices": [
+        {
+          "path": "LICENSE-APACHE",
+          "sha256": "553fffcd9b1cb158bc3e9edc35da85ca5c3b3d7d2e61c883ebcfa8a65814b583",
+          "bytes": 566,
+          "retained": "notice-texts/cargo/553fffcd9b1cb158bc3e9edc35da85ca5c3b3d7d2e61c883ebcfa8a65814b583.txt"
+        },
+        {
+          "path": "LICENSE-MIT",
+          "sha256": "4455bf75a91154108304cb283e0fea9948c14f13e20d60887cf2552449dea3b1",
+          "bytes": 1092,
+          "retained": "notice-texts/cargo/4455bf75a91154108304cb283e0fea9948c14f13e20d60887cf2552449dea3b1.txt"
+        }
+      ]
+    }
+  ],
+  "resolutionRecovered": true,
+  "originalPostUpdateLockfileRecovered": false,
+  "reconstructionMethod": "Original pinned Cargo.lock plus all three changes printed by the original compilation log. This is reconstructed resolution, not a byte-for-byte copy of the missing generated file.",
+  "originalLockSHA256": "4dc33950691aaf914acc9fd06b533170b73f93b3de5c0bb9abe48a7ed9276401",
+  "reconstructedLockSHA256": "d031d0ff0d17c3fe603473dcb4d56eec4a41f38ef0120b6633cc90ed227d7168",
+  "resolvedPackageCount": 277,
+  "allDependencyReferencesResolve": true,
+  "cacheChain": [
+    {
+      "run": 41222097386,
+      "job": 124652954476,
+      "cached": false,
+      "logSHA256": "82641b7e8fc4957822c324b07272a7d2802876042f0fff38cdca62d3d3500c78"
+    },
+    {
+      "run": 41305008201,
+      "job": 124845105799,
+      "cached": true,
+      "logSHA256": "b61e03e8c717373ab07e6893961873b4ab9553c7e97065f20edaca15341d7f3e"
+    },
+    {
+      "run": 41442505918,
+      "job": 125270469589,
+      "cached": true,
+      "logSHA256": "c4315c921ac8808ba95c111e1e19de3f847a25460390f5390dbad04bac20fcf9"
+    },
+    {
+      "run": 41633288340,
+      "job": 125911308407,
+      "cached": true,
+      "logSHA256": "f1b10024da2fc82a009f35103dc93f11263fb53ab63e20cbb566f83a9ca8617a"
+    },
+    {
+      "run": 41826822151,
+      "job": 126567067349,
+      "cached": true,
+      "logSHA256": "68c6aa09e9aae529234c21cef60e754775dc4ad5acf7769b6c7fd285f3bc6d13"
+    },
+    {
+      "run": 41885603216,
+      "job": 126774022710,
+      "cached": true,
+      "logSHA256": "ce8d283ae9a9c37a457a952531e7d9c59e89d0f4a4354f7b26712b23dcfc6269"
+    },
+    {
+      "run": 42024754339,
+      "job": 127239956552,
+      "cached": true,
+      "logSHA256": "5b04403a48957647d59ea7bad4face66aa700d54c7b41632d503f98f0ce35530"
+    },
+    {
+      "run": 42215499637,
+      "job": 127886829262,
+      "cached": true,
+      "logSHA256": "d4edf0af8ec30663a318447f67496f352d384c8b4f59cf92386da094238de1bc"
+    },
+    {
+      "run": 42371123454,
+      "job": 128400603480,
+      "cached": true,
+      "logSHA256": "e863d84f19a1a4d22ff0b57a98151846926013cf49730dfdec21fbfed15ed1f0"
+    }
+  ]
+}

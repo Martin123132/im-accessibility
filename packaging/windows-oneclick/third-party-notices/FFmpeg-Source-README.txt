@@ -48,17 +48,27 @@ including the AOM/aribb24 patches, librsvg edits and Rust-symbol deduplication.
 
 The manifest records the original container image digests, Rust revision,
 GCC version and MinGW runtime revision. A byte-identical FFmpeg rebuild has
-not been run. In particular, the rav1e recipe updates the cc build tool and
-the cached log does not retain the resulting Cargo.lock; its final build-tool
-resolution is still unverified. The collected original lockfile is not
-misrepresented as that missing post-update lockfile.
+not been run. The rav1e dependency update was recovered from the October 31
+compilation log: cc 1.10.0, find-msvc-tools 0.1.15 and shlex 2.0.1. The recipe
+is unchanged and nine build records trace reuse through November 7 with the
+same base-image digest and source-cache filename. All three source archives
+were already present in the 601-archive collection and match registry hashes.
+The reconstructed post-update Cargo.lock resolves all 277 package records.
+It is a documented reconstruction, not the missing generated file's original
+bytes. FFmpeg-Build-Record.json records the evidence and checksums.
 
 Publication status
 ------------------
 These are private retained materials, not a public source download offer.
-The collection does not certify complete legal compliance. Before any
-authorised binary publication, close the recorded source/notice review and
-provide required source/build materials to binary recipients. Signing and
+The technical licence review is complete with a distribution blocker: pinned
+libzvbi includes GPL-2.0-only packet/PDC code on the enabled decoder source
+path. See FFmpeg-Licence-Review.json. The current executable cannot be cleared
+as an LGPLv3-only dependency chain from this evidence. The source repository
+contains a narrow future-build patch to exclude libzvbi and unused LittleCMS
+GPL plugins. No replacement runtime has been built or installed.
+
+Before any authorised binary publication, resolve that finding and provide
+required source/build materials to binary recipients. Signing and
 physical Windows/accessibility acceptance are separate release questions.
 Nothing in these materials authorises publishing the app or changing the
 working installation.

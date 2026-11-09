@@ -7,3 +7,6 @@
 # Preserve original spacing and heading separators; they are not code conflict markers.
 FFmpeg-Dependency-Notices.txt -diff
 Rust-COPYRIGHT-library.html -diff
+# These evidence records are byte-pinned copies, including their recorded line endings.
+FFmpeg-Build-Record.json -text whitespace=cr-at-eol
+FFmpeg-Licence-Review.json -text whitespace=cr-at-eol

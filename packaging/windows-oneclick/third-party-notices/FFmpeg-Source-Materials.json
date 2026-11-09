@@ -23,22 +23,21 @@
     "failures": [],
     "allRootLockPackagesCovered": true
   },
-  "noticeDocuments": 682,
-  "noticeOrigins": 2364,
-  "correspondingSourceComplete": false,
+  "noticeDocuments": 14274,
+  "noticeOrigins": 45597,
+  "correspondingSourceComplete": true,
   "publicSourceDownloadAvailable": false,
+  "buildRecordResolved": true,
+  "licenceReviewStatus": "completed-with-distribution-blocker",
+  "copyrightRedistributionCleared": false,
   "limitations": [
     {
-      "id": "rav1e-build-tool-update",
-      "detail": "The vendor recipe runs cargo update cc before cargo cinstall. The cached build log does not retain the resulting Cargo.lock. The archived original lockfile and its packages do not prove the final versions of this build tool and any dependencies changed by that command."
-    },
-    {
-      "id": "notice-scope",
-      "detail": "Notice collection covers discovered source notice files, embedded NVIDIA notices, Rust library copyright materials and Cargo manifests. A conservative superset includes unused platforms/tests. Some upstream crates declare MIT in Cargo.toml without a separate notice; those original manifests are retained. This collection is not a completed legal or runtime-linkage review."
+      "id": "ZVBI_GPL2_ONLY",
+      "detail": "Completed review identifies GPL-2.0-only libzvbi code on the enabled decoder source/build path; the vendor LGPL label does not clear this executable for redistribution."
     },
     {
       "id": "recipient-source-access",
-      "detail": "Source archives are retained privately with hashes. A binary publication must make required source/build materials available to its recipients; no public source download has been published."
+      "detail": "Required source/build materials are retained privately; no public binary/source release is authorised."
     }
   ],
   "buildContext": {
@@ -908,6 +907,144 @@
   ],
   "files": [
     {
+      "path": "Build-Record-Recovery/job-124652954476.log",
+      "bytes": 8612186,
+      "sha256": "82641b7e8fc4957822c324b07272a7d2802876042f0fff38cdca62d3d3500c78",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Build-Record-Recovery/job-124845105799.log",
+      "bytes": 439670,
+      "sha256": "b61e03e8c717373ab07e6893961873b4ab9553c7e97065f20edaca15341d7f3e",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Build-Record-Recovery/job-125270469589.log",
+      "bytes": 435979,
+      "sha256": "c4315c921ac8808ba95c111e1e19de3f847a25460390f5390dbad04bac20fcf9",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Build-Record-Recovery/job-125911308407.log",
+      "bytes": 444067,
+      "sha256": "f1b10024da2fc82a009f35103dc93f11263fb53ab63e20cbb566f83a9ca8617a",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Build-Record-Recovery/job-126567067349.log",
+      "bytes": 427874,
+      "sha256": "68c6aa09e9aae529234c21cef60e754775dc4ad5acf7769b6c7fd285f3bc6d13",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Build-Record-Recovery/job-126774022710.log",
+      "bytes": 523214,
+      "sha256": "ce8d283ae9a9c37a457a952531e7d9c59e89d0f4a4354f7b26712b23dcfc6269",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Build-Record-Recovery/job-127239956552.log",
+      "bytes": 446400,
+      "sha256": "5b04403a48957647d59ea7bad4face66aa700d54c7b41632d503f98f0ce35530",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Build-Record-Recovery/job-127886829262.log",
+      "bytes": 423832,
+      "sha256": "d4edf0af8ec30663a318447f67496f352d384c8b4f59cf92386da094238de1bc",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Build-Record-Recovery/rav1e-post-update-reconstructed.Cargo.lock",
+      "bytes": 65261,
+      "sha256": "d031d0ff0d17c3fe603473dcb4d56eec4a41f38ef0120b6633cc90ed227d7168",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Build-Record-Recovery/rav1e-recipe-20261031.sh",
+      "bytes": 1469,
+      "sha256": "a3a92819459530d94e97423b94560d2ea58fb06b1a944c8124f4f0c46eaaa421",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Build-Record-Recovery/resolved-build-dependencies.json",
+      "bytes": 5805,
+      "sha256": "76f31998f60e86d65d3513dbaf40e5e4a0731674ecf80161fb0a785b2153a6bd",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Licence-Review-Evidence/ffmpeg-libzvbi-teletextdec.c",
+      "bytes": 30570,
+      "sha256": "c70de292d40e92164066fd409724b2ba2812db4a1a01bd62243bfc06b1f71c77",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Licence-Review-Evidence/ffmpeg-link-command.txt",
+      "bytes": 6924,
+      "sha256": "f86371cf5892bb70339d48c2a58165e9b42730ecc71a8fcf4b2ccde58069fe8a",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Licence-Review-Evidence/future-build-README.md",
+      "bytes": 2191,
+      "sha256": "bc14a3872777fdf7f0630bcc685c0b6338723c7593e7e6afbc4ab8571cf1c2e4",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Licence-Review-Evidence/future-build-exclude-unused-copyleft.patch",
+      "bytes": 811,
+      "sha256": "4a468788bb1afe1e590cee56c80f2f9830166f2633ef6c019332b9ceea957d71",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Licence-Review-Evidence/zvbi-COPYING.md",
+      "bytes": 78695,
+      "sha256": "6d679539253897582d38fcd1eabfa670c01c0ece73d8cd3dc97869fcf723f106",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Licence-Review-Evidence/zvbi-src-Makefile.am",
+      "bytes": 9256,
+      "sha256": "85227768bcefde22062795c6d63cc28626d7f926fefd7382025f6aa3f8b0afd1",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Licence-Review-Evidence/zvbi-src-decoder.c",
+      "bytes": 22197,
+      "sha256": "b7860bcb4df1516d8b8fe202d7b9e7901db309ce20c2697af4ffd1ef0f86a945",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Licence-Review-Evidence/zvbi-src-packet-830.c",
+      "bytes": 8239,
+      "sha256": "8ad0a75af222067e7d3257ebf56aa28e3f56021d9266e1a952fcfbc7bde50ad4",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Licence-Review-Evidence/zvbi-src-packet-830.h",
+      "bytes": 1930,
+      "sha256": "d2f828ad0c8a58bea7cec804e23530a5ed8f5e5b06fdc88b9801d938c737b6a7",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Licence-Review-Evidence/zvbi-src-packet.c",
+      "bytes": 65387,
+      "sha256": "239b66f60bfb39911eb5b949fd635e45c2e99031ba6de566fdde625d728fadc8",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Licence-Review-Evidence/zvbi-src-pdc.c",
+      "bytes": 38435,
+      "sha256": "6dfc006c78e625f68a0924526d73cc39e2d38de88f4076bf668f7ed21f65d778",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "Licence-Review-Evidence/zvbi-src-pdc.h",
+      "bytes": 12729,
+      "sha256": "a59cee8cf8a725530703e01dffdb1c0396c24875ad2b74d63f5e3c8f101a8252",
+      "role": "source-or-provenance"
+    },
+    {
       "path": "Rust-1.99.1-channel.toml",
       "bytes": 943486,
       "sha256": "fb152be80975c194aa5fc684b2aec3a6e14e2b855efe2faa4e5f8ae6e590f463",
@@ -923,6 +1060,12 @@
       "path": "assemble-materials.py",
       "bytes": 9155,
       "sha256": "8c06b818ddcb31f540936d4faa988ed212d6e1d09572cf74cc9adafe9f4ceb2a",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "assemble-reviewed-materials.py",
+      "bytes": 9777,
+      "sha256": "20ee04f3706d9031786dcd3cb7359ded1654fdb84d9f3b0890c96783c768aa37",
       "role": "source-or-provenance"
     },
     {
@@ -950,6 +1093,12 @@
       "role": "source-or-provenance"
     },
     {
+      "path": "finish-licence-review.py",
+      "bytes": 10121,
+      "sha256": "c7a9b3f039b0cb21f6d5b374d77eaed6e1b04b2ab6fd5e55e44c8574ec0f4cea",
+      "role": "source-or-provenance"
+    },
+    {
       "path": "gcc-runtime-provenance.json",
       "bytes": 89,
       "sha256": "33367986e2261c8e0e16b0a6533dbd8755a8dd8cab37f75cd933929d3e718bb3",
@@ -968,15 +1117,39 @@
       "role": "source-or-provenance"
     },
     {
+      "path": "licence-review.json",
+      "bytes": 261108,
+      "sha256": "bc179a03bbce8ef8e7cd820746cf9a85a33cf0c5b4d60c82487de69559101d2b",
+      "role": "source-or-provenance"
+    },
+    {
       "path": "nested-source-revisions.json",
       "bytes": 1127,
       "sha256": "7d578169c398b3f904878fc2a5cda48deb6160af6743f0d116e25d26d13cb13f",
       "role": "source-or-provenance"
     },
     {
+      "path": "reconstruct-rav1e-lock.py",
+      "bytes": 3582,
+      "sha256": "f9d53d64cbdfde6313e116568e98f702da6eaee1a35bd7d939db283ee7466a86",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "review-source-headers.py",
+      "bytes": 2602,
+      "sha256": "3ca871539de7ac548c3d2590764c61b60bd69e8bfdd463017c5a19d814799a41",
+      "role": "source-or-provenance"
+    },
+    {
       "path": "rust-runtime-source.json",
       "bytes": 20698,
       "sha256": "6e6ba614f73afb28c0e70bdf3bd32b9cea71db9664e46097c99ff2b87b60db9c",
+      "role": "source-or-provenance"
+    },
+    {
+      "path": "source-header-review.json",
+      "bytes": 17670609,
+      "sha256": "b18e335667e02910f0c4f99641072554686f03d7590d27c7e6758a0cd2f16fa1",
       "role": "source-or-provenance"
     },
     {

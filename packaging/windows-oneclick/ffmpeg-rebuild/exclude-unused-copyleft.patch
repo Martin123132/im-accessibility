@@ -1,0 +1,28 @@
+diff --git a/scripts.d/45-lcms2.sh b/scripts.d/45-lcms2.sh
+--- a/scripts.d/45-lcms2.sh
++++ b/scripts.d/45-lcms2.sh
+@@ -16,8 +16,8 @@ ffbuild_dockerbuild() {
+         --prefix="$FFBUILD_PREFIX"
+         -Ddefault_library=static
+         -Dutils=false
+-        -Dfastfloat=true
+-        -Dthreaded=true
++        -Dfastfloat=false
++        -Dthreaded=false
+     )
+ 
+     if [[ $TARGET == win* || $TARGET == linux* ]]; then
+diff --git a/scripts.d/50-zvbi.sh b/scripts.d/50-zvbi.sh
+--- a/scripts.d/50-zvbi.sh
++++ b/scripts.d/50-zvbi.sh
+@@ -9,7 +9,9 @@ ffbuild_depends() {
+ }
+ 
+ ffbuild_enabled() {
+-    return 0
++    # Private ImAccessibility reconstruction: teletext is not an app dependency.
++    # Exclude the GPL-2.0-only packet/PDC source path from an LGPLv3 build.
++    return -1
+ }
+ 
+ ffbuild_dockerbuild() {

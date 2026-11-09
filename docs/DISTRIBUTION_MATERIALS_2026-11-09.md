@@ -1,5 +1,7 @@
 # Distribution materials correction — 9 November 2026
 
+**Update:** the [completed licence review](LICENCE_REVIEW_2026-11-09.md) resolves the missing rav1e build record and replaces the generic review-pending state with a concrete libzvbi redistribution blocker. The earlier collection and QA receipts below remain historical evidence.
+
 The repository is private. This work does not authorise publication, replace the accepted installation, change the project's licence, or establish complete third-party compliance. Dependency due diligence and packaging are implementation work; an unspecified request for the owner to approve copyright ownership is not a substitute for that work.
 
 ## Verified findings
@@ -62,8 +64,8 @@ The builder now verifies and includes the notice collection, official Rust libra
 
 ## Precise remaining limits
 
-1. The vendor rav1e recipe runs `cargo update cc` before compiling. Its cached image log does not preserve the resulting Cargo.lock. The original lockfile and exact archived packages do not prove the final versions of that build tool or dependencies updated by the command. This is a build-provenance gap, not evidence that the application stole code. No byte-identical FFmpeg rebuild was attempted or claimed.
-2. The collected notices are a conservative source superset. Complete runtime-linkage and notice-obligation review is still open; collecting 682 texts is not itself proof of compliance. The manifests identify the scope and original source locations rather than declaring blanket approval.
+1. **Resolved in the subsequent review:** the original compilation log identifies all three rav1e dependency changes. A reconstructed lockfile, verified sources and nine-record cache history are retained. A byte-identical FFmpeg rebuild is still not claimed.
+2. **Review completed with a blocker:** the expanded notice/source review identifies `ZVBI_GPL2_ONLY` on the enabled decoder source path. The current executable cannot receive copyright redistribution clearance from this evidence; see the linked review and narrow future-build patch.
 3. Required source/build materials must be available to recipients if a binary is eventually published. The two verified bundles currently exist privately. No public source offer or public binary publication is authorised.
 4. Trusted signing/SmartScreen acceptance, Windows 11, human Narrator/NVDA acceptance, genuine separate-user/VM installation and physical DHCP renewal remain unverified. Recovery 2.2 picture/audio and normal Stop were accepted by the owner earlier; this packaging-only QA does not expand that physical acceptance.
 
