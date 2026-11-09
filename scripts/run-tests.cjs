@@ -43,6 +43,7 @@ const packageTests=[
  'packaging/windows-oneclick/discover-setup.test.cjs',
  'packaging/windows-oneclick/installer-source.test.cjs',
  'packaging/windows-oneclick/audit-release.test.cjs',
+ 'packaging/windows-oneclick/verify-source-materials.test.cjs',
  'packaging/windows-oneclick/native-source.test.cjs'
 ];
 const selected=(mode==='codex'?codex:mode==='tv'?tv:mode==='package'?packageTests:[...codex,...tv,...packageTests]);

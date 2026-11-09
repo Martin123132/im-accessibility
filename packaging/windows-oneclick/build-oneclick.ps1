@@ -86,7 +86,7 @@ if($ffmpegHash -eq $lgplPin){
  foreach($entry in $noticePins.notices){
   if($entry.file -notmatch '^[A-Za-z0-9._-]+$'){throw 'Unsafe third-party notice filename'}
   $noticePath=Join-Path $noticeRoot $entry.file
-  if((Get-FileHash -LiteralPath $noticePath -Algorithm SHA256).Hash.ToLowerInvariant() -cne $entry.sha256){throw ('Third-party notice differs from upstream pin: '+$entry.file)}
+  if((Get-FileHash -LiteralPath $noticePath -Algorithm SHA256).Hash.ToLowerInvariant() -cne $entry.sha256){throw ('Third-party material differs from recorded pin: '+$entry.file)}
   Copy-Item -LiteralPath $noticePath -Destination (Join-Path $third $entry.file) -ErrorAction Stop
  }
  [IO.File]::WriteAllText((Join-Path $stage 'encoder-profile.txt'),"h264_mf" + [Environment]::NewLine,(New-Object Text.UTF8Encoding($false)))

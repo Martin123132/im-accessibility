@@ -1,7 +1,7 @@
 'use strict';
 // Pure source policy tests: no TV, Windows registry, signing or network actions.
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const {safe,privateFile,flags,knownNoticeGaps,TEMPLATE_SHA}=require('./audit-release.cjs');
+const {safe,privateFile,flags,knownNoticeGaps,lgplSourceEvidence,TEMPLATE_SHA}=require('./audit-release.cjs');
 test('distribution manifest rejects path escapes and duplicates cannot be represented safely',()=>{
  for(const p of ['../owner/settings.json','/absolute.exe','C:\\Windows\\secret','foo//bar','a/./b','a/../b','private?.exe','foo\\bar'])assert.equal(safe(p),false,p);
  for(const p of ['Runtime/ffmpeg.exe','tv-reliability-v0.5/cast/node_modules/ws/LICENSE','ImAccessibility.exe'])assert.equal(safe(p),true,p);
@@ -33,7 +33,7 @@ test('release auditor hard-codes manual gates rather than silently approving a b
  assert.doesNotMatch(source,/git push|gh release create|New-LocalUser|Start TV stream/);
 });
 
-test('pinned LGPL payload reports missing or altered OpenH264 and GPLv3 notices',()=>{
+test('pinned LGPL payload reports missing or altered third-party materials',()=>{
  const crypto=require('node:crypto'),pins=require('./third-party-notices/pins.json');
  const entries=new Map();
  assert.deepEqual(knownNoticeGaps(entries,pins.ffmpegSHA256),pins.notices.map(n=>'THIRD_PARTY/'+n.file));
@@ -46,6 +46,22 @@ test('pinned LGPL payload reports missing or altered OpenH264 and GPLv3 notices'
  entries.get('THIRD_PARTY/OpenH264-LICENSE.txt').sha256='0'.repeat(64);
  assert.deepEqual(knownNoticeGaps(entries,pins.ffmpegSHA256),['THIRD_PARTY/OpenH264-LICENSE.txt']);
  assert.equal(pins.completeDependencyInventory,false);
+});
+
+test('source collection evidence cannot be inherited by another runtime or treated as publication approval',()=>{
+ const pins=require('./third-party-notices/pins.json');
+ const entries=new Map(pins.notices.map(n=>['THIRD_PARTY/'+n.file,{sha256:n.sha256}]));
+ const evidence=lgplSourceEvidence(entries,pins.ffmpegSHA256);
+ assert.equal(evidence.manifestIncluded,true);
+ assert.equal(evidence.sourceArchivesRecorded,85);
+ assert.equal(evidence.cargoRegistryArchivesRecorded,601);
+ assert.equal(evidence.sourceCollectionVerifiedByThisPackageAudit,false);
+ assert.equal(evidence.correspondingSourceComplete,false);
+ assert.equal(evidence.publicSourceDownloadAvailable,false);
+ assert.ok(evidence.limitations.some(x=>x.id==='rav1e-build-tool-update'));
+ entries.get('THIRD_PARTY/FFmpeg-Source-Materials.json').sha256='0'.repeat(64);
+ assert.equal(lgplSourceEvidence(entries,pins.ffmpegSHA256).manifestIncluded,false);
+ assert.equal(lgplSourceEvidence(entries,'0'.repeat(64)),null);
 });
 
 

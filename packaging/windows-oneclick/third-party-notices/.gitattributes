@@ -1,3 +1,9 @@
 # Preserve the exact upstream notice bytes used by pins.json on Windows too.
 *.txt text eol=lf
 *.json text eol=lf
+*.html -text
+*.zip -text
+# Large generated/upstream mirrors are reviewed through their pinned hashes and index.
+# Preserve original spacing and heading separators; they are not code conflict markers.
+FFmpeg-Dependency-Notices.txt -diff
+Rust-COPYRIGHT-library.html -diff
