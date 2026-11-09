@@ -1,5 +1,7 @@
 # TV selection and audio setup recovery — 9 November 2026
 
+**Current result:** Recovery 2.2 is normally installed in the owner's Windows profile. The owner confirmed LG picture and sound, no black console window, and Stop with laptop sound restored. The final check found 97/97 payload hashes correct, no streaming listeners, no pending audio journal, the guardian task Ready with zero automatic triggers, and only the user-opened control panel still running. Both legacy task definitions and the original settings are unchanged. Code commits: `ce461fed3a1c1be7022240ea620c753a47a185a7` and `c8f7a689a94b415382d7608409e2ba37fe2e673b`, on local branch `codex/lg-recovery-20261109`.
+
 ## Reproduced failures and corrections
 
 The installed Windows form ignored selection whenever `settings.json` already existed. Uninstall intentionally preserves that file, so reinstall did not repair selection. A regression against the actual compiled form failed with `Preserved settings block LG selection` before the correction.
@@ -28,4 +30,6 @@ The Recovery 2.2 source suite has **265 passed, 2 expected skips, 0 failed**, in
 
 Replacement EXE: `ImAccessibility-Setup-v0.3.21-RECOVERY2.2-PRIVATE-PREVIEW.exe`, **92280320 bytes**, SHA-256 `5c67a08813aef744cad9251b1f2b8fdda4a2d43c4fa341f4cf2b051a9a95c6db`. Detailed package, task and rollback receipts remain in the local evidence directory.
 
-No genuine separate Windows account/VM was available. Normal owner-profile uninstall, Recovery 2.2 physical acceptance, and the prior rights, corresponding-source, signing/SmartScreen, Windows 11 and human accessibility distribution gates remain open. The legacy application and both legacy scheduled tasks remain protected. Nothing is published or merged by this work.
+Normal owner-profile **Recovery 2.1 uninstall also passed**: application, owned task and uninstall registration removed; saved settings and both legacy task definitions preserved. Recovery 2.2 was then installed and physically accepted as described above. It remains installed for use; a normal owner-profile 2.2 uninstall has not been performed. Its disposable uninstall checks and actual scheduler registration/removal checks passed.
+
+No genuine separate Windows account/VM was available. The prior rights, complete corresponding-source/dependency notices, signing/SmartScreen, Windows 11 and human screen-reader distribution gates remain open. Physical DHCP renewal was not forced; the guarded source regressions cover it. The legacy application and both legacy scheduled tasks remain protected. No source was pushed during this recovery follow-up, and nothing was merged or publicly released.
