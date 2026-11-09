@@ -13,7 +13,7 @@ const VIEWING=require('../viewing-policy.cjs');
 const speakerRouter=new SpeakerRouter();
 const SETTINGS=process.env.IM_ACCESSIBILITY_CONFIG_PATH!==undefined
  ?require('../release-config.cjs').readUserSettings():null;
-const playback=new (require('./playback-health.cjs').PlaybackHealth)(SETTINGS?SETTINGS.television.ip:null);
+const playback=new (require('./playback-health.cjs').PlaybackHealth)(SETTINGS?SETTINGS.television.ip:null,()=>Date.now(),event=>console.log('TV_RECEIVER '+event));
 const ROOT=__dirname,LAN=SETTINGS?SETTINGS.network.ip:'192.168.4.36',PORT=43198;
 const ORIGIN='http://'+LAN+':'+PORT,UPSTREAM_DIR=path.resolve(ROOT,'../cast');
 const SOURCE_FILE=path.join(UPSTREAM_DIR,'runtime','private-access.json');
@@ -160,16 +160,18 @@ function createServer(){
    const u=new URL(req.url,ORIGIN);
    if(u.search)return json(res,404,{error:'Not found'});
    const route=u.pathname;
-   if(req.method==='GET'&&route==='/health')return json(res,200,{service:'interactive-tv',build:'tv-resume-v0.5',runId:process.env.IM_ACCESSIBILITY_RUN_ID||null,ready:active(),sourceReady:state().sourceReady,playback:playback.state()});
+   if(req.method==='GET'&&route==='/health')return json(res,200,{service:'interactive-tv',build:'tv-resume-v0.5',runId:process.env.IM_ACCESSIBILITY_RUN_ID||null,ready:active(),sourceReady:state().sourceReady,playback:playback.state(),receiverContact:playback.diagnostic()});
    if(req.method==='GET'&&route==='/playback-health.js')return asset(res,'playback-health.js','text/javascript; charset=utf-8');
    if(req.method==='GET'&&route==='/tv/'+token){
     if(!active())return json(res,410,{error:'Session expired'});
+    playback.contact(req.socket.remoteAddress,'page');
     return asset(res,'viewer.html','text/html; charset=utf-8');
    }
    // Optional minimal full-viewport browser HTML page. Original /tv/ page is unchanged.
    // The same time-limited viewer key protects both routes and their HLS/media APIs.
    if(req.method==='GET'&&(route==='/full/'+token||route==='/fastfull/'+token)){
     if(!active())return json(res,410,{error:'Session expired'});
+    playback.contact(req.socket.remoteAddress,'page');
     return asset(res,'immersive.html','text/html; charset=utf-8');
    }
    if(req.method==='GET'&&route==='/immersive.js')return asset(res,'immersive.js','text/javascript; charset=utf-8');
@@ -193,7 +195,7 @@ function createServer(){
     }catch(e){return json(res,503,{error:'Frame preview temporarily unavailable'})}
    }
    const media=route.match(/^\/media\/([a-f0-9]{64})\/(index\.m3u8|segment\d{6}\.ts)$/);
-   if(req.method==='GET'&&media){if(!active()||media[1]!==token)return json(res,403,{error:'No video permission'});return await proxy(res,media[2])}
+   if(req.method==='GET'&&media){if(!active()||media[1]!==token)return json(res,403,{error:'No video permission'});playback.contact(req.socket.remoteAddress,'media');return await proxy(res,media[2])}
    if(!route.startsWith('/api/'))return json(res,404,{error:'Not found'});
    const auth=(req.headers.authorization||'').replace(/^Bearer /,'');
    if(!tokenMatches(auth)||!active())return json(res,401,{error:'Viewer permission required'});

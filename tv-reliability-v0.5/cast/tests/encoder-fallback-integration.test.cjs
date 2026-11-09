@@ -7,7 +7,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),
  {EventEmitter}=require('node:events');
 const serverSource=fs.readFileSync(path.join(__dirname,'..','server.cjs'),'utf8');
 const policy=require('../encoder-fallback.cjs');
-function sandbox(){
+function sandbox(audio=false){
  const timers=[],spawns=[],modes=[];
  const fakeFs={
   mkdirSync(){},readdirSync(){return []},
@@ -17,19 +17,21 @@ function sandbox(){
  };
  const fakeCP={
   spawn(binary,args){
-   assert.match(String(binary),/qa-fake-ffmpeg/);
+   assert.match(String(binary),/qa-fake-(ffmpeg|loopback)/);
    const child=new EventEmitter();
    child.stderr=new EventEmitter();
+   child.stdout=new (require('node:stream').PassThrough)();
    child.pid=spawns.length+300;
    child.exitCode=null;child.killed=false;
    child.kill=signal=>{child.killed=true;child.signalSent=signal;return true;};
-   child.stdio=[null,null,child.stderr,null];
+   child.stdio=[null,child.stdout,child.stderr,new (require('node:stream').PassThrough)()];
    spawns.push(child);
    return child;
   }
  };
  const fakeSound={
-  isAudioOptIn:()=>false,encoderKind:()=> 'h264_mf',
+  isAudioOptIn:()=>audio,encoderKind:()=> 'h264_mf',
+  BINARY:'qa-fake-loopback.exe',probe:()=>({deviceIdHash:'a'.repeat(64)}),
   argsFor(dir,format,index,mode,codec){
    modes.push({codec,format,mode});
    return ['-c:v',codec];
@@ -111,6 +113,29 @@ test('owner Stop while FFmpeg is active never starts a second capture',()=>{
  x.runTimers();
  assert.equal(x.spawns.length,1);
  assert.equal(x.server.status().encoderFallbackUsed,false);
+});
+
+test('audio pipe EPIPE during Cinema restart cannot crash cast or discard sound',()=>{
+ const x=sandbox(true);x.server.startCapture();
+ const ff=x.spawns[0];
+ x.server.switchQuality('cinema');
+ assert.doesNotThrow(()=>ff.stdio[3].emit('error',Object.assign(Error('write EPIPE'),{code:'EPIPE'})));
+ ff.exitCode=0;ff.emit('exit',0,null);x.runTimers();
+ assert.equal(x.modes.length,2);assert.equal(x.modes[1].mode,'cinema');
+ assert.ok(x.modes[1].format,'planned quality restart retains opted-in audio');
+ assert.equal(x.server.status().audioState,'active');
+ x.server.stopCapture();
+});
+
+test('unexpected audio pipe failure falls back once without an unhandled error; Stop never restarts',()=>{
+ const x=sandbox(true);x.server.startCapture();const ff=x.spawns[0];
+ assert.doesNotThrow(()=>ff.stdio[3].emit('error',Error('write EPIPE')));
+ ff.exitCode=1;ff.emit('exit',1,null);x.runTimers();
+ assert.equal(x.modes.length,2);assert.equal(x.modes[1].format,null);
+ assert.equal(x.server.status().audioState,'fallback');
+ x.server.stopCapture();
+ assert.doesNotThrow(()=>ff.stdio[3].emit('error',Error('late write EPIPE')));
+ x.runTimers();assert.equal(x.modes.length,2);
 });
 
 test('OpenH264 startup failure is reported without retrying the blank stream',()=>{

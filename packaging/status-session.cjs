@@ -61,9 +61,18 @@ async function status({fsApi=fs,stateFile=path.join(runtime,'state.json'),
  summary.message=summary.receiverConfirmed?'Selected TV reports advancing video. Video and viewer services are healthy.':
   summary.videoReady?'Video services ready; selected TV playback '+summary.playback+'.':
   'Desktop video is not ready. Stop and retry if it does not recover.';
+ if(summary.videoReady&&summary.playback==='unconfirmed'){
+  const messages={
+   none:'LG launch requested, but no TV page request has reached this session. Check the LG browser, then Stop and retry.',
+   page:'TV reached the viewer, but has not requested video. On the TV, open Controls and choose Play video.',
+   media:'TV is requesting video, but playback is unconfirmed. Check the picture on the TV; Stop and retry if blank.',
+   report:'TV playback reports stopped. Check the TV picture; Stop and retry if it does not recover.'
+  };
+  if(Object.hasOwn(messages,viewer.receiverContact)){summary.receiverContact=viewer.receiverContact;summary.message=messages[viewer.receiverContact];}
+ }
  if(record.lg==='pairing')summary.message='Approve the connection request on your selected LG TV using its remote.';
  if(record.lg==='needs-tv'||record.lg==='unavailable')summary.message='LG connection failed. Check that your selected TV is on and approve its pairing prompt, then Stop and retry.';
- if(cast.audioState==='failed')summary.message+=' TV audio is unavailable.';
+ if(['failed','fallback','unavailable'].includes(cast.audioState))summary.message+=' TV audio is unavailable. Use Stop to finish audio cleanup before retrying.';
  return summary;
 }
 if(require.main===module)status().then(r=>console.log(JSON.stringify(r))).catch(e=>{

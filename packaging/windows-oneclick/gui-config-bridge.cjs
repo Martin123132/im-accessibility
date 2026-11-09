@@ -15,7 +15,7 @@ async function main(){
     return output(first.doctor({nodeExe:process.execPath,ffmpegExe:ffmpeg}));
   }
   if(command==='discover'){
-    // Read-only discovery before settings exist; never pairs or launches a television.
+    // Read-only discovery, also after reinstall; never pairs or launches a television.
     let data='';
     for await(const part of process.stdin){data+=String(part);if(data.length>1024)throw Error('Discovery input too large')}
     const v=JSON.parse(data);
@@ -33,12 +33,19 @@ async function main(){
     }
     const v=JSON.parse(data);
     if(!v||typeof v!=='object'||Array.isArray(v)||
-       Object.keys(v).sort().join(',')!=='adapterName,ffmpegExe,localIp,nodeExe,tvIp')
+       !['adapterName,ffmpegExe,localIp,nodeExe,tvIp',
+         'adapterName,ffmpegExe,localIp,nodeExe,previousHash,tvIp'].includes(Object.keys(v).sort().join(',')))
       throw Error('Invalid setup fields');
     if(v.nodeExe!==process.execPath||v.ffmpegExe!==ffmpeg)
       throw Error('Only the installed verified runtimes are permitted');
-    const result=first.saveSettings(v);
-    return output({saved:result.written,summary:result.summary});
+    if(Object.hasOwn(v,'previousHash')&&(typeof v.previousHash!=='string'||!/^[a-f0-9]{64}$/.test(v.previousHash)))throw Error('Invalid prior settings confirmation');
+    const current=await status.status();
+    if(!['not-started','stopped'].includes(current.state)||current.audioPending!==false)
+      throw Error('Stop the TV stream and finish laptop audio restoration before saving a TV selection.');
+    // Also protects another installation using the same local streaming ports.
+    require('./tv-reliability-v0.5/session-guard.cjs').assertPortsAvailable();
+    const result=first.saveSettings(v,{expectedHash:v.previousHash??null});
+    return output({saved:result.written,unchanged:result.unchanged===true,backup:result.backup||null,summary:result.summary});
   }
   if(command==='validate'){
     const v=first.validateInstalled();return output(v.summary);

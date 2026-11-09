@@ -1,9 +1,15 @@
 'use strict';
 // Diagnostic only. A heartbeat cannot grant input permission or change audio.
 class PlaybackHealth{
- constructor(tvIp,clock=()=>Date.now()){this.tvIp=tvIp;this.clock=clock;this.last=null;this.progressAt=null;}
+ constructor(tvIp,clock=()=>Date.now(),log=()=>{}){this.tvIp=tvIp;this.clock=clock;this.log=log;this.last=null;this.progressAt=null;this.seen=new Set();this.lastState=null;}
+ isSelected(address){return !!this.tvIp&&String(address).replace(/^::ffff:/,'')===this.tvIp;}
+ contact(address,kind){
+  if(!this.isSelected(address)||!['page','media','report'].includes(kind))return;
+  if(!this.seen.has(kind)){this.seen.add(kind);this.log('contact='+kind);}
+ }
+ diagnostic(){return this.seen.has('report')?'report':this.seen.has('media')?'media':this.seen.has('page')?'page':'none';}
  report(address,input){
-  if(!this.tvIp||String(address).replace(/^::ffff:/,'')!==this.tvIp)throw Error('Only the selected TV may report playback');
+  if(!this.isSelected(address))throw Error('Only the selected TV may report playback');
   if(!input||Object.keys(input).sort().join(',')!=='currentTime,ended,error,hidden,paused,readyState'||
      !Number.isFinite(input.currentTime)||input.currentTime<0||input.currentTime>1e9||
      !Number.isInteger(input.readyState)||input.readyState<0||input.readyState>4||
@@ -13,6 +19,8 @@ class PlaybackHealth{
      input.currentTime-this.last.currentTime<Math.max(2,(now-this.last.at)/1000+2))this.progressAt=now;
   if(input.paused||input.ended||input.error||input.hidden||input.readyState<2)this.progressAt=null;
   this.last={...input,at:now};
+  this.contact(address,'report');
+  const state=this.state();if(state!==this.lastState){this.lastState=state;this.log('playback='+state);}
  }
  state(){
   const now=this.clock(),last=this.last;

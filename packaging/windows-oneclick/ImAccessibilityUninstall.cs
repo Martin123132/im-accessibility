@@ -84,7 +84,9 @@ namespace ImAccessibilityDesktop {
   static void RemoveShortcuts(string root){
    var targets=new string[]{
     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),"I'm-accessibility.lnk"),
-    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs),"I'm-accessibility.lnk")};
+    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs),"I'm-accessibility.lnk"),
+    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),"I'm-accessibility (Private Preview).lnk"),
+    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs),"I'm-accessibility (Private Preview).lnk")};
    foreach(string item in targets)try{
     if(!File.Exists(item))continue;
     var type=Type.GetTypeFromProgID("WScript.Shell");
@@ -152,18 +154,31 @@ namespace ImAccessibilityDesktop {
    }
    string root=Expected();
    // Move our own tiny uninstaller out of the application before deleting files.
-   if(args.Length==0){
+   int parent=0;
+   bool fromApp=args.Length==2&&args[0]=="--from-app"&&Int32.TryParse(args[1],out parent)&&parent>0;
+   if(args.Length==0||fromApp){
     string temp=Path.Combine(Path.GetTempPath(),"ImAccessibility-Uninstall-"+Guid.NewGuid().ToString("N")+".exe");
     try{
      File.Copy(Assembly.GetExecutingAssembly().Location,temp,false);
-     var p=new ProcessStartInfo(temp,"--execute"){
+     var p=new ProcessStartInfo(temp,"--execute"+(fromApp?" "+parent:"")){
       UseShellExecute=false,CreateNoWindow=false,WorkingDirectory=Path.GetTempPath()
      };
      Process.Start(p);
     }catch(Exception ex){MessageBox.Show(ex.Message,"Uninstaller unavailable",MessageBoxButtons.OK,MessageBoxIcon.Error);}
     return;
    }
-   if(args.Length!=1||args[0]!="--execute")return;
+   if((args.Length!=1&&args.Length!=2)||args[0]!="--execute")return;
+   if(args.Length==2){
+    try{
+     if(!Int32.TryParse(args[1],out parent)||parent<=0)throw new Exception("Invalid app handover.");
+     using(var app=Process.GetProcessById(parent)){
+      if(!String.Equals(app.MainModule.FileName,Path.Combine(root,"ImAccessibility.exe"),StringComparison.OrdinalIgnoreCase))
+       throw new Exception("App handover identity changed. No process was stopped.");
+      if(!app.WaitForExit(5000))throw new Exception("The TV app is still closing. Wait and reopen Uninstall.");
+     }
+    }catch(ArgumentException){} // The exact parent already exited; normal verification still follows.
+    catch(Exception ex){MessageBox.Show(ex.Message,"Uninstall not started",MessageBoxButtons.OK,MessageBoxIcon.Warning);return;}
+   }
    if(ConfirmUninstall()!=DialogResult.Yes)return;
    try{
     DoUninstall(root);

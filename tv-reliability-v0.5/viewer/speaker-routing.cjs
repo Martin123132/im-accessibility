@@ -9,7 +9,12 @@ const ROOT=__dirname,NATIVE=path.resolve(ROOT,'../cast/native/SpeakerEndpoint.ex
 const JOURNAL=path.join(ROOT,'runtime','speaker-route.json');
 const WATCH=path.join(ROOT,'speaker-route-watch.cjs');
 const READY=path.join(ROOT,'runtime','audio-guard-ready.json');
-const TASK_NAME='ImAccessibility-AudioGuard-v1';
+function taskNameFor(installation,installed=fs.existsSync(path.join(installation,'installer-manifest.json'))){
+ if(!installed)return 'ImAccessibility-AudioGuard-v1';
+ const identity=path.resolve(installation).replace(/[\\/]+$/,'').toLowerCase();
+ return 'ImAccessibility-AudioGuard-'+crypto.createHash('sha256').update(identity,'utf8').digest('hex').slice(0,16);
+}
+const TASK_NAME=taskNameFor(path.resolve(ROOT,'../..'));
 // The audio restoration lifetime must follow the *same* owner/legacy policy as video.
 // A null deadline means: keep the guard until journal removal or lost heartbeat.
 const HEARTBEAT_TIMEOUT_MS=22000, MAX_TV_SESSION_MS=VIEWING.maxMs();
@@ -206,4 +211,4 @@ class SpeakerRouter{
  }
 }
 module.exports={SpeakerRouter,runNative,validDeviceId,HEARTBEAT_TIMEOUT_MS,MAX_TV_SESSION_MS,JOURNAL,NATIVE,
- READY,TASK_NAME,startIndependentGuard,guardianReady};
+ READY,TASK_NAME,taskNameFor,startIndependentGuard,guardianReady};

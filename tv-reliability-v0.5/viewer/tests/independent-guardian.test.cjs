@@ -3,14 +3,60 @@
 // sound endpoint, start a real guard or control another user's processes.
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os');
-const {SpeakerRouter,guardianReady,startIndependentGuard,TASK_NAME}=require('../speaker-routing.cjs');
+const {SpeakerRouter,guardianReady,startIndependentGuard,TASK_NAME,taskNameFor}=require('../speaker-routing.cjs');
 const {serviceTick}=require('../speaker-route-watch.cjs');
 const TAG='a'.repeat(32),DEVICE='b'.repeat(64);
 function temp(){
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'imacc-independent-audio-'));
+ // CI may expose TEMP through a DOS short alias. Loaded Node modules and
+ // Windows PowerShell GetFullPath use the long path for installation identity.
+ const dir=fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()),'imacc-independent-audio-'));
  return {dir,journal:path.join(dir,'speaker-route.json'),
   marker:path.join(dir,'audio-guard-ready.json'),clean(){fs.rmSync(dir,{recursive:true,force:true})}};
 }
+
+test('installed guardian names cannot select the legacy owner task or another installation',()=>{
+ const one=path.resolve('private-candidate-one'),two=path.resolve('private-candidate-two');
+ const name=taskNameFor(one,true);
+ assert.match(name,/^ImAccessibility-AudioGuard-[a-f0-9]{16}$/);
+ assert.notEqual(name,'ImAccessibility-AudioGuard-v1');
+ assert.notEqual(name,taskNameFor(two,true));
+ assert.equal(name,taskNameFor(one.toUpperCase()+path.sep,true));
+ assert.equal(taskNameFor(one,false),'ImAccessibility-AudioGuard-v1');
+});
+
+test('PowerShell registration and Node audio recovery derive the same installed task name',{skip:process.platform!=='win32'},()=>{
+ const x=temp();try{
+  const source=fs.readFileSync(path.resolve(__dirname,'../../../packaging/windows-oneclick/audio-guard-task.ps1'),'utf8');
+  // Execute only the actual pure identity block, never the task-management code.
+  const block=source.slice(source.indexOf('$root='),source.indexOf('$node='));
+  assert.ok(block.includes('$TaskName='));assert.doesNotMatch(block,/ScheduledTask|schtasks|Start-Process/);
+  const file=path.join(x.dir,'identity.ps1');fs.writeFileSync(file,block+'\nWrite-Output $TaskName\n');
+  const r=require('node:child_process').spawnSync('powershell.exe',['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',file],{encoding:'utf8',windowsHide:true,timeout:8000});
+  assert.equal(r.status,0,r.stderr);assert.equal(r.stdout.trim(),taskNameFor(x.dir,true));
+ }finally{x.clean()}
+});
+
+test('installed audio guardian Status works in the inherited GUI PowerShell environment',{skip:process.platform!=='win32'},()=>{
+ const x=temp();try{
+  const crypto=require('node:crypto'),cp=require('node:child_process');
+  const script=path.join(x.dir,'audio-guard-task.ps1');
+  fs.copyFileSync(path.resolve(__dirname,'../../../packaging/windows-oneclick/audio-guard-task.ps1'),script);
+  const node='Runtime/node.exe',watch='tv-reliability-v0.5/viewer/speaker-route-watch.cjs',app='ImAccessibility.exe';
+  for(const file of [node,watch,app]){fs.mkdirSync(path.dirname(path.join(x.dir,file)),{recursive:true});fs.writeFileSync(path.join(x.dir,file),'synthetic fixture; never executed');}
+  const files=[node,watch,app].map(file=>({path:file,sha256:crypto.createHash('sha256').update(fs.readFileSync(path.join(x.dir,file))).digest('hex')}));
+  for(let i=0;i<77;i++)files.push({path:'fixture-'+i,sha256:'0'.repeat(64)});
+  fs.writeFileSync(path.join(x.dir,'installer-manifest.json'),JSON.stringify({product:'ImAccessibility',version:'v0.3.21-independent-audio-guard-private-preview',files}));
+  const windowsPs=path.join(process.env.SystemRoot,'System32/WindowsPowerShell/v1.0/powershell.exe');
+  const run=()=>cp.spawnSync(windowsPs,['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',script,'-Action','Status'],{
+   env:{...process.env},encoding:'utf8',windowsHide:true,timeout:12000
+  });
+  const status=run();assert.equal(status.status,0,status.stdout+status.stderr);
+  const result=JSON.parse(status.stdout);assert.equal(result.installed,false);assert.equal(result.startsTv,false);
+  assert.equal(result.task,taskNameFor(x.dir,true));
+  fs.appendFileSync(path.join(x.dir,watch),'modified');
+  const modified=run();assert.equal(modified.status,1);assert.match(modified.stderr,/watcher differs from installed manifest/);
+ }finally{x.clean()}
+});
 test('Task-guard start is narrow, checks exact session heartbeat and does not register a task',()=>{
  const x=temp(),now=250000,invocations=[];
  try{

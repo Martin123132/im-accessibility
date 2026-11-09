@@ -70,6 +70,25 @@ namespace ImAccessibilityInstaller {
    if(Directory.Exists(path)&&((File.GetAttributes(path)&FileAttributes.ReparsePoint)!=0))
     throw new Exception("Windows directory links are not allowed in install location.");
   }
+  public static string ExistingApplication(){
+   string root=Destination;
+   ImAccessibilitySafety.InstallSafety.NoTreeLinks(root);
+   string receipt=Path.Combine(root,"installer-manifest.json");
+   if(!File.Exists(receipt))throw new Exception("An existing folder has no installation receipt. It has been preserved; no program was opened.");
+   var map=new JavaScriptSerializer().Deserialize<Dictionary<string,object>>(File.ReadAllText(receipt));
+   if(Convert.ToString(map["product"])!="ImAccessibility"||Convert.ToString(map["version"])!=Version)
+    throw new Exception("A different version is installed. Open it from its own shortcut, Stop the TV, then uninstall it before installing this version.");
+   bool appListed=false;
+   foreach(var entry in Entries(map)){
+    string rel=Convert.ToString(entry["path"]),full;SafeEntry(root,rel,out full);
+    if(!File.Exists(full)||new FileInfo(full).Length!=Convert.ToInt64(entry["bytes"])||
+      !String.Equals(Hash(full),Convert.ToString(entry["sha256"]),StringComparison.OrdinalIgnoreCase))
+     throw new Exception("The installed app could not be verified: "+rel+". No files were replaced or program opened.");
+    if(rel=="ImAccessibility.exe")appListed=true;
+   }
+   if(!appListed)throw new Exception("The installed application is missing from its receipt.");
+   return Path.Combine(root,"ImAccessibility.exe");
+  }
   public static string Install(bool test, Action<string> progress){
    string root=Destination;
    if(test)ImAccessibilitySafety.InstallSafety.CheckTestProfile(LocalData);
@@ -140,6 +159,8 @@ namespace ImAccessibilityInstaller {
    }
   }
   static void Shortcut(string filename,string target,string root){
+   // A private acceptance build must never replace the restored owner's link.
+   if(File.Exists(filename))filename=Path.Combine(Path.GetDirectoryName(filename),"I'm-accessibility (Private Preview).lnk");
    string parent=Path.GetDirectoryName(filename);
    if(File.Exists(filename))throw new Exception("An existing shortcut was preserved: "+filename);
    if(!Directory.Exists(parent))Directory.CreateDirectory(parent);
@@ -156,9 +177,13 @@ namespace ImAccessibilityInstaller {
    Shortcut(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),"I'm-accessibility.lnk"),exe,root);
   }
   static void RegisterUninstaller(string root){
+   using(var existing=Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\ImAccessibility")){
+    if(existing!=null&&!String.Equals(Convert.ToString(existing.GetValue("InstallLocation")),root,StringComparison.OrdinalIgnoreCase))
+     throw new Exception("Another installation's Windows uninstall entry was preserved.");
+   }
    using(var key=Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\ImAccessibility")){
     if(key==null)throw new Exception("Windows uninstall registry unavailable.");
-    key.SetValue("DisplayName","I'm-accessibility");
+    key.SetValue("DisplayName","I'm-accessibility (Private Preview)");
     key.SetValue("DisplayVersion","0.3.21");
     key.SetValue("Publisher","I'm-accessibility project");
     key.SetValue("InstallLocation",root);
@@ -195,7 +220,7 @@ namespace ImAccessibilityInstaller {
   Button install=new Button();CheckBox open=new CheckBox();TextBox output=new TextBox();
   Label destination=new Label();
   public InstallerWindow(){
-   Text="Install I'm-accessibility";BackColor=Color.FromArgb(247,249,251);
+   Text="Install I'm-accessibility - Recovery 2.2 Private Preview";BackColor=Color.FromArgb(247,249,251);
    ForeColor=Color.FromArgb(25,44,59);Font=new Font("Segoe UI",10);
    StartPosition=FormStartPosition.CenterScreen;Size=new Size(710,455);MinimumSize=new Size(675,430);
    Controls.Add(new Label{Left=28,Top=22,Width=642,Height=48,
@@ -231,6 +256,10 @@ namespace ImAccessibilityInstaller {
    output.AccessibleName="Installation progress and verification messages";
    output.AccessibleDescription="Read-only log of installed files and any errors.";
    Controls.Add(output);
+   if(Directory.Exists(InstallCore.Destination)){
+    install.Text="Open installed app";install.AccessibleName="Verify and open the existing installed app";
+    open.Enabled=false;output.Text="Already installed. Open the app to use Stop or Uninstall. No files will be overwritten.";
+   }
    KeyPreview=true;KeyDown+=(sender,e)=>{if(e.KeyCode==Keys.Escape){Close();e.Handled=true;}};
 
   }
@@ -248,6 +277,11 @@ namespace ImAccessibilityInstaller {
   async void BeginInstall(){
    install.Enabled=false;
    try{
+    if(Directory.Exists(InstallCore.Destination)){
+     string existing=await Task.Run(()=>InstallCore.ExistingApplication());
+     Process.Start(new ProcessStartInfo(existing){WorkingDirectory=InstallCore.Destination,UseShellExecute=true});
+     Close();return;
+    }
     bool launch=open.Checked;
     string folder=await Task.Run(()=>InstallCore.Install(false,Log));
     Log("Installation complete. Open using the desktop or Start Menu shortcut.");
@@ -270,9 +304,13 @@ namespace ImAccessibilityInstaller {
     }
     return;
    }
-   if(args.Length==2&&(args[0]=="--verify"||args[0]=="--test-install")){
+   if(args.Length==2&&(args[0]=="--verify"||args[0]=="--test-install"||args[0]=="--test-existing")){
     try{
-     string result=args[0]=="--verify"?InstallCore.VerifyArchive():InstallCore.Install(true,s=>{});
+     string result;
+     if(args[0]=="--test-existing"){
+      ImAccessibilitySafety.InstallSafety.CheckTestProfile(InstallCore.LocalData);
+      result=InstallCore.ExistingApplication();
+     }else result=args[0]=="--verify"?InstallCore.VerifyArchive():InstallCore.Install(true,s=>{});
      File.WriteAllText(args[1],"SUCCESS "+result+"\r\n",Encoding.UTF8);
     }catch(Exception ex){try{File.WriteAllText(args[1],"FAILED "+ex.ToString()+"\r\n",Encoding.UTF8);}catch{}}
     return;
