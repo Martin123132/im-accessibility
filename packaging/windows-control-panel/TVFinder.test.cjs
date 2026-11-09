@@ -92,3 +92,24 @@ test('LG and AirPlay on the same IP are deduplicated without saved config',()=>{
  assert.equal(rows.find(x=>x.ip==='192.168.50.23').brand,'LG');
  assert.equal(rows.find(x=>x.ip==='192.168.50.88').brand,'Samsung');
 });
+
+test('Find TVs independently scans the one physical LAN when saved settings are stale',()=>{
+ const interfaces={WiFi:[{family:'IPv4',internal:false,address:'192.168.50.152',netmask:'255.255.255.0'}]};
+ const savedFailure=()=>{throw Error('No matching physical private-LAN adapter')};
+ const result=f.discoveryContext({interfaces,readSettings:savedFailure});
+ assert.equal(result.network.ip,'192.168.50.152');
+ assert.equal(result.network.name,'WiFi');
+ assert.equal(result.television.ip,null);
+});
+test('Find TVs never guesses which of multiple LAN adapters to search',()=>{
+ const adapter=ip=>({family:'IPv4',internal:false,address:ip,netmask:'255.255.255.0'});
+ const interfaces={Ethernet:[adapter('192.168.50.36')],WiFi:[adapter('192.168.50.152')]};
+ assert.throws(()=>f.discoveryContext({interfaces,readSettings:()=>{throw Error('stale')}}),/Select one physical private network/);
+ const selected=f.discoveryContext({adapter:{adapterName:'WiFi',localIp:'192.168.50.152'},
+  interfaces,readSettings:()=>{throw Error('not called')}});
+ assert.equal(selected.network.name,'WiFi');
+ assert.equal(selected.television.ip,null);
+});
+test('Find TVs preserves the already validated saved receiver when it is current',()=>{
+ assert.equal(f.discoveryContext({readSettings:()=>fake}).television.ip,fake.television.ip);
+});

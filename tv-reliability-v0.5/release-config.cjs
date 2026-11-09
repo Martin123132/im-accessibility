@@ -108,6 +108,31 @@ function validate(config,{networkInterfaces=os.networkInterfaces(),existsFile=(f
   executables:Object.freeze({nodeExe,ffmpegExe}),taskName:TASK_NAME
  });
 }
+// A DHCP lease can change this PC's address without changing the approved LAN
+// or TV. Rebind only on the same named physical adapter and same subnet; do not
+// rewrite settings, discover a new TV, or silently select another interface.
+// Explicit setup validation remains strict (validate() never guesses an IP).
+function validateCurrentLease(config,{networkInterfaces=os.networkInterfaces(),existsFile}={}){
+ try{return validate(config,{networkInterfaces,existsFile})}
+ catch(error){
+  if(!/^No matching physical private-LAN adapter\b/.test(String(error.message)))throw error;
+  const old=config?.network,television=config?.television;
+  if(!old||typeof old.adapterName!=='string'||!old.adapterName.trim()||
+     !isPrivate(old.localIp)||!television||!isPrivate(television.ip)||
+     old.localIp===television.ip)throw error;
+  let current;
+  try{current=chooseAdapter({adapterName:old.adapterName},networkInterfaces)}
+  catch{throw error;}
+  if(old.localIp===current.ip||!subnet(old.localIp,current.ip,current.mask)||
+     !usableHost(old.localIp,current.mask)||
+     !subnet(television.ip,current.ip,current.mask)||
+     !usableHost(television.ip,current.mask)||television.ip===current.ip)
+   throw error;
+  return validate({...config,network:{...old,localIp:current.ip}},
+    {networkInterfaces,existsFile});
+ }
+}
+
 function configPath({env=process.env,platform=process.platform,repoRoot=path.resolve(__dirname,'..')}={}){
  if(platform!=='win32')throw Error('Windows is required for this release configuration');
  const dest=env[SETTINGS_ENV]||(
@@ -130,7 +155,7 @@ function readUserSettings({env=process.env,platform=process.platform,repoRoot=pa
  if(!stat.isFile()||stat.size<2||stat.size>MAX_BYTES)throw Error('Invalid or oversized settings.json (maximum 8 KiB)');
  let json;
  try{json=JSON.parse(fsApi.readFileSync(file,'utf8'))}catch{throw Error('settings.json is not valid JSON')}
- return validate(json,{networkInterfaces,existsFile:(f)=>{try{return fsApi.statSync(f).isFile()}catch{return false}}});
+ return validateCurrentLease(json,{networkInterfaces,existsFile:(f)=>{try{return fsApi.statSync(f).isFile()}catch{return false}}});
 }
 function safeSummary(config){
  return {valid:true,schema:config.schema,adapter:config.network.name,
@@ -148,4 +173,4 @@ if(require.main===module){
  }
 }
 module.exports={SETTINGS_ENV,TASK_NAME,MAX_BYTES,SUPPORTED_MODEL,uintIp,maskBits,isPrivate,subnet,usableHost,
- adapters,chooseAdapter,validate,configPath,readUserSettings,safeSummary};
+ adapters,chooseAdapter,validate,validateCurrentLease,configPath,readUserSettings,safeSummary};

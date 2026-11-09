@@ -15,7 +15,7 @@ function findReleaseConfig(){
 }
 // Installed builds use the standard per-user settings in LOCALAPPDATA.
 // Source tests can supply IM_ACCESSIBILITY_CONFIG_PATH explicitly.
-const {readUserSettings,isPrivate,subnet,usableHost,chooseAdapter,SUPPORTED_MODEL}=require(findReleaseConfig());
+const {readUserSettings,isPrivate,subnet,usableHost,chooseAdapter,adapters:lanAdapters,SUPPORTED_MODEL}=require(findReleaseConfig());
 const SERVICES=[
  ['_googlecast._tcp.local','Google Cast','Cast receiver'],
  ['_airplay._tcp.local','Apple AirPlay','AirPlay receiver'],
@@ -180,10 +180,22 @@ function scanUdp(mode,network,onHit,durationMs){
   setTimeout(finish,durationMs);
  });
 }
+// Device discovery is independent of saved start/pairing settings. A changed
+// DHCP lease, first-run setup or stale settings must not disable Find TVs.
+// Without an explicitly selected adapter, only ONE physical private LAN may be
+// scanned. Ambiguous or virtual interfaces are never chosen automatically.
+function discoveryContext({adapter=null,interfaces=os.networkInterfaces(),readSettings=readUserSettings}={}){
+ if(adapter!==null)return {network:chooseAdapter(adapter,interfaces),
+  television:{ip:null,model:SUPPORTED_MODEL}};
+ try{return readSettings()}
+ catch{
+  const available=lanAdapters(interfaces);
+  if(available.length!==1)throw Error('Select one physical private network to find TVs');
+  return {network:available[0],television:{ip:null,model:SUPPORTED_MODEL}};
+ }
+}
 async function scan({durationMs=4200,adapter=null}={}){
- // Initial setup has no saved settings; restrict discovery to the actual selected LAN adapter.
- const network=adapter?chooseAdapter(adapter,os.networkInterfaces()):null;
- const verified=network?{network,television:{ip:null,model:SUPPORTED_MODEL}}:readUserSettings();
+ const verified=discoveryContext({adapter});
  const found=[];
  await Promise.all(['ssdp','mdns'].map(mode=>scanUdp(mode,verified.network,x=>found.push(x),durationMs)));
  const devices=mergeRows(found,verified);
@@ -196,4 +208,4 @@ if(require.main===module){
   process.stderr.write('TV_DISCOVERY_UNAVAILABLE '+String(e.message||e).slice(0,180)+'\n');process.exitCode=1;
  });
 }
-module.exports={validLan,recognizeSsdp,mdnsRecords,recognizeMdns,question,mergeRows,scan};
+module.exports={validLan,recognizeSsdp,mdnsRecords,recognizeMdns,question,mergeRows,discoveryContext,scan};
