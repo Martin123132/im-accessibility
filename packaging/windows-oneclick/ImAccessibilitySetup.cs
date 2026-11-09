@@ -220,7 +220,7 @@ namespace ImAccessibilityInstaller {
   Button install=new Button();CheckBox open=new CheckBox();TextBox output=new TextBox();
   Label destination=new Label();
   public InstallerWindow(){
-   Text="Install I'm-accessibility - Recovery 2.1 Private Preview";BackColor=Color.FromArgb(247,249,251);
+   Text="Install I'm-accessibility - Recovery 2.2 Private Preview";BackColor=Color.FromArgb(247,249,251);
    ForeColor=Color.FromArgb(25,44,59);Font=new Font("Segoe UI",10);
    StartPosition=FormStartPosition.CenterScreen;Size=new Size(710,455);MinimumSize=new Size(675,430);
    Controls.Add(new Label{Left=28,Top=22,Width=642,Height=48,

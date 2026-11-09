@@ -21,12 +21,14 @@ try{$digest=[BitConverter]::ToString($hasher.ComputeHash([Text.Encoding]::UTF8.G
 finally{$hasher.Dispose()}
 $TaskName='ImAccessibility-AudioGuard-'+$digest.Substring(0,16)
 $node=Join-Path $root 'Runtime\node.exe'
+$launcher=Join-Path $root 'ImAccessibility.exe'
 $watch=Join-Path $root 'tv-reliability-v0.5\viewer\speaker-route-watch.cjs'
 $journal=Join-Path $root 'tv-reliability-v0.5\viewer\runtime\speaker-route.json'
 $manifest=Join-Path $root 'installer-manifest.json'
-$arguments='"'+$watch+'" --task-guardian'
+$arguments='--audio-guardian'
 function Check-PinnedFiles {
  if(!(Test-Path -LiteralPath $node -PathType Leaf)){throw 'Bundled verified Node runtime missing'}
+ if(!(Test-Path -LiteralPath $launcher -PathType Leaf)){throw 'Verified windowless audio launcher missing'}
  if(!(Test-Path -LiteralPath $watch -PathType Leaf)){throw 'Independent audio watcher missing'}
  if(!(Test-Path -LiteralPath $manifest -PathType Leaf)){throw 'Installed application manifest missing'}
  $info=Get-Content -LiteralPath $manifest -Raw|ConvertFrom-Json
@@ -40,6 +42,8 @@ function Check-PinnedFiles {
  if($digest -ne $bound[0].sha256){throw 'Independent watcher differs from installed manifest'}
  $runtime=@($info.files|Where-Object{$_.path -eq 'Runtime/node.exe'})
  if($runtime.Count -ne 1 -or (Get-FileHash -LiteralPath $node -Algorithm SHA256).Hash.ToLowerInvariant() -ne $runtime[0].sha256){throw 'Bundled Node differs from installed manifest'}
+ $app=@($info.files|Where-Object{$_.path -eq 'ImAccessibility.exe'})
+ if($app.Count -ne 1 -or (Get-FileHash -LiteralPath $launcher -Algorithm SHA256).Hash.ToLowerInvariant() -ne $app[0].sha256){throw 'Audio launcher differs from installed manifest'}
 }
 function Get-Task {
  # Windows writes an error stream for Get-ScheduledTask -TaskName when absent.
@@ -54,9 +58,9 @@ function Assert-OwnedTask($task){
  $items=@($task.Actions)
  if($items.Count -ne 1){throw 'Task name is used by another configuration'}
  $actual=$items[0]
- if([IO.Path]::GetFullPath($actual.Execute) -ine [IO.Path]::GetFullPath($node) -or
+ if([IO.Path]::GetFullPath($actual.Execute) -ine [IO.Path]::GetFullPath($launcher) -or
     $actual.Arguments -cne $arguments -or
-    [IO.Path]::GetFullPath($actual.WorkingDirectory) -ine [IO.Path]::GetFullPath((Split-Path -Parent $watch))){
+    [IO.Path]::GetFullPath($actual.WorkingDirectory) -ine [IO.Path]::GetFullPath($root)){
   throw 'A different Windows task already uses the audio guardian name; refusing overwrite'
  }
  $owner=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value
@@ -88,7 +92,7 @@ if($Action -eq 'Enable'){
   Write-Output 'ALREADY_ENABLED_NO_CHANGES'
   return
  }
- $actionDef=New-ScheduledTaskAction -Execute $node -Argument $arguments -WorkingDirectory (Split-Path -Parent $watch)
+ $actionDef=New-ScheduledTaskAction -Execute $launcher -Argument $arguments -WorkingDirectory $root
  $sid=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value
  $principal=New-ScheduledTaskPrincipal -UserId $sid -LogonType Interactive -RunLevel Limited
  $settings=New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
@@ -101,7 +105,7 @@ if($Action -eq 'Disable' -or $Action -eq 'DisableIfOwned'){
  if($Action -eq 'DisableIfOwned' -and $null -ne $existing){
   # Removing this installation never removes a task bound to another app copy.
   if(@($existing.Actions).Count -ne 1 -or
-     $existing.Actions[0].Execute -ine $node -or $existing.Actions[0].Arguments -cne $arguments){
+     $existing.Actions[0].Execute -ine $launcher -or $existing.Actions[0].Arguments -cne $arguments){
    Write-Output 'OTHER_INSTALLATION_TASK_PRESERVED';return
   }
  }

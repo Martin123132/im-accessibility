@@ -1,6 +1,10 @@
 'use strict';
 // Compile real Windows GUI code and inspect controls without showing or starting a session.
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),cp=require('node:child_process');
+test('compiled audio guardian starts and exits without any console window',{skip:process.platform!=='win32'},async()=>{
+ const result=await require('../windows-oneclick/test-hidden-guardian.cjs').verify();
+ assert.equal(result.passed,true);assert.equal(result.gracefulExit,true);assert.equal(result.scratchRemoved,true);
+});
 test('Windows GUIs compile; installed app exposes named keyboard-accessible controls',{skip:process.platform!=='win32'},()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'imaccess-gui-')),repo=path.resolve(__dirname,'../..');
  const csc=path.join(process.env.WINDIR,'Microsoft.NET/Framework64/v4.0.30319/csc.exe');

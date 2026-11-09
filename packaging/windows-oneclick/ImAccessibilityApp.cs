@@ -27,6 +27,22 @@ namespace ImAccessibilityDesktop {
    if(!File.Exists(Settings))return null;
    using(var sha=SHA256.Create())return BitConverter.ToString(sha.ComputeHash(File.ReadAllBytes(Settings))).Replace("-","").ToLowerInvariant();
   }
+  public static int RunAudioGuardian(){
+   // Task Scheduler launches this Windows-subsystem EXE, so neither the launcher
+   // nor its fixed Node child allocates a visible console. This separate process
+   // remains independent of the owner's control window and TV supervisor.
+   string watch=Path.Combine(Root,"tv-reliability-v0.5","viewer","speaker-route-watch.cjs");
+   if(!File.Exists(Node)||!File.Exists(watch))return 2;
+   try{
+    var si=new ProcessStartInfo(Node,Quote(watch)+" --task-guardian");
+    si.WorkingDirectory=Path.GetDirectoryName(watch);si.UseShellExecute=false;si.CreateNoWindow=true;
+    si.RedirectStandardInput=true;si.RedirectStandardOutput=true;si.RedirectStandardError=true;
+    using(var p=new Process()){
+     p.StartInfo=si;p.Start();p.StandardInput.Close();
+     p.BeginOutputReadLine();p.BeginErrorReadLine();p.WaitForExit();return p.ExitCode;
+    }
+   }catch{return 2;}
+  }
   public static string Quote(string s){return "\""+s.Replace("\"","\\\"")+"\"";}
   public static string Run(string op,string input,bool audio) {
    if(!File.Exists(Node)||!File.Exists(Bridge))throw new IOException("Bundled Node or app controller is missing.");
@@ -97,7 +113,7 @@ if(op=="start"&&File.Exists(encoderProfile)){
    int presentationTries;bool presentationBusy,commandBusy;
    readonly System.Windows.Forms.Timer healthPoll=new System.Windows.Forms.Timer();
   public MainWindow(){
-   Text="I'm-accessibility - Recovery 2.1 Private Preview";Font=new Font("Segoe UI",10);
+   Text="I'm-accessibility - Recovery 2.2 Private Preview";Font=new Font("Segoe UI",10);
    BackColor=Color.FromArgb(247,249,250);ForeColor=Color.FromArgb(28,42,56);
    Size=new Size(780,830);MinimumSize=new Size(700,570);
    StartPosition=FormStartPosition.CenterScreen;AutoScaleMode=AutoScaleMode.Font;
@@ -429,6 +445,9 @@ if(op=="start"&&File.Exists(encoderProfile)){
  }
  static class Program{
   [STAThread] static void Main(string[] args){
+   if(args.Length>0&&args[0]=="--audio-guardian"){
+    Environment.ExitCode=args.Length==1?Engine.RunAudioGuardian():2;return;
+   }
    if(args.Length==2&&args[0]=="--accessibility-selftest"){
     try{
      using(var window=new MainWindow()){

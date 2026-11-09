@@ -39,10 +39,10 @@ test('installed audio guardian Status works in the inherited GUI PowerShell envi
   const crypto=require('node:crypto'),cp=require('node:child_process');
   const script=path.join(x.dir,'audio-guard-task.ps1');
   fs.copyFileSync(path.resolve(__dirname,'../../../packaging/windows-oneclick/audio-guard-task.ps1'),script);
-  const node='Runtime/node.exe',watch='tv-reliability-v0.5/viewer/speaker-route-watch.cjs';
-  for(const file of [node,watch]){fs.mkdirSync(path.dirname(path.join(x.dir,file)),{recursive:true});fs.writeFileSync(path.join(x.dir,file),'synthetic fixture; never executed');}
-  const files=[node,watch].map(file=>({path:file,sha256:crypto.createHash('sha256').update(fs.readFileSync(path.join(x.dir,file))).digest('hex')}));
-  for(let i=0;i<78;i++)files.push({path:'fixture-'+i,sha256:'0'.repeat(64)});
+  const node='Runtime/node.exe',watch='tv-reliability-v0.5/viewer/speaker-route-watch.cjs',app='ImAccessibility.exe';
+  for(const file of [node,watch,app]){fs.mkdirSync(path.dirname(path.join(x.dir,file)),{recursive:true});fs.writeFileSync(path.join(x.dir,file),'synthetic fixture; never executed');}
+  const files=[node,watch,app].map(file=>({path:file,sha256:crypto.createHash('sha256').update(fs.readFileSync(path.join(x.dir,file))).digest('hex')}));
+  for(let i=0;i<77;i++)files.push({path:'fixture-'+i,sha256:'0'.repeat(64)});
   fs.writeFileSync(path.join(x.dir,'installer-manifest.json'),JSON.stringify({product:'ImAccessibility',version:'v0.3.21-independent-audio-guard-private-preview',files}));
   const windowsPs=path.join(process.env.SystemRoot,'System32/WindowsPowerShell/v1.0/powershell.exe');
   const run=()=>cp.spawnSync(windowsPs,['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',script,'-Action','Status'],{
