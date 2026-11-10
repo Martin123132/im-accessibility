@@ -113,7 +113,12 @@ if(op=="start"&&File.Exists(encoderProfile)){
    int presentationTries;bool presentationBusy,commandBusy;
    readonly System.Windows.Forms.Timer healthPoll=new System.Windows.Forms.Timer();
   public MainWindow(){
-   Text="I'm-accessibility - Recovery 2.2 Private Preview";Font=new Font("Segoe UI",10);
+#if REBUILT_FFMPEG_PRIVATE
+   Text="I'm-accessibility - Recovery 2.3 Private Preview";
+#else
+   Text="I'm-accessibility - Recovery 2.2 Private Preview";
+#endif
+   Font=new Font("Segoe UI",10);
    BackColor=Color.FromArgb(247,249,250);ForeColor=Color.FromArgb(28,42,56);
    Size=new Size(780,830);MinimumSize=new Size(700,570);
    StartPosition=FormStartPosition.CenterScreen;AutoScaleMode=AutoScaleMode.Font;

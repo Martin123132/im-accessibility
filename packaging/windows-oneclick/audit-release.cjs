@@ -9,6 +9,8 @@ const NATIVE=require('./native-source-pins.json');
 const NOTICE_PINS=require('./third-party-notices/pins.json');
 const LGPL_SOURCE=require('./third-party-notices/FFmpeg-Source-Materials.json');
 const LICENCE_REVIEW=require('./third-party-notices/FFmpeg-Licence-Review.json');
+const REBUILT_PINS=require('./third-party-notices/rebuilt-pins.json');
+const REBUILD=require('./ffmpeg-rebuild/private-candidate-20261110.json');
 const REQUIRED=['THIRD_PARTY/Node-LICENSE.txt','THIRD_PARTY/FFmpeg-LICENSE.txt',
  'THIRD_PARTY/bundled-runtimes.json',
  'THIRD_PARTY/FFmpeg-README.txt','tv-reliability-v0.5/cast/node_modules/lgtv2/LICENSE',
@@ -19,11 +21,25 @@ function safe(p){return typeof p==='string'&&/^[A-Za-z0-9._/-]+$/.test(p)&&!p.st
 function privateFile(e){if(e.path==='tv-reliability-v0.5/cast/node_modules/lgtv2/pairing.json')return e.sha256!==TEMPLATE_SHA;return PRIVATE.test(e.path)}
 function flags(v){return new Set(v.match(/--enable-[A-Za-z0-9_-]+/g)||[])}
 function knownNoticeGaps(entries,ffmpegSHA256){
- if(ffmpegSHA256!==NOTICE_PINS.ffmpegSHA256)return [];
- return NOTICE_PINS.notices.filter(n=>entries.get('THIRD_PARTY/'+n.file)?.sha256!==n.sha256)
+ const rebuilt=ffmpegSHA256===REBUILT_PINS.ffmpegSHA256;
+ if(ffmpegSHA256!==NOTICE_PINS.ffmpegSHA256&&!rebuilt)return [];
+ const required=rebuilt?[...NOTICE_PINS.notices,...REBUILT_PINS.notices]:NOTICE_PINS.notices;
+ return required.filter(n=>entries.get('THIRD_PARTY/'+n.file)?.sha256!==n.sha256)
   .map(n=>'THIRD_PARTY/'+n.file);
 }
 function lgplSourceEvidence(entries,ffmpegSHA256){
+ if(ffmpegSHA256===REBUILT_PINS.ffmpegSHA256){
+  return {manifestIncluded:knownNoticeGaps(entries,ffmpegSHA256).length===0,
+   sourceArchivesRecorded:LGPL_SOURCE.sourceArchives,recipeStagesRecorded:LGPL_SOURCE.recipeStages,
+   cargoRegistryArchivesRecorded:LGPL_SOURCE.cargoRegistryArchives,retainedFileCount:LGPL_SOURCE.files.length,
+   sourceCollectionVerifiedByThisPackageAudit:false,buildRecordResolved:true,
+   correspondingSourceComplete:LGPL_SOURCE.correspondingSourceComplete&&
+    REBUILD.binaries.some(b=>b.file==='ffmpeg.exe'&&b.sha256===ffmpegSHA256),
+   publicSourceDownloadAvailable:false,rebuiltFromOriginalImage:REBUILD.originalImageManifestSha256,
+   sourceBundleParts:REBUILD.sourceBundleParts,
+   rebuildAppendix:require('./ffmpeg-rebuild/source-appendix-20261110.json'),
+   limitations:[{id:'recipient-source-access',detail:'The two original source ZIPs and rebuild appendix remain private; no public source/binary distribution is authorised.'}]};
+ }
  if(ffmpegSHA256!==LGPL_SOURCE.ffmpegSHA256)return null;
  const pin=NOTICE_PINS.notices.find(n=>n.file==='FFmpeg-Source-Materials.json');
  const included=!!pin&&entries.get('THIRD_PARTY/'+pin.file)?.sha256===pin.sha256;
@@ -37,6 +53,14 @@ function lgplSourceEvidence(entries,ffmpegSHA256){
   limitations:LGPL_SOURCE.limitations};
 }
 function licenceEvidence(entries,ffmpegSHA256){
+ if(ffmpegSHA256===REBUILT_PINS.ffmpegSHA256){
+  return {manifestIncluded:knownNoticeGaps(entries,ffmpegSHA256).length===0,
+   reviewStatus:'excluded-library-findings-resolved-for-private-rebuild',technicalReviewCompleted:true,
+   copyrightRedistributionCleared:false,findings:[],
+   resolvedByExclusion:['ZVBI_GPL2_ONLY','LittleCMS fast-float and threaded GPL plugins'],
+   excludedLibrariesAbsentFromLinkMaps:REBUILD.excludedLibrariesAbsentFromLinkMaps,
+   originalRuntimeAssessmentUnchanged:true};
+ }
  if(ffmpegSHA256!==LICENCE_REVIEW.ffmpegSHA256)return null;
  const pin=NOTICE_PINS.notices.find(n=>n.file==='FFmpeg-Licence-Review.json');
  return {manifestIncluded:!!pin&&entries.get('THIRD_PARTY/'+pin.file)?.sha256===pin.sha256,
@@ -48,7 +72,10 @@ function execute(program,args){const r=spawnSync(program,args,{encoding:'utf8',w
 function sign(exe){
  if(!exe||!fs.existsSync(exe))return 'not-provided';
  if(process.platform!=='win32')return 'unverified-nonwindows';
- try{return execute('powershell.exe',['-NoProfile','-NonInteractive','-Command',"(Get-AuthenticodeSignature -LiteralPath '"+exe.replace(/'/g,"''")+"').Status.ToString()"]).trim()}catch{return 'unverified'}
+ // Windows PowerShell may inherit PowerShell 7's module search path. Import its
+ // own security module explicitly; no policy or persistent environment changes.
+ try{return execute(path.join(process.env.SystemRoot,'System32','WindowsPowerShell','v1.0','powershell.exe'),
+  ['-NoProfile','-NonInteractive','-Command',"Import-Module ([IO.Path]::Combine($PSHOME,'Modules','Microsoft.PowerShell.Security','Microsoft.PowerShell.Security.psd1')) -ErrorAction Stop; (Get-AuthenticodeSignature -LiteralPath '"+exe.replace(/'/g,"''")+"').Status.ToString()"]).trim()}catch{return 'unverified'}
 }
 function audit(stage,installer){
  const meta=JSON.parse(fs.readFileSync(path.join(stage,'installer-manifest.json'),'utf8'));
@@ -76,18 +103,33 @@ function audit(stage,installer){
  }
  const node=path.join(stage,'Runtime','node.exe'),ffmpeg=path.join(stage,'Runtime','ffmpeg.exe');
  const nodeVersion=execute(node,['-p','process.version']).trim();
- const ff=execute(ffmpeg,['-hide_banner','-buildconf']);
+ const ff=execute(ffmpeg,['-version']);
  const fswitches=flags(ff);
  const ffmpegVersion=ff.split(/\r?\n/).find(s=>s.startsWith('ffmpeg version '))||'unknown';
  const ffmpegSHA256=hash(ffmpeg);
  const exactVendorMatch=ffmpegSHA256===VENDOR.vendorFFmpegExeSha256;
- const lgplPinned=ffmpegSHA256==='71ac0a64a4e3e0caaf7a8c25c7e73d161ac1b269cca930d207e89e1b23959dfb'&&
+ const compatibleLgplFlags=
   !fswitches.has('--enable-gpl')&&!fswitches.has('--enable-nonfree')&&
   ff.includes('--disable-libx264')&&ff.includes('--disable-libx265');
+ const legacyLgplPinned=ffmpegSHA256==='71ac0a64a4e3e0caaf7a8c25c7e73d161ac1b269cca930d207e89e1b23959dfb'&&compatibleLgplFlags;
+ const rebuiltPinned=ffmpegSHA256===REBUILT_PINS.ffmpegSHA256&&compatibleLgplFlags&&
+  ff.includes('--disable-libzvbi')&&!fswitches.has('--enable-libzvbi');
+ const lgplPinned=legacyLgplPinned||rebuiltPinned;
  const acceptedFFmpeg=exactVendorMatch||lgplPinned;
  missingNotices.push(...knownNoticeGaps(byPath,ffmpegSHA256));
  const sourceEvidence=lgplSourceEvidence(byPath,ffmpegSHA256);
  const licenceAssessment=licenceEvidence(byPath,ffmpegSHA256);
+ if(rebuiltPinned){
+  if(missingNotices.length)failures.push('Rebuilt FFmpeg source/licence evidence is missing or altered');
+  if(meta.buildId!==REBUILT_PINS.buildId)failures.push('Rebuilt FFmpeg installer build identity differs');
+  if(hash(node)!==REBUILT_PINS.nodeSHA256||
+     byPath.get('THIRD_PARTY/Node-LICENSE.txt')?.sha256!==REBUILT_PINS.nodeLicenseSHA256||
+     byPath.get('THIRD_PARTY/FFmpeg-LICENSE.txt')?.sha256!==REBUILT_PINS.ffmpegLicenseSHA256)
+   failures.push('Rebuilt preview runtime/licence inputs differ from verified pins');
+  const profile=path.join(stage,'encoder-profile.txt');
+  if(!byPath.has('encoder-profile.txt')||!fs.existsSync(profile)||fs.readFileSync(profile,'utf8').trim()!=='h264_mf')
+   failures.push('Rebuilt FFmpeg requires the explicit Media Foundation encoder profile');
+ }
  // LGPL evidence must not inherit counts or source completeness from the
  // unrelated Gyan GPL inventory. Neither candidate has distribution clearance.
  let runtimeInventoryVerified=false;
@@ -124,7 +166,8 @@ function audit(stage,installer){
   if(!sourceEvidence.correspondingSourceComplete)blockers.push('Pinned FFmpeg corresponding source collection is incomplete');
   if(!licenceAssessment.manifestIncluded)blockers.push('Pinned FFmpeg licence review is missing or altered');
   for(const finding of licenceAssessment.findings)blockers.push('FFmpeg licence finding '+finding.id+': '+finding.detail);
-  if(!licenceAssessment.copyrightRedistributionCleared&&!licenceAssessment.findings.length)blockers.push('Pinned FFmpeg copyright redistribution is not cleared');
+  if(!licenceAssessment.copyrightRedistributionCleared&&!licenceAssessment.findings.length)blockers.push(
+   rebuiltPinned?'Rebuilt FFmpeg remains a private candidate; final public distribution approval is outstanding':'Pinned FFmpeg copyright redistribution is not cleared');
   if(!sourceEvidence.publicSourceDownloadAvailable)blockers.push('FFmpeg source archives are retained privately; recipient source download is not published');
  }
  else blockers.push('LGPL-mode FFmpeg source and notices still need review');
@@ -135,12 +178,13 @@ function audit(stage,installer){
  blockers.push('Public binary publication is not authorised');
  blockers.push('Human Narrator/NVDA speech and Windows 11 compatibility not accepted');
  return {schema:1,product:'ImAccessibility',version:meta.version,createdUtc:new Date().toISOString(),
-  files:meta.files.length,integrity:{failures,passed:meta.files.length-failures.length},
+  buildId:meta.buildId||null,files:meta.files.length,integrity:{failures,passed:meta.files.length-failures.length},
   privacy:{flaggedPaths:privatePaths,upstreamPairingTemplate:byPath.get('tv-reliability-v0.5/cast/node_modules/lgtv2/pairing.json')?.sha256===TEMPLATE_SHA},
   runtimes:{nodeVersion,nodeSha256:hash(node),ffmpegVersion,ffmpegSha256:ffmpegSHA256,
    runtimeInventoryVerified,
-   vendorMatch:acceptedFFmpeg,lgplPinned,ffmpegUpstreamCoreCommit:lgplPinned?'d4070a14ce':VENDOR.coreSourceCommit,
-   vendorArchiveSha256:lgplPinned?'7a347fb3220968b63fc7e025ed78370588726e0d0bf2bd0445d3f8f2387c36db':VENDOR.vendorZIPsha256,
+   vendorMatch:exactVendorMatch||legacyLgplPinned,runtimePinVerified:acceptedFFmpeg,locallyRebuilt:rebuiltPinned,
+   lgplPinned,ffmpegUpstreamCoreCommit:lgplPinned?REBUILD.ffmpegCommit:VENDOR.coreSourceCommit,
+   vendorArchiveSha256:rebuiltPinned?null:legacyLgplPinned?'7a347fb3220968b63fc7e025ed78370588726e0d0bf2bd0445d3f8f2387c36db':VENDOR.vendorZIPsha256,
    externalLibraryCount:lgplPinned?null:VENDOR.externalLibraryCount,
    archivedExternalSourceCount:lgplPinned?null:archivedExternalSourceCount,
    verifiedExternalBuildRecipeCount:lgplPinned?null:verifiedExternalBuildRecipeCount,

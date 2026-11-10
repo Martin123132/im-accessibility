@@ -6,12 +6,13 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const cp = require('node:child_process');
 const assert = require('node:assert/strict');
-const sound = require('../../../tv-reliability-v0.5/cast/sound.cjs');
 
 async function main() {
-  const [ffmpegArg, ffprobeArg, outputArg] = process.argv.slice(2);
+  const [ffmpegArg, ffprobeArg, outputArg, soundArg] = process.argv.slice(2);
   if (!ffmpegArg || !ffprobeArg || !outputArg) throw Error('Provide FFmpeg, FFprobe, and a NEW evidence directory');
   const ffmpeg = fs.realpathSync(ffmpegArg), ffprobe = fs.realpathSync(ffprobeArg);
+  const soundFile = fs.realpathSync(soundArg || path.join(__dirname, '../../../tv-reliability-v0.5/cast/sound.cjs'));
+  const sound = require(soundFile);
   const output = path.resolve(outputArg);
   if (fs.existsSync(output)) throw Error('Evidence directory must not already exist');
   fs.mkdirSync(output, {recursive: true});
@@ -149,7 +150,7 @@ async function main() {
     });
   } finally {
     for (const child of active.keys()) child.kill();
-    const receipt = {startedWith: {ffmpeg, ffprobe, ffmpegSha256: hash(ffmpeg), ffprobeSha256: hash(ffprobe)}, syntheticInputsOnly: true, tvSessionStarted: false, audioDevicesChanged: false, pass: results.filter(r => r.pass).length, fail: results.filter(r => !r.pass).length, results, processes, activeChildrenAtEnd: active.size};
+    const receipt = {startedWith: {ffmpeg, ffprobe, ffmpegSha256: hash(ffmpeg), ffprobeSha256: hash(ffprobe), argumentSourceModule: soundFile, argumentSourceSha256: hash(soundFile)}, syntheticInputsOnly: true, tvSessionStarted: false, audioDevicesChanged: false, pass: results.filter(r => r.pass).length, fail: results.filter(r => !r.pass).length, results, processes, activeChildrenAtEnd: active.size};
     fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify(receipt, null, 2) + '\n');
     process.exitCode = receipt.fail || active.size ? 1 : 0;
   }

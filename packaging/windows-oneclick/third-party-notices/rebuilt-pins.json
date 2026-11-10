@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "ffmpegSHA256": "b35f4924476dad990b0414e3031ab20d7e90604201b39621fd937b265062ea69",
+  "nodeSHA256": "3331e1ffe19874215472217c5e94f5a0c6d8e18c4ac7111d3937aa0ad5e9b4a5",
+  "nodeLicenseSHA256": "4573185d56580da2b890ba34a85a409257640f1c5632eade4300137266194d18",
+  "ffmpegLicenseSHA256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768",
+  "historicalRuntimeSHA256": "71ac0a64a4e3e0caaf7a8c25c7e73d161ac1b269cca930d207e89e1b23959dfb",
+  "buildId": "recovery2.3-ffmpeg-20261110",
+  "notices": [
+    {
+      "file": "FFmpeg-README.txt",
+      "source": "third-party-notices/FFmpeg-Rebuilt-README.txt",
+      "sha256": "0b40a202cc60a6565cd223371f27262f31688aa143628419d52f895333e39919"
+    },
+    {
+      "file": "FFmpeg-Rebuild-Record.json",
+      "source": "third-party-notices/FFmpeg-Rebuild-Record.json",
+      "sha256": "955fff2766f622fb3f46e0f542997c4253d8e8dbcec2b1b7b975840d0f076cbc"
+    },
+    {
+      "file": "FFmpeg-Rebuild-Source-Appendix.json",
+      "source": "third-party-notices/FFmpeg-Rebuild-Source-Appendix.json",
+      "sha256": "fc52bd67437bb14fe06e4cf6e3e0d90547a7b1b78074a783267c574886b477d7"
+    },
+    {
+      "file": "FFmpeg-Rebuild-Patch.patch",
+      "source": "ffmpeg-rebuild/exclude-unused-copyleft.patch",
+      "sha256": "4a468788bb1afe1e590cee56c80f2f9830166f2633ef6c019332b9ceea957d71"
+    },
+    {
+      "file": "FFmpeg-Rebuild-Instructions.md",
+      "source": "ffmpeg-rebuild/README.md",
+      "sha256": "f4554ac6169e6c957efa0a00e4351c0e6dc853adc5655047bfda45178906a5e4"
+    },
+    {
+      "file": "BtbN-Build-Scripts-LICENSE.txt",
+      "source": "ffmpeg-rebuild/BtbN-Build-Scripts-LICENSE.txt",
+      "sha256": "c1b3cc7eec42bd9c4f6247169bb887b4a9bc904abfd2a7f7f9231ed357844993"
+    }
+  ]
+}

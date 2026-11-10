@@ -80,6 +80,30 @@ test('complete source and LGPL flags cannot erase the pinned libzvbi licence fin
  assert.equal(licenceEvidence(entries,'0'.repeat(64)),null);
 });
 
+test('rebuilt runtime requires its own pinned evidence and preserves the historical finding',()=>{
+ const crypto=require('node:crypto'),base=require('./third-party-notices/pins.json'),rebuilt=require('./third-party-notices/rebuilt-pins.json');
+ const entries=new Map(base.notices.map(n=>['THIRD_PARTY/'+n.file,{sha256:n.sha256}]));
+ assert.equal(knownNoticeGaps(entries,rebuilt.ffmpegSHA256).length,rebuilt.notices.length);
+ for(const n of rebuilt.notices){
+  const bytes=fs.readFileSync(path.join(__dirname,n.source));
+  assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),n.sha256,n.file);
+  entries.set('THIRD_PARTY/'+n.file,{sha256:n.sha256});
+ }
+ assert.deepEqual(knownNoticeGaps(entries,rebuilt.ffmpegSHA256),[]);
+ const source=lgplSourceEvidence(entries,rebuilt.ffmpegSHA256),review=licenceEvidence(entries,rebuilt.ffmpegSHA256);
+ assert.equal(source.manifestIncluded,true);assert.equal(source.correspondingSourceComplete,true);
+ assert.equal(source.publicSourceDownloadAvailable,false);assert.equal(source.sourceCollectionVerifiedByThisPackageAudit,false);
+ assert.equal(source.rebuildAppendix.sha256,'530763d054f8ba75aaf0c78fd9c7ea76486ee675f45e561f4387853bb3a167e6');
+ assert.equal(review.excludedLibrariesAbsentFromLinkMaps,true);assert.deepEqual(review.findings,[]);
+ assert.equal(review.copyrightRedistributionCleared,false);
+ assert.ok(licenceEvidence(entries,base.ffmpegSHA256).findings.some(x=>x.id==='ZVBI_GPL2_ONLY'));
+ entries.get('THIRD_PARTY/FFmpeg-Rebuild-Record.json').sha256='0'.repeat(64);
+ assert.equal(lgplSourceEvidence(entries,rebuilt.ffmpegSHA256).manifestIncluded,false);
+ assert.equal(licenceEvidence(entries,rebuilt.ffmpegSHA256).manifestIncluded,false);
+ assert.deepEqual(knownNoticeGaps(entries,rebuilt.ffmpegSHA256),['THIRD_PARTY/FFmpeg-Rebuild-Record.json']);
+ assert.equal(lgplSourceEvidence(entries,'f'.repeat(64)),null);
+});
+
 
 test('Gyan FFmpeg 9.0.1 vendor hash and exact upstream source pin remain explicit',()=>{
  const v=require('./ffmpeg-9.0.1-source-inventory.json');

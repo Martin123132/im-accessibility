@@ -18,6 +18,9 @@ namespace ImAccessibilityInstaller {
  static class InstallCore {
   const string PayloadResource="ImAccessibilityInstallerPayload";
   public const string Version="v0.3.21-independent-audio-guard-private-preview";
+#if REBUILT_FFMPEG_PRIVATE
+  public const string BuildId="recovery2.3-ffmpeg-20261110";
+#endif
   public static string LocalData {
    get {string e=Environment.GetEnvironmentVariable("LOCALAPPDATA");
     return String.IsNullOrWhiteSpace(e)?Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData):e;}
@@ -37,6 +40,10 @@ namespace ImAccessibilityInstaller {
     if(Convert.ToString(map["product"])!="ImAccessibility"||
        Convert.ToString(map["version"])!=Version)
      throw new Exception("Unrecognised product/version in signed-internal package.");
+#if REBUILT_FFMPEG_PRIVATE
+    if(!map.ContainsKey("buildId")||Convert.ToString(map["buildId"])!=BuildId)
+     throw new Exception("The package does not match this private preview build.");
+#endif
     return map;
    }
   }
@@ -78,6 +85,10 @@ namespace ImAccessibilityInstaller {
    var map=new JavaScriptSerializer().Deserialize<Dictionary<string,object>>(File.ReadAllText(receipt));
    if(Convert.ToString(map["product"])!="ImAccessibility"||Convert.ToString(map["version"])!=Version)
     throw new Exception("A different version is installed. Open it from its own shortcut, Stop the TV, then uninstall it before installing this version.");
+#if REBUILT_FFMPEG_PRIVATE
+   if(!map.ContainsKey("buildId")||Convert.ToString(map["buildId"])!=BuildId)
+    throw new Exception("A different private preview is installed. It has been preserved; this installer will not replace or open it.");
+#endif
    bool appListed=false;
    foreach(var entry in Entries(map)){
     string rel=Convert.ToString(entry["path"]),full;SafeEntry(root,rel,out full);
@@ -220,7 +231,12 @@ namespace ImAccessibilityInstaller {
   Button install=new Button();CheckBox open=new CheckBox();TextBox output=new TextBox();
   Label destination=new Label();
   public InstallerWindow(){
-   Text="Install I'm-accessibility - Recovery 2.2 Private Preview";BackColor=Color.FromArgb(247,249,251);
+#if REBUILT_FFMPEG_PRIVATE
+   Text="Install I'm-accessibility - Recovery 2.3 Private Preview";
+#else
+   Text="Install I'm-accessibility - Recovery 2.2 Private Preview";
+#endif
+   BackColor=Color.FromArgb(247,249,251);
    ForeColor=Color.FromArgb(25,44,59);Font=new Font("Segoe UI",10);
    StartPosition=FormStartPosition.CenterScreen;Size=new Size(710,455);MinimumSize=new Size(675,430);
    Controls.Add(new Label{Left=28,Top=22,Width=642,Height=48,

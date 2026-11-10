@@ -23,6 +23,22 @@ foreach($inputPath in @($csc,$NodeExe,$NodeLicense,$FFmpegExe,$FFmpegLicense,$FF
  if(!(Test-Path -LiteralPath $inputPath)){throw ('Missing required input: '+$inputPath)}
 }
 if(Test-Path -LiteralPath $OutputDirectory){throw 'Refusing to overwrite existing output directory'}
+$noticeRoot=Join-Path $source 'third-party-notices'
+$rebuiltPins=Get-Content -LiteralPath (Join-Path $noticeRoot 'rebuilt-pins.json') -Raw|ConvertFrom-Json
+$lgplPin='71ac0a64a4e3e0caaf7a8c25c7e73d161ac1b269cca930d207e89e1b23959dfb'
+$ffmpegHash=(Get-FileHash -LiteralPath $FFmpegExe -Algorithm SHA256).Hash.ToLowerInvariant()
+$isRebuilt=$ffmpegHash -ceq $rebuiltPins.ffmpegSHA256
+if($ffmpegHash -notin @($lgplPin,$rebuiltPins.ffmpegSHA256,'57c56e369d5b4873b4d93fc1a1d833cb7cd8bc9325c14b05c34ce60b22842d8a')){
+ throw 'FFmpeg is not an explicitly verified private runtime'
+}
+if($isRebuilt){
+ foreach($pin in @(@($NodeExe,$rebuiltPins.nodeSHA256),@($NodeLicense,$rebuiltPins.nodeLicenseSHA256),
+  @($FFmpegLicense,$rebuiltPins.ffmpegLicenseSHA256),@($FFmpegReadme,($rebuiltPins.notices|Where-Object {$_.file -ceq 'FFmpeg-README.txt'}).sha256))){
+  if((Get-FileHash -LiteralPath $pin[0] -Algorithm SHA256).Hash.ToLowerInvariant() -cne $pin[1]){throw 'Rebuilt preview runtime/licence inputs do not match verified pins'}
+ }
+}
+$recoveryTag=if($isRebuilt){'RECOVERY2.3'}else{'RECOVERY2.2'}
+$buildId=if($isRebuilt){$rebuiltPins.buildId}else{'recovery2.2-original-runtime'}
 $nodeVersion=(& $NodeExe -p 'process.version' | Out-String).Trim()
 if($LASTEXITCODE -ne 0 -or $nodeVersion -notmatch '^v24\.'){throw ('Expected tested Node 24, got '+$nodeVersion)}
 $ffmpegVersion=(& $FFmpegExe -version | Select-Object -First 1 | Out-String).Trim()
@@ -75,19 +91,33 @@ Copy-Item -LiteralPath $FFmpegLicense -Destination (Join-Path $third 'FFmpeg-LIC
 Copy-Item -LiteralPath $FFmpegReadme -Destination (Join-Path $third 'FFmpeg-README.txt') -ErrorAction Stop
 # The separately QA-tested FFmpeg LGPL executable is allowed only by exact SHA.
 # Keep the original x264 behaviour for old private owner builds.
-$lgplPin='71ac0a64a4e3e0caaf7a8c25c7e73d161ac1b269cca930d207e89e1b23959dfb'
-$ffmpegHash=(Get-FileHash -LiteralPath $FFmpegExe -Algorithm SHA256).Hash.ToLowerInvariant()
-if($ffmpegHash -eq $lgplPin){
+if($ffmpegHash -eq $lgplPin -or $isRebuilt){
  $notice=[IO.File]::ReadAllText($FFmpegLicense)
  if($notice -notmatch 'GNU LESSER GENERAL PUBLIC LICENSE'){throw 'Pinned LGPL license notice missing'}
- $noticeRoot=Join-Path $source 'third-party-notices'
  $noticePins=Get-Content -LiteralPath (Join-Path $noticeRoot 'pins.json') -Raw|ConvertFrom-Json
- if($noticePins.ffmpegSHA256 -cne $ffmpegHash){throw 'Additional licence notices do not match the FFmpeg pin'}
+ if((!$isRebuilt -and $noticePins.ffmpegSHA256 -cne $ffmpegHash) -or
+    ($isRebuilt -and $noticePins.ffmpegSHA256 -cne $rebuiltPins.historicalRuntimeSHA256)){
+  throw 'Additional licence notices do not match the FFmpeg provenance'
+ }
  foreach($entry in $noticePins.notices){
   if($entry.file -notmatch '^[A-Za-z0-9._-]+$'){throw 'Unsafe third-party notice filename'}
   $noticePath=Join-Path $noticeRoot $entry.file
   if((Get-FileHash -LiteralPath $noticePath -Algorithm SHA256).Hash.ToLowerInvariant() -cne $entry.sha256){throw ('Third-party material differs from recorded pin: '+$entry.file)}
   Copy-Item -LiteralPath $noticePath -Destination (Join-Path $third $entry.file) -ErrorAction Stop
+ }
+ if($isRebuilt){
+  foreach($entry in $rebuiltPins.notices){
+   if($entry.file -notmatch '^[A-Za-z0-9._-]+$' -or $entry.source -notmatch '^[A-Za-z0-9._/-]+$' -or
+      $entry.source -match '(^|/)\.\.?(/|$)'){throw 'Unsafe rebuilt-runtime evidence path'}
+   $noticePath=[IO.Path]::GetFullPath((Join-Path $source $entry.source))
+   if(!$noticePath.StartsWith($source+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)){
+    throw 'Rebuilt-runtime evidence escapes source directory'
+   }
+   if((Get-FileHash -LiteralPath $noticePath -Algorithm SHA256).Hash.ToLowerInvariant() -cne $entry.sha256){
+    throw ('Rebuilt-runtime evidence differs from recorded pin: '+$entry.file)
+   }
+   Copy-Item -LiteralPath $noticePath -Destination (Join-Path $third $entry.file) -ErrorAction Stop
+  }
  }
  [IO.File]::WriteAllText((Join-Path $stage 'encoder-profile.txt'),"h264_mf" + [Environment]::NewLine,(New-Object Text.UTF8Encoding($false)))
  Write-Output 'Pinned LGPL FFmpeg: Windows Media Foundation H264 selected for HLS; fast MSE unverified, HLS kept.'
@@ -95,13 +125,14 @@ if($ffmpegHash -eq $lgplPin){
 # Record the actual shipped runtimes AND licence hashes. This inventory is
 # integrity evidence only; it never represents source/licence clearance.
 $runtimeInventory=[pscustomobject]@{
- schema=1;redistributionApproved=$false
+ schema=1;redistributionApproved=$false;buildId=$buildId
  node=[pscustomobject]@{version=$nodeVersion;sha256=(Get-FileHash -LiteralPath $NodeExe -Algorithm SHA256).Hash.ToLowerInvariant();license='THIRD_PARTY/Node-LICENSE.txt';licenseSHA256=(Get-FileHash -LiteralPath $NodeLicense -Algorithm SHA256).Hash.ToLowerInvariant()}
  ffmpeg=[pscustomobject]@{version=$ffmpegVersion;sha256=$ffmpegHash;license='THIRD_PARTY/FFmpeg-LICENSE.txt';licenseSHA256=(Get-FileHash -LiteralPath $FFmpegLicense -Algorithm SHA256).Hash.ToLowerInvariant();correspondingSourceComplete=$false}
 }
 [IO.File]::WriteAllText((Join-Path $third 'bundled-runtimes.json'),($runtimeInventory|ConvertTo-Json -Depth 5)+[Environment]::NewLine,(New-Object Text.UTF8Encoding($false)))
 function Compile-Exe([string]$sourceFile,[string]$outputName,[string[]]$references){
  $argsList=@('/nologo','/target:winexe','/platform:x64',('/out:'+(Join-Path $stage $outputName)))
+ if($isRebuilt){$argsList+='/define:REBUILT_FFMPEG_PRIVATE'}
  foreach($ref in $references){$argsList+=('/reference:'+$ref)}
  $argsList+=(Join-Path $source $sourceFile)
  if($sourceFile -eq 'ImAccessibilityUninstall.cs'){$argsList+=(Join-Path $source 'InstallSafety.cs')}
@@ -118,7 +149,7 @@ foreach($file in @('Setup.cmd','Start.cmd','StartSound.cmd','Status.cmd')){
 [IO.File]::WriteAllText((Join-Path $stage 'Uninstall.cmd'),'@echo off'+$crlf+'start "" "%~dp0ImAccessibility-Uninstall.exe"'+$crlf,[Text.Encoding]::ASCII)
 [IO.File]::WriteAllText((Join-Path $stage 'Stop.cmd'),'@echo off'+$crlf+'"%~dp0Runtime\node.exe" "%~dp0stop-session.cjs"'+$crlf+'exit /b %errorlevel%'+$crlf,[Text.Encoding]::ASCII)
 $notice=@(
- 'ImAccessibility v0.3.21 RECOVERY 2.2 PRIVATE single-file click installer',
+ ('ImAccessibility v0.3.21 '+$recoveryTag+' PRIVATE single-file click installer'),
  'Install and launch with a graphical Windows app; TV never starts during install.',
  'Node.js and FFmpeg binaries are bundled with this local preview.',
  'Initial supported LG model: OLED55CX6LA.',
@@ -135,15 +166,16 @@ $inventory=@(foreach($item in $files){[pscustomobject]@{
  sha256=(Get-FileHash -LiteralPath $item.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
 }})
 $manifest=[pscustomobject]@{
- format=1;product='ImAccessibility';version='v0.3.21-independent-audio-guard-private-preview';files=$inventory
+ format=1;product='ImAccessibility';version='v0.3.21-independent-audio-guard-private-preview';buildId=$buildId;files=$inventory
 }
 $man=Join-Path $stage 'installer-manifest.json'
 [IO.File]::WriteAllText($man,($manifest|ConvertTo-Json -Depth 8)+[Environment]::NewLine,(New-Object Text.UTF8Encoding($false)))
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $zip=Join-Path $out 'ImAccessibilityEmbeddedPayload.zip'
 [IO.Compression.ZipFile]::CreateFromDirectory($stage,$zip,[IO.Compression.CompressionLevel]::Optimal,$false)
-$exe=Join-Path $out 'ImAccessibility-Setup-v0.3.21-RECOVERY2.2-PRIVATE-PREVIEW.exe'
+$exe=Join-Path $out ('ImAccessibility-Setup-v0.3.21-'+$recoveryTag+'-PRIVATE-PREVIEW.exe')
 $compilerArgs=@('/nologo','/target:winexe','/platform:x64',('/out:'+$exe))
+if($isRebuilt){$compilerArgs+='/define:REBUILT_FFMPEG_PRIVATE'}
 foreach($ref in @('System.Windows.Forms.dll','System.Drawing.dll','System.Web.Extensions.dll',
  'System.IO.Compression.dll','System.IO.Compression.FileSystem.dll','Microsoft.CSharp.dll')){
  $compilerArgs+=('/reference:'+$ref)
@@ -159,7 +191,7 @@ if($LASTEXITCODE -ne 0){throw 'Release audit detected package corruption or priv
 $summary=[pscustomobject]@{
  file=$exe;sizeBytes=(Get-Item -LiteralPath $exe).Length
  sha256=(Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()
- files=$files.Count;nodeVersion=$nodeVersion;ffmpegVersion=$ffmpegVersion;privatePreview=$true
+ files=$files.Count;nodeVersion=$nodeVersion;ffmpegVersion=$ffmpegVersion;privatePreview=$true;buildId=$buildId
 }
 $summary|ConvertTo-Json -Depth 5|Set-Content -LiteralPath (Join-Path $out 'build-report.json') -Encoding UTF8
 $summary|ConvertTo-Json -Compress
