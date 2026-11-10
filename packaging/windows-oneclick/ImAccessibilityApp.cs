@@ -68,7 +68,8 @@ if(op=="start"&&File.Exists(encoderProfile)){
     if(input!=null)p.StandardInput.Write(input);
     p.StandardInput.Close();
     var outputTask=p.StandardOutput.ReadToEndAsync();var errorTask=p.StandardError.ReadToEndAsync();
-    if(!p.WaitForExit(15000)){try{p.Kill();p.WaitForExit(2000);}catch{}throw new Exception("Local "+op+" timed out.");}
+    int timeout=op=="prepare-audio"?75000:15000;
+    if(!p.WaitForExit(timeout)){try{p.Kill();p.WaitForExit(2000);}catch{}throw new Exception("Local "+op+" timed out.");}
     string output=outputTask.Result,error=errorTask.Result;
     if(p.ExitCode!=0)throw new Exception(String.IsNullOrWhiteSpace(error)?output.Trim():error.Trim());
     return output.Trim();
@@ -114,7 +115,7 @@ if(op=="start"&&File.Exists(encoderProfile)){
    readonly System.Windows.Forms.Timer healthPoll=new System.Windows.Forms.Timer();
   public MainWindow(){
 #if REBUILT_FFMPEG_PRIVATE
-   Text="I'm-accessibility - Recovery 2.3 Private Preview";
+   Text="I'm-accessibility - Recovery 2.4.2 Private Preview";
 #else
    Text="I'm-accessibility - Recovery 2.2 Private Preview";
 #endif
@@ -141,7 +142,7 @@ if(op=="start"&&File.Exists(encoderProfile)){
    confirm.CheckedChanged+=(s,e)=>{save.Enabled=confirm.Enabled&&confirm.Checked&&!commandBusy&&!scanning&&setupIdle;};
    save.Text="Save selected TV";save.SetBounds(155,518,203,43);Primary(save);
    save.Enabled=false;save.Click+=(s,e)=>Save();Controls.Add(save);
-   state.SetBounds(366,491,350,85);state.Text="Checking setup...";Controls.Add(state);
+   state.SetBounds(366,518,350,58);state.Text="Checking setup...";Controls.Add(state);
    Panel second=new Panel{Left=28,Top=582,Width=694,Height=2,BackColor=Color.Silver};Controls.Add(second);
    AddLabel("2   USE YOUR TV",28,599,675,28,11,true);
    sound.SetBounds(29,635,675,29);
@@ -199,6 +200,17 @@ if(op=="start"&&File.Exists(encoderProfile)){
      e.Cancel=true;CloseSafely();
     };
   }
+  internal void FitToWorkingArea(Rectangle area){
+   // Keep the whole frame above the taskbar; AutoScroll handles shorter screens.
+   MinimumSize=new Size(Math.Min(MinimumSize.Width,area.Width),Math.Min(MinimumSize.Height,area.Height));
+   int width=Math.Min(Width,area.Width),height=Math.Min(Height,area.Height);
+   Bounds=new Rectangle(Math.Max(area.Left,Math.Min(Left,area.Right-width)),
+    Math.Max(area.Top,Math.Min(Top,area.Bottom-height)),width,height);
+  }
+  protected override void OnLoad(EventArgs e){
+   FitToWorkingArea(Screen.FromControl(this).WorkingArea);
+   base.OnLoad(e);
+  }
   public object AccessibilityReport(){
    Control[] ordered={adapters,find,televisions,tvIP,confirm,save,sound,start,stop,status,uninstall,log};
    var records=new List<Dictionary<string,object>>();
@@ -249,7 +261,11 @@ if(op=="start"&&File.Exists(encoderProfile)){
       adapters.SelectedIndex=-1;
       for(int i=0;i<adapters.Items.Count;i++)
        if(((Adapter)adapters.Items[i]).IP==ip)adapters.SelectedIndex=i;
-     }catch{adapters.SelectedIndex=-1;Log("Saved network unavailable. Choose a network explicitly for discovery. Start still uses your saved TV and network.");}
+     }catch{
+      adapters.SelectedIndex=-1;editingSetup=true;start.Enabled=false;
+      state.Text="Saved network unavailable. Choose the network and find your TV again.";
+      Log(state.Text);
+     }
     }else if(adapters.Items.Count==1){
      state.Text="Ready to find TVs...";
      BeginInvoke(new Action(()=>FindTVs()));
@@ -343,7 +359,11 @@ if(op=="start"&&File.Exists(encoderProfile)){
    bool audio=sound.Checked;
    try{
       await Task.Run(()=>Engine.Run("validate",null,false));
-      if(audio)await Task.Run(()=>Engine.Run("prepare-audio",null,true));
+      if(audio){
+       state.Text="Preparing laptop audio restoration. Please wait...";
+       Log("Preparing audio safety. This can take up to a minute on first use.");
+       await Task.Run(()=>Engine.Run("prepare-audio",null,true));
+      }
       Log(await Task.Run(()=>Engine.Run("start",null,audio)));
       presentationTries=0;presentationBusy=false;presentationPoll.Start();
     }

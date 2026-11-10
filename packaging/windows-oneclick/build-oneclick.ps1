@@ -37,7 +37,7 @@ if($isRebuilt){
   if((Get-FileHash -LiteralPath $pin[0] -Algorithm SHA256).Hash.ToLowerInvariant() -cne $pin[1]){throw 'Rebuilt preview runtime/licence inputs do not match verified pins'}
  }
 }
-$recoveryTag=if($isRebuilt){'RECOVERY2.3'}else{'RECOVERY2.2'}
+$recoveryTag=if($isRebuilt){'RECOVERY2.4.2'}else{'RECOVERY2.2'}
 $buildId=if($isRebuilt){$rebuiltPins.buildId}else{'recovery2.2-original-runtime'}
 $nodeVersion=(& $NodeExe -p 'process.version' | Out-String).Trim()
 if($LASTEXITCODE -ne 0 -or $nodeVersion -notmatch '^v24\.'){throw ('Expected tested Node 24, got '+$nodeVersion)}

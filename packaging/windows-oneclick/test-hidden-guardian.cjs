@@ -24,7 +24,9 @@ async function verify({scheduled=false,appExe=null,nodeExe=process.execPath,repo
   fs.mkdirSync(path.dirname(marker),{recursive:true});
   fs.writeFileSync(path.join(dir,watch),`const fs=require('node:fs'),path=require('node:path');
 if(process.argv.length!==3||process.argv[2]!=='--task-guardian')process.exit(2);
-fs.writeFileSync(path.join(__dirname,'fixture-ready.json'),JSON.stringify({pid:process.pid,parentPid:process.ppid,args:process.argv.slice(2)}));
+const ready=path.join(__dirname,'fixture-ready.json');
+fs.writeFileSync(ready+'.tmp',JSON.stringify({pid:process.pid,parentPid:process.ppid,args:process.argv.slice(2)}));
+fs.renameSync(ready+'.tmp',ready);
 const timer=setInterval(()=>{if(fs.existsSync(path.join(__dirname,'fixture-stop'))){clearInterval(timer);process.exit(0)}},100);
 setTimeout(()=>process.exit(3),60000).unref();`);
   if(appExe)fs.copyFileSync(appExe,app);

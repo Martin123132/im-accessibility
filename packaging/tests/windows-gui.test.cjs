@@ -60,12 +60,13 @@ test('TV selection remains usable with settings preserved by uninstall',{skip:pr
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'imaccess-selection-')),repo=path.resolve(__dirname,'../..');
  try{
   const profile=path.join(dir,'Profile');fs.mkdirSync(path.join(profile,'ImAccessibility'),{recursive:true});
-  fs.writeFileSync(path.join(profile,'ImAccessibility/settings.json'),'{}');
+  fs.writeFileSync(path.join(profile,'ImAccessibility/settings.json'),JSON.stringify({television:{ip:'10.36.2.40'}}));
   fs.mkdirSync(path.join(dir,'Runtime'));fs.copyFileSync(process.execPath,path.join(dir,'Runtime/node.exe'));
-  fs.writeFileSync(path.join(dir,'gui-config-bridge.cjs'),`console.log(require('node:fs').readFileSync(require('node:path').join(__dirname,'status.json'),'utf8'))`);
+  fs.writeFileSync(path.join(dir,'Runtime/ffmpeg.exe'),'not executed by this controller fixture');
+  fs.writeFileSync(path.join(dir,'gui-config-bridge.cjs'),`const op=process.argv[2];if(op==='doctor')console.log(JSON.stringify({adapters:[{name:'FixtureEthernet',ip:'10.36.2.5',mask:'255.255.255.0'}]}));else if(op==='validate'){console.error('Saved network unavailable');process.exitCode=1;}else if(op==='prepare-audio')setTimeout(()=>console.log('{"ready":true}'),16000);else console.log(require('node:fs').readFileSync(require('node:path').join(__dirname,'status.json'),'utf8'))`);
   fs.writeFileSync(path.join(dir,'status.json'),JSON.stringify({state:'not-started',audioPending:false,message:'Choose Start TV to connect.'}));
   const harness=path.join(dir,'Selection.cs'),exe=path.join(dir,'Selection.exe');
-  fs.writeFileSync(harness,`using System; using System.IO; using System.Threading; using System.Reflection; using System.Windows.Forms;
+  fs.writeFileSync(harness,`using System; using System.IO; using System.Threading; using System.Reflection; using System.Windows.Forms; using System.Drawing;
 using ImAccessibilityDesktop;
 class Selection {
  static T Field<T>(object o,string name){return (T)o.GetType().GetField(name,BindingFlags.Instance|BindingFlags.NonPublic).GetValue(o);}
@@ -74,6 +75,16 @@ class Selection {
  [STAThread] static void Main(){using(var w=new MainWindow()){
   var list=Field<ListBox>(w,"televisions");var confirm=Field<CheckBox>(w,"confirm");
   var save=Field<Button>(w,"save");var address=Field<TextBox>(w,"tvIP");
+  var setupStatus=Field<Label>(w,"state");
+  if(setupStatus.Bounds.IntersectsWith(confirm.Bounds)||setupStatus.Bounds.IntersectsWith(save.Bounds))
+   throw new Exception("Setup status is hidden behind another control");
+  foreach(var area in new[]{new Rectangle(0,0,1024,720),new Rectangle(-1366,0,1366,728),new Rectangle(0,0,640,440)}){
+   w.Bounds=new Rectangle(200,100,780,830);w.FitToWorkingArea(area);
+   if(!area.Contains(w.Bounds))throw new Exception("Initial window extends beyond usable screen: "+area);
+  }
+  Call(w,"Initialize");Poll(w);
+  if(Field<Button>(w,"start").Enabled||!setupStatus.Text.Contains("Saved network unavailable"))
+   throw new Exception("Idle status hid unavailable saved network or enabled Start");
   list.Items.Add(new FoundTV{IP="10.36.2.40",Name="Test LG",Brand="LG"});
   list.SelectedIndex=0;
   if(!confirm.Enabled||address.Text!="10.36.2.40")throw new Exception("Preserved settings block LG selection");
@@ -89,7 +100,9 @@ class Selection {
   list.Items.Add(new FoundTV{IP="10.36.2.41",Name="Test Samsung",Brand="Samsung"});list.SelectedIndex=1;
   if(confirm.Enabled||confirm.Checked||save.Enabled)throw new Exception("Unsupported TV became selectable for streaming");
   list.SelectedIndex=0;if(confirm.Checked)throw new Exception("Confirmation carried to another selection");
-  Console.WriteLine("PASS preserved-settings TV selection and explicit confirmation");
+  var prepared=Engine.Parse(Engine.Run("prepare-audio",null,true));
+  if(!(bool)prepared["ready"])throw new Exception("Healthy slow audio setup did not complete");
+  Console.WriteLine("PASS preserved-settings TV selection, explicit confirmation and slow audio preparation");
  }}
 }`);
   const csc=path.join(process.env.WINDIR,'Microsoft.NET/Framework64/v4.0.30319/csc.exe');
@@ -97,7 +110,7 @@ class Selection {
    ...['System.Windows.Forms.dll','System.Drawing.dll','System.Web.Extensions.dll'].map(x=>'/reference:'+x),
    path.join(repo,'packaging/windows-oneclick/ImAccessibilityApp.cs'),harness],{encoding:'utf8',windowsHide:true,timeout:25000});
   assert.equal(built.status,0,built.stdout+built.stderr);
-  const run=cp.spawnSync(exe,[],{env:{...process.env,LOCALAPPDATA:profile},encoding:'utf8',windowsHide:true,timeout:10000});
+  const run=cp.spawnSync(exe,[],{env:{...process.env,LOCALAPPDATA:profile},encoding:'utf8',windowsHide:true,timeout:40000});
   assert.equal(run.status,0,run.stdout+run.stderr);assert.match(run.stdout,/PASS preserved-settings/);
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });

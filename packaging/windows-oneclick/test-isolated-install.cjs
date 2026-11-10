@@ -26,7 +26,7 @@ function main(setup,output,ffprobe){
   gui(setup,'--verify','archive',/^SUCCESS VALID/);
   gui(setup,'--test-install','fresh-install',/^SUCCESS /);
   const packageManifest=JSON.parse(fs.readFileSync(path.join(app,'installer-manifest.json'),'utf8'));
-  const rebuilt=packageManifest.buildId==='recovery2.3-ffmpeg-20261110';
+  const rebuilt=packageManifest.buildId===require('./third-party-notices/rebuilt-pins.json').buildId;
   if(rebuilt){
    const pins=require('./third-party-notices/rebuilt-pins.json');
    assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(app,'Runtime','ffmpeg.exe'))).digest('hex'),pins.ffmpegSHA256);
@@ -50,7 +50,7 @@ function main(setup,output,ffprobe){
   }
   const a11y=JSON.parse(gui(path.join(app,'ImAccessibility.exe'),'--accessibility-selftest','accessibility',/"allNamed":true/));
   assert.equal(a11y.tabOrderValid,true);assert.equal(a11y.allTabStops,true);
-  if(rebuilt){assert.match(a11y.window,/Recovery 2\.3/);checks.push('distinct-recovery-2.3-title');}
+  if(rebuilt){assert.match(a11y.window,/Recovery 2\.4\.2/);checks.push('distinct-recovery-2.4.2-title');}
   const guardianStatus=node(`const cp=require('node:child_process'),path=require('node:path');const r=cp.spawnSync(path.join(process.env.SystemRoot,'System32/WindowsPowerShell/v1.0/powershell.exe'),['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',${JSON.stringify(path.join(app,'audio-guard-task.ps1'))},'-Action','Status'],{encoding:'utf8',windowsHide:true,timeout:12000});if(r.status!==0)throw Error(r.stderr);console.log(r.stdout);`);
   assert.equal(JSON.parse(guardianStatus).installed,false);checks.push('packaged-audio-guardian-status');
   const first=path.join(app,'first-run.cjs');

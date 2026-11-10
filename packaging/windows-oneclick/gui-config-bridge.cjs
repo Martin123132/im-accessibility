@@ -64,7 +64,7 @@ async function main(){
     const script=path.join(__dirname,'audio-guard-task.ps1');
     const powershell=path.join(process.env.SystemRoot,'System32','WindowsPowerShell','v1.0','powershell.exe');
     const r=cp.spawnSync(powershell,['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',script,'-Action','Enable','-OwnerConsent','YES'],
-      {encoding:'utf8',windowsHide:true,timeout:12000,maxBuffer:8192});
+      {encoding:'utf8',windowsHide:true,timeout:60000,maxBuffer:8192});
     if(r.error||r.status!==0)throw Error('Audio safety setup failed; no stream started. '+String(r.stderr||r.error?.message||'Unknown failure').slice(0,180));
     return output({ready:true,note:'Audio restoration enabled on demand; no automatic triggers.'});
   }

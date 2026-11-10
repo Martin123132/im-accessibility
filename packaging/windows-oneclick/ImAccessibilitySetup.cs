@@ -19,7 +19,7 @@ namespace ImAccessibilityInstaller {
   const string PayloadResource="ImAccessibilityInstallerPayload";
   public const string Version="v0.3.21-independent-audio-guard-private-preview";
 #if REBUILT_FFMPEG_PRIVATE
-  public const string BuildId="recovery2.3-ffmpeg-20261110";
+  public const string BuildId="recovery2.4.2-vm-20261110";
 #endif
   public static string LocalData {
    get {string e=Environment.GetEnvironmentVariable("LOCALAPPDATA");
@@ -232,7 +232,7 @@ namespace ImAccessibilityInstaller {
   Label destination=new Label();
   public InstallerWindow(){
 #if REBUILT_FFMPEG_PRIVATE
-   Text="Install I'm-accessibility - Recovery 2.3 Private Preview";
+   Text="Install I'm-accessibility - Recovery 2.4.2 Private Preview";
 #else
    Text="Install I'm-accessibility - Recovery 2.2 Private Preview";
 #endif

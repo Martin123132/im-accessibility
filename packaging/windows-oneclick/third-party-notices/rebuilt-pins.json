@@ -5,7 +5,7 @@
   "nodeLicenseSHA256": "4573185d56580da2b890ba34a85a409257640f1c5632eade4300137266194d18",
   "ffmpegLicenseSHA256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768",
   "historicalRuntimeSHA256": "71ac0a64a4e3e0caaf7a8c25c7e73d161ac1b269cca930d207e89e1b23959dfb",
-  "buildId": "recovery2.3-ffmpeg-20261110",
+  "buildId": "recovery2.4.2-vm-20261110",
   "notices": [
     {
       "file": "FFmpeg-README.txt",

@@ -1,5 +1,7 @@
 # Recovery 2.3 private installer — 10 November 2026
 
+Historical build record. Subsequent real Windows 11 VM testing found defects and produced [Recovery 2.4.2](WINDOWS_VM_RECOVERY_2_4_2_2026-11-10.md); use that report for the latest private candidate and acceptance state. The isolation limitations below describe the earlier Recovery 2.3 build task.
+
 Built one private Windows installer containing the rebuilt FFmpeg. It passed guarded installer and synthetic runtime tests. **It has not replaced the owner's accepted Recovery 2.2 installation and is not cleared for public distribution.** The repository remains private.
 
 ## Exact candidate
