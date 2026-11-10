@@ -19,7 +19,7 @@ const required=[
   'tv-reliability-v0.5/viewer/web/immersive.js',
   'tv-reliability-v0.5/viewer/web/immersive.css',
   'tv-reliability-v0.5/release-config.cjs',
-   'tv-reliability-v0.5/viewing-policy.cjs',
+   'tv-reliability-v0.5/viewing-policy.cjs','tv-reliability-v0.5/elapsed-clock.cjs',
   'packaging/package-core.cjs','packaging/build-preview.cjs',
   'packaging/install.cjs','packaging/uninstall.cjs',
   'packaging/first-run.cjs','packaging/launch-host.cjs',

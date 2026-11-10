@@ -3,8 +3,9 @@
 // sound endpoint, start a real guard or control another user's processes.
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os');
-const {SpeakerRouter,guardianReady,startIndependentGuard,TASK_NAME,taskNameFor}=require('../speaker-routing.cjs');
-const {serviceTick}=require('../speaker-route-watch.cjs');
+const {SpeakerRouter,guardianReady,startIndependentGuard,TASK_NAME,taskNameFor,publishRename}=require('../speaker-routing.cjs');
+const {serviceTick,writeReadiness}=require('../speaker-route-watch.cjs');
+const CLOCK=require('../../elapsed-clock.cjs');
 const TAG='a'.repeat(32),DEVICE='b'.repeat(64);
 function temp(){
  // CI may expose TEMP through a DOS short alias. Loaded Node modules and
@@ -60,7 +61,7 @@ test('installed audio guardian Status works in the inherited GUI PowerShell envi
 test('Task-guard start is narrow, checks exact session heartbeat and does not register a task',()=>{
  const x=temp(),now=250000,invocations=[];
  try{
-  fs.writeFileSync(x.marker,JSON.stringify({sessionTag:TAG,pid:12345,beatAt:now})+'\n');
+  fs.writeFileSync(x.marker,JSON.stringify({sessionTag:TAG,pid:12345,clockBasis:CLOCK.BASIS,beatAt:now})+'\n');
   const ok=startIndependentGuard({sessionTag:TAG,readyFile:x.marker,nowFn:()=>now,
    execFn:(exe,args)=>{invocations.push({exe,args});return {status:0}},
    pauseFn:()=>{throw Error('Already ready; no artificial wait necessary')}
@@ -82,7 +83,7 @@ test('Independent guardian survives video-session-loss logically and restores on
  let muted=true,calls=0;
  try{
   const record={sessionTag:TAG,deviceIdHash:DEVICE,originalMuted:false,
-    appliedMuted:true,startedAt:1000,lastPulse:now,viewingMode:'until-stopped'};
+    appliedMuted:true,startedAt:1000,lastPulse:now,clockBasis:CLOCK.BASIS,viewingMode:'until-stopped'};
   fs.writeFileSync(x.journal,JSON.stringify(record)+'\n');
   const native=(_exe,args)=>{
    if(args[0]==='--status')return {deviceIdHash:DEVICE,muted,endpoint:'default-speaker-output'};
@@ -115,6 +116,54 @@ test('Independent heartbeat loss while viewer is alive restores original mute in
   assert.equal(fs.existsSync(x.journal),false);
  }finally{x.clean()}
 });
+test('Audio readiness ignores wall-clock skew but rejects expired, future and old-clock heartbeats',()=>{
+ const x=temp(),dateNow=Date.now,now=CLOCK.now();
+ try{
+  fs.writeFileSync(x.marker,JSON.stringify({sessionTag:TAG,pid:12345,clockBasis:CLOCK.BASIS,beatAt:now}));
+  for(const offset of [-60000,8000,60000]){
+   let wall=dateNow()+offset;Date.now=()=>wall;
+   assert.equal(startIndependentGuard({sessionTag:TAG,readyFile:x.marker,
+    execFn:()=>({status:0}),pauseFn:()=>{wall+=1000;throw Error('Fresh same-boot heartbeat was rejected')}}),true);
+   assert.equal(guardianReady(TAG,{file:x.marker}),true);
+  }
+  assert.equal(guardianReady(TAG,{file:x.marker,now:now+8000}),false);
+  assert.equal(guardianReady(TAG,{file:x.marker,now:now-1000}),false);
+  fs.writeFileSync(x.marker,JSON.stringify({sessionTag:TAG,pid:12345,beatAt:now}));
+  assert.equal(guardianReady(TAG,{file:x.marker,now}),false,'Never mix the old wall clock with uptime');
+ }finally{Date.now=dateNow;x.clean()}
+});
+test('Old wall-clock or pre-reboot audio journals restore the original endpoint instead of extending its mute',()=>{
+ const x=temp();
+ try{
+  for(const clockBasis of [undefined,CLOCK.BASIS]){
+   let muted=true;
+   fs.writeFileSync(x.journal,JSON.stringify({sessionTag:TAG,deviceIdHash:DEVICE,originalMuted:false,
+    appliedMuted:true,startedAt:100000,lastPulse:110000,clockBasis,viewingMode:'until-stopped'}));
+   const result=serviceTick(1000,(_exe,args)=>{
+    if(args[0]==='--cas'){assert.deepEqual(args,['--cas',DEVICE,'1','0']);muted=false}
+    return {deviceIdHash:DEVICE,muted,endpoint:'default-speaker-output'};
+   },x.journal,x.marker);
+   assert.equal(result.action,'stop');assert.equal(muted,false);
+   assert.equal(fs.existsSync(x.journal),false);assert.equal(fs.existsSync(x.marker),false);
+  }
+ }finally{x.clean()}
+});
+test('A same-boot heartbeat deadline expires despite wall-clock corrections',()=>{
+ const x=temp(),dateNow=Date.now;let muted=true;
+ try{
+  const now=CLOCK.now();
+  fs.writeFileSync(x.journal,JSON.stringify({sessionTag:TAG,deviceIdHash:DEVICE,originalMuted:false,
+   appliedMuted:true,startedAt:now,lastPulse:now,clockBasis:CLOCK.BASIS,viewingMode:'until-stopped'}));
+  Date.now=()=>dateNow()+60000;
+  assert.equal(serviceTick(undefined,()=>{throw Error('Fresh lease must not alter sound')},x.journal,x.marker).action,'watch');
+  Date.now=()=>dateNow()-60000;
+  assert.equal(serviceTick(now+22001,(_exe,args)=>{
+   if(args[0]==='--cas')muted=false;
+   return {deviceIdHash:DEVICE,muted,endpoint:'default-speaker-output'};
+  },x.journal,x.marker).action,'stop');
+  assert.equal(muted,false);
+ }finally{Date.now=dateNow;x.clean()}
+});
 test('Task manager registration requires an exact owner approval; task code contains no TV launch',()=>{
  const ps=fs.readFileSync(path.resolve(__dirname,'../../../packaging/windows-oneclick/audio-guard-task.ps1'),'utf8');
  assert.ok(ps.includes("if($OwnerConsent -ne 'YES')"));
@@ -125,4 +174,43 @@ test('Task manager registration requires an exact owner approval; task code cont
  assert.match(ps,/Audio guardian must have no automatic task triggers/);
  assert.ok(ps.includes("if(Test-Path -LiteralPath $journal)"));
  assert.doesNotMatch(ps,/system\\.launcher|powershell -enc|Invoke-WebRequest|Start-Process.+resume-host/);
+});
+test('Audio journal and guardian readiness survive brief Windows file-sharing violations',()=>{
+ const x=temp(),waits=[];let attempts=0;
+ try{
+  const tempFile=path.join(x.dir,'publication.tmp');
+  fs.writeFileSync(x.marker,'previous complete record');fs.writeFileSync(tempFile,'new complete record');
+  const flaky={...fs,renameSync(from,to){
+   attempts++;
+   if(attempts<=2){assert.equal(fs.readFileSync(to,'utf8'),'previous complete record');throw Object.assign(Error('reader has file open'),{code:'EPERM'})}
+   fs.renameSync(from,to);
+  }};
+  publishRename(tempFile,x.marker,flaky,ms=>waits.push(ms));
+  assert.equal(attempts,3);assert.deepEqual(waits,[20,40]);
+  assert.equal(fs.readFileSync(x.marker,'utf8'),'new complete record');
+  let blocked=2;
+  const api={...fs,renameSync(from,to){if(blocked-->0)throw Object.assign(Error('sharing violation'),{code:'EBUSY'});fs.renameSync(from,to)}};
+  writeReadiness({sessionTag:TAG},1000,x.marker,api);
+  assert.equal(guardianReady(TAG,{file:x.marker,now:1000}),true);
+  blocked=2;
+  const r=new SpeakerRouter({journal:x.journal,fsApi:api,clock:()=>1000,watchFn:()=>{},
+   statusFn:()=>({deviceIdHash:DEVICE,muted:false}),casFn:()=>{throw Error('No mute allowed in fixture')}});
+  r.setMode('both',DEVICE);blocked=2;r.pulse();
+  assert.equal(JSON.parse(fs.readFileSync(x.journal)).lastPulse,1000);
+  assert.equal(r.restore(),true);
+  assert.equal(fs.readdirSync(x.dir).some(name=>name.endsWith('.tmp')),false);
+ }finally{x.clean()}
+});
+test('Persistent publication errors remain bounded and cannot destroy the prior recovery record',()=>{
+ const x=temp(),waits=[];let attempts=0;
+ try{
+  fs.writeFileSync(x.marker,'prior recovery record');
+  const locked={...fs,renameSync(){attempts++;throw Object.assign(Error('still locked'),{code:'EPERM'})}};
+  assert.throws(()=>publishRename('unused',x.marker,locked,ms=>waits.push(ms)),/still locked/);
+  assert.equal(attempts,6);assert.equal(waits.reduce((a,b)=>a+b,0),300);
+  assert.equal(fs.readFileSync(x.marker,'utf8'),'prior recovery record');
+  attempts=0;
+  assert.throws(()=>publishRename('unused',x.marker,{renameSync(){attempts++;throw Object.assign(Error('disk failure'),{code:'EIO'})}},()=>{throw Error('No retry for disk failure')}),/disk failure/);
+  assert.equal(attempts,1);
+ }finally{x.clean()}
 });

@@ -9,6 +9,7 @@ const {launchTv}=require('./lg-launch.cjs');
 const SOUND=require('./sound.cjs');
 const ENCODER_FALLBACK=require('./encoder-fallback.cjs');
 const VIEWING=require('../viewing-policy.cjs');
+const CLOCK=require('../elapsed-clock.cjs');
 const ROOT=__dirname,RUNTIME=path.join(ROOT,'runtime'),SEGMENTS=path.join(RUNTIME,'stream');
 const FFMPEG=process.env.IM_ACCESSIBILITY_CONFIG_PATH!==undefined
  ?require('../release-config.cjs').readUserSettings().executables.ffmpegExe
@@ -19,7 +20,7 @@ const WANT_AUDIO=SOUND.isAudioOptIn(process.env.IM_ACCESSIBILITY_TV_AUDIO);
 const controlKey=crypto.randomBytes(24).toString('hex'),watchKey=crypto.randomBytes(24).toString('hex');
 const ctrlOrigin='http://'+LAN_IP+':'+PORT;
 let capture=null,captureState='stopped',capturePid=null,captureError=null,
- captureStarted=null,watchHits=0,lastWatchAt=null,lgState='idle',lastDeviceIp=null;
+ captureStarted=null,captureStartedTick=null,watchHits=0,lastWatchAt=null,lgState='idle',lastDeviceIp=null;
 let audioChild=null,audioDeviceIdHash=null,audioState=WANT_AUDIO?'pending':'off',audioError=null,
     ownerStopped=false,recoveryTried=false;
 // Detect a blocked encoder even when FFmpeg's process is still alive.
@@ -35,9 +36,17 @@ function atomic(file,obj){
  fs.writeFileSync(temp,JSON.stringify(obj,null,2)+'\n');
  fs.renameSync(temp,file);
 }
-function manifestAgeMs(dir=SEGMENTS,now=Date.now()){
- try{return Math.max(0,now-fs.statSync(path.join(dir,'index.m3u8')).mtimeMs)}
- catch{return null}
+const manifestObservations=new Map();
+function manifestAgeMs(dir=SEGMENTS,now=CLOCK.now()){
+ try{
+  const st=fs.statSync(path.join(dir,'index.m3u8'));
+  const signature=[st.mtimeMs,st.ctimeMs,st.size,st.ino].join(':');
+  let seen=manifestObservations.get(dir);
+  // Measure how long an unchanged playlist has been observed. Filesystem UTC
+  // and this Node process's wall clock need not agree after clock corrections.
+  if(!seen||seen.signature!==signature||now<seen.at){seen={signature,at:now};manifestObservations.set(dir,seen)}
+  return now-seen.at;
+ }catch{manifestObservations.delete(dir);return null}
 }
 function shouldRecover({alive,ageMs,sinceStartMs,recovering=false}){
  return !!alive&&!recovering&&Number.isFinite(ageMs)&&ageMs>MAX_MANIFEST_AGE_MS&&
@@ -60,6 +69,7 @@ function status(){
    audioDeviceIdHash:audioState==='active'?audioDeviceIdHash:null,audioError};
 }
 function clearSegments(){
+ manifestObservations.delete(SEGMENTS);
  for(const name of fs.readdirSync(SEGMENTS)){
   const segment=name.match(/^segment(\d{6})\.ts$/);
   if(segment)nextSegment=Math.max(nextSegment,Number(segment[1])+1);
@@ -73,7 +83,7 @@ function safeEndAudio(child){
  try{child.kill('SIGTERM')}catch{}
 }
 function spawnCapture(format=null){
- captureState='starting';captureError=null;captureStarted=new Date().toISOString();
+ captureState='starting';captureError=null;captureStarted=new Date().toISOString();captureStartedTick=CLOCK.now();
  captureFormat=format;
  const args=SOUND.argsFor(SEGMENTS,format,nextSegment,qualityMode,videoEncoder);
  const ff=cp.spawn(FFMPEG,args,{cwd:ROOT,windowsHide:true,
@@ -142,14 +152,14 @@ function spawnCapture(format=null){
    encoder:videoEncoder,alreadyUsed:encoderFallbackUsed,ownerStopped,
    pendingRestart:!!watchRecovery,recoveryTried,spawnError,
    hadManifest:fs.existsSync(path.join(SEGMENTS,'index.m3u8')),
-   sinceStartMs:Date.now()-Date.parse(captureStarted),exitCode:code,signal
+   sinceStartMs:CLOCK.now()-captureStartedTick,exitCode:code,signal
   },'early-exit');
-  const recent=Date.now();
+  const recent=CLOCK.now();
   recoveries=recoveries.filter(t=>recent-t<RECOVERY_WINDOW_MS);
   if(early.switchIt&&recoveries.length<4&&!ownerStopped&&VIEWING.active(expiresAt)){
    videoEncoder=early.encoder;encoderFallbackUsed=true;
    encoderFallbackReason=early.reason;lastRecoveryReason=early.reason;
-   lastRecoveryUtc=new Date(recent).toISOString();
+   lastRecoveryUtc=new Date().toISOString();
    recoveries.push(recent);recoveryCount++;
    captureState='recovering';captureError=null;
    setTimeout(()=>{
@@ -169,11 +179,11 @@ function spawnCapture(format=null){
   // Unexpected FFmpeg exits should recover desktop video automatically as well.
   // Bound consecutive attempts to avoid a rapid encoder crash/restart loop.
   if(!ownerStopped&&VIEWING.active(expiresAt)){
-   const now=Date.now();
+   const now=CLOCK.now();
    recoveries=recoveries.filter(t=>now-t<RECOVERY_WINDOW_MS);
    if(recoveries.length<4){
     recoveries.push(now);recoveryCount++;
-    lastRecoveryUtc=new Date(now).toISOString();
+    lastRecoveryUtc=new Date().toISOString();
     lastRecoveryReason='FFmpeg exited unexpectedly '+String(code)+'/'+String(signal);
     const nextFormat=format?null:captureFormat;
     if(format){recoveryTried=true;audioState='fallback';
@@ -212,7 +222,7 @@ function switchQuality(mode){
  if(!VIEWING.active(expiresAt)||ownerStopped)throw Error('Viewing session is not active');
  if(mode===qualityMode)return status();
  if(!captureAlive()||captureState!=='running'||pendingRestart)throw Error('Video is not ready to change quality');
- const now=Date.now();
+ const now=CLOCK.now();
  if(lastQualityAt&&now-lastQualityAt<5000)throw Error('Quality changes must be at least five seconds apart');
  const previous=qualityMode;
  qualityMode=mode;qualityVersion++;
@@ -231,10 +241,10 @@ function stopCapture(){
  captureState='stopped';audioState='off';audioDeviceIdHash=null;
  return status();
 }
-function watchdogTick(now=Date.now()){
+function watchdogTick(now=CLOCK.now()){
  if(ownerStopped||captureState!=='running'||pendingRestart||!captureAlive())return false;
  const ageMs=manifestAgeMs(SEGMENTS,now);
- const sinceStartMs=now-Date.parse(captureStarted);
+ const sinceStartMs=now-captureStartedTick;
  // A Media Foundation process can remain alive without creating a first HLS
  // playlist. Without this guard, the existing stale-playlist test never fires.
  const firstPlaylist=fs.existsSync(path.join(SEGMENTS,'index.m3u8'));
@@ -258,7 +268,7 @@ function watchdogTick(now=Date.now()){
    captureError='Could not stop the stalled hardware encoder';
    return false;
   }
-  recoveries.push(now);recoveryCount++;lastRecoveryUtc=new Date(now).toISOString();
+  recoveries.push(now);recoveryCount++;lastRecoveryUtc=new Date().toISOString();
   lastRecoveryReason=stalled.reason;
   safeEndAudio(audioChild);
   return true;
@@ -286,7 +296,7 @@ function watchdogTick(now=Date.now()){
  }
  const nextFormat=audioTooUnstable?null:captureFormat;
  pendingRestart={format:nextFormat};
- recoveries.push(now);recoveryCount++;lastRecoveryUtc=new Date(now).toISOString();
+ recoveries.push(now);recoveryCount++;lastRecoveryUtc=new Date().toISOString();
  lastRecoveryReason='No fresh HLS video segments for '+Math.round(ageMs/1000)+' seconds';
  captureState='recovering';
  console.warn('HLS_CAPTURE_STALL_AUTO_RECOVER '+lastRecoveryReason+

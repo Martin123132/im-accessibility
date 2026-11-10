@@ -46,7 +46,7 @@ test('full-screen click maps letterboxed HLS to Windows only within an active ow
   setRequestHeader(){}
   send(body){
    const data=body===null?null:JSON.parse(body);
-   requests.push({route:this.route,method:this.method,data});
+   requests.push({route:this.route,method:this.method,data,timeout:this.timeout});
    let result={};
    if(this.route==='/api/status')result={canArm:true,enabled:armed,audioAvailable:true,audioRoute:'laptop-only',expiresAt:new Date(now+3600000).toISOString()};
    if(this.route==='/api/arm'){armed=true;result={enabled:true}}
@@ -85,6 +85,8 @@ test('full-screen click maps letterboxed HLS to Windows only within an active ow
  assert.equal(els.get('desktop').muted,true,'Initial HLS autoplay must be muted');
  assert.equal(els.get('sound').disabled,false,'Sound is enabled only when the service exposes audio');
  events.get('sound:click')();
+ assert.ok(requests.find(x=>x.route==='/api/audio-route').timeout>=17000,'Allow bounded guardian startup and native endpoint calls');
+ assert.equal(requests.find(x=>x.route==='/api/status').timeout,5500,'Ordinary controls keep their short timeout');
  assert.equal(els.get('desktop').muted,false,'Owner can explicitly enable TV sound');
  assert.equal(els.get('sound').textContent,'TV sound ON');
  assert.equal(els.get('laptop').disabled,false);

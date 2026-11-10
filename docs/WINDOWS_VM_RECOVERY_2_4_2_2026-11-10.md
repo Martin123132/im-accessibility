@@ -1,5 +1,7 @@
 # Recovery 2.4.2 Windows VM acceptance — 10 November 2026
 
+Subsequent owner LG testing passed picture but failed audio. The [Recovery 2.4.3 timing repair report](WINDOWS_VM_RECOVERY_2_4_3_2026-11-10.md) records that failure, the narrowly scoped fix, and the newer candidate's evidence. The statements below describe the earlier NAT-only test stage.
+
 Private follow-up to [Recovery 2.3](PRIVATE_INSTALLER_RECOVERY_2_3_2026-11-10.md). This uses a real Windows 11 guest and its normal user profile. The owner's accepted Recovery 2.2 installation remains protected. Nothing in this report authorises a public release or replacement of that installation.
 
 ## Candidate and scope

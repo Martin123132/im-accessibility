@@ -50,7 +50,7 @@ function main(setup,output,ffprobe){
   }
   const a11y=JSON.parse(gui(path.join(app,'ImAccessibility.exe'),'--accessibility-selftest','accessibility',/"allNamed":true/));
   assert.equal(a11y.tabOrderValid,true);assert.equal(a11y.allTabStops,true);
-  if(rebuilt){assert.match(a11y.window,/Recovery 2\.4\.2/);checks.push('distinct-recovery-2.4.2-title');}
+  if(rebuilt){assert.match(a11y.window,/Recovery 2\.4\.4/);checks.push('distinct-recovery-2.4.4-title');}
   const guardianStatus=node(`const cp=require('node:child_process'),path=require('node:path');const r=cp.spawnSync(path.join(process.env.SystemRoot,'System32/WindowsPowerShell/v1.0/powershell.exe'),['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',${JSON.stringify(path.join(app,'audio-guard-task.ps1'))},'-Action','Status'],{encoding:'utf8',windowsHide:true,timeout:12000});if(r.status!==0)throw Error(r.stderr);console.log(r.stdout);`);
   assert.equal(JSON.parse(guardianStatus).installed,false);checks.push('packaged-audio-guardian-status');
   const first=path.join(app,'first-run.cjs');

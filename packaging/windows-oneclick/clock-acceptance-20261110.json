@@ -1,0 +1,454 @@
+{
+  "schema": 1,
+  "recordedUtc": "2026-11-10T22:51:06.069Z",
+  "buildId": "recovery2.4.4-clock-20261110",
+  "baseCommit": "69497544976fab0cac61d6fa7289c785eb46c624",
+  "private": true,
+  "installer": {
+    "file": "D:\\ImAccessibility-Private-Installer-20261110\\Candidate-2.4.4\\out\\ImAccessibility-Setup-v0.3.21-RECOVERY2.4.4-PRIVATE-PREVIEW.exe",
+    "sizeBytes": 107410432,
+    "sha256": "30fba87af2100fe7c42ea7a9a7774b3cf7a7c1c539514883a6d0e65ebd107859",
+    "files": 113,
+    "nodeVersion": "v24.15.0",
+    "ffmpegVersion": "ffmpeg version n9.0.2-48-gd4070a14ce-imaccessibility-private-20261110 Copyright (c) 2000-2026 the FFmpeg developers",
+    "privatePreview": true,
+    "buildId": "recovery2.4.4-clock-20261110"
+  },
+  "sourceFiles": [
+    {
+      "file": "docs/WINDOWS_VM_RECOVERY_2_4_2_2026-11-10.md",
+      "workingTreeSHA256": "3dc538bb231b6bf4f4cefc58f3000866132dfb7ecf8ccad7fba8e06de20a253e"
+    },
+    {
+      "file": "packaging/build-preview.cjs",
+      "workingTreeSHA256": "1e6d94150e4a8c92ad0fecd8bc08db6eaa4c907c97de5226bae3e818ec6d13a6"
+    },
+    {
+      "file": "packaging/windows-oneclick/ImAccessibilityApp.cs",
+      "workingTreeSHA256": "bd3fcbc763843e3b8b0ed088371cd4988f86e1cc232fb69b7bd52b3c85a291dd"
+    },
+    {
+      "file": "packaging/windows-oneclick/ImAccessibilitySetup.cs",
+      "workingTreeSHA256": "4799f373783e014b08137cd370bd00480559e36af2e5b35ba2137c0d6fc1448c"
+    },
+    {
+      "file": "packaging/windows-oneclick/build-oneclick.ps1",
+      "workingTreeSHA256": "e40ccbd7c70e4779dc330154b625ca9fb3348c1a396eb36059f9945ded59b6ee"
+    },
+    {
+      "file": "packaging/windows-oneclick/test-isolated-install.cjs",
+      "workingTreeSHA256": "c29445c96cc51c0929959d4a7f7d1106f7ec0024f96f21af6f51ee2ca58c5390"
+    },
+    {
+      "file": "packaging/windows-oneclick/third-party-notices/rebuilt-pins.json",
+      "workingTreeSHA256": "80780290bc5bc3498818b1c41abdbcf06889ed4f3a25c923585cbbf789fe987f"
+    },
+    {
+      "file": "scripts/check-source.cjs",
+      "workingTreeSHA256": "58f52bc7a057daffc3ff9b16c6cf74de6cf7ec66f49f44920fc5fc4572038742"
+    },
+    {
+      "file": "tv-reliability-v0.5/cast/server.cjs",
+      "workingTreeSHA256": "0a159102aa885e3f1d91e1361a3a922386f2f226858d87603ddae097b6795fde"
+    },
+    {
+      "file": "tv-reliability-v0.5/cast/tests/encoder-fallback-integration.test.cjs",
+      "workingTreeSHA256": "79a1caaa343893f7295d7931cf89bd296c02e153861f0cfcf769414e4ee845ec"
+    },
+    {
+      "file": "tv-reliability-v0.5/tests/session-policy.test.cjs",
+      "workingTreeSHA256": "b6bd11785c033bfba75e76e3446278b2add7839c2e5a964a65bbd0bf721f904f"
+    },
+    {
+      "file": "tv-reliability-v0.5/viewer/speaker-route-watch.cjs",
+      "workingTreeSHA256": "9010347b30c4b593bd7cbb4fd0c7754fbe1576ff5f4fce229bc864e94c512ca0"
+    },
+    {
+      "file": "tv-reliability-v0.5/viewer/speaker-routing.cjs",
+      "workingTreeSHA256": "dcffb48ac1dc2d308c6331b56c00c166962dca9afc36efa27e9c651bea655ee3"
+    },
+    {
+      "file": "tv-reliability-v0.5/viewer/tests/immersive.test.cjs",
+      "workingTreeSHA256": "4f6a4d8f0c4a446aab09b8f6b0d83a2c2ab14159398a807520bd6b58e28cee39"
+    },
+    {
+      "file": "tv-reliability-v0.5/viewer/tests/independent-guardian.test.cjs",
+      "workingTreeSHA256": "15937bc729e6294fbd8023b048b3978fc0eaea7a07ee4a3468961debe326f68a"
+    },
+    {
+      "file": "tv-reliability-v0.5/viewer/web/immersive.js",
+      "workingTreeSHA256": "0f2170f05f70a1a688652d4a7f076f795094d96f0389934ede083ec94ca6c4db"
+    },
+    {
+      "file": "tv-reliability-v0.5/elapsed-clock.cjs",
+      "workingTreeSHA256": "48c9cdbb9b273feb68b509680bcc29852d22b69963908bedfca23480dcc8ffb5"
+    },
+    {
+      "file": "docs/WINDOWS_VM_RECOVERY_2_4_3_2026-11-10.md",
+      "workingTreeSHA256": "a1ec6e501b1cda07461aa82ec0b99045194a7a49e972c05f51eceaa024497d37"
+    }
+  ],
+  "sourceTests": {
+    "passed": 277,
+    "expectedSkips": 2,
+    "failed": 0
+  },
+  "guardedInstaller": {
+    "passed": 23,
+    "directChildrenExited": 19,
+    "realProfile": false
+  },
+  "realVmPreviousUninstall": {
+    "atUtc": "2026-11-10T22:17:55.2160793Z",
+    "phase": "removed",
+    "passed": true,
+    "realUserProfile": true,
+    "settingsUnchanged": true,
+    "settingsSHA256": "D6F8572E0ED8AB05C70EC8951AE09576DCB3F8E558F136EE98038F108B857C33",
+    "payloadHashesVerified": 0,
+    "shortcuts": [
+      {
+        "path": "C:\\Users\\qaowner\\Desktop\\I'm-accessibility.lnk",
+        "exists": false
+      },
+      {
+        "path": "C:\\Users\\qaowner\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\I'm-accessibility.lnk",
+        "exists": false
+      }
+    ],
+    "uninstallRegistration": false,
+    "tasks": [],
+    "processes": [],
+    "windowsBuild": "26300"
+  },
+  "realVmNewInstall": {
+    "atUtc": "2026-11-10T22:21:15.3980043Z",
+    "phase": "installed",
+    "passed": true,
+    "realUserProfile": true,
+    "settingsUnchanged": true,
+    "settingsSHA256": "D6F8572E0ED8AB05C70EC8951AE09576DCB3F8E558F136EE98038F108B857C33",
+    "payloadHashesVerified": 113,
+    "shortcuts": [
+      {
+        "path": "C:\\Users\\qaowner\\Desktop\\I'm-accessibility.lnk",
+        "exists": true
+      },
+      {
+        "path": "C:\\Users\\qaowner\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\I'm-accessibility.lnk",
+        "exists": true
+      }
+    ],
+    "uninstallRegistration": true,
+    "tasks": [],
+    "processes": [
+      {
+        "ProcessId": 3220,
+        "Name": "ImAccessibility.exe",
+        "CreationDate": "/Date(1794349257511)/",
+        "ExecutablePath": "C:\\Users\\qaowner\\AppData\\Local\\Programs\\ImAccessibility\\ImAccessibility.exe"
+      }
+    ],
+    "windowsBuild": "26300"
+  },
+  "priorCandidate": {
+    "installer": {
+      "file": "D:\\ImAccessibility-Private-Installer-20261110\\Candidate-2.4.3\\out\\ImAccessibility-Setup-v0.3.21-RECOVERY2.4.3-PRIVATE-PREVIEW.exe",
+      "sizeBytes": 107410432,
+      "sha256": "54eb85db1593db6710b969d67ed02c8b011d63c3a499075937e94b46d18027f8",
+      "files": 113,
+      "nodeVersion": "v24.15.0",
+      "ffmpegVersion": "ffmpeg version n9.0.2-48-gd4070a14ce-imaccessibility-private-20261110 Copyright (c) 2000-2026 the FFmpeg developers",
+      "privatePreview": true,
+      "buildId": "recovery2.4.3-clock-20261110"
+    },
+    "physicalAcceptancePassed": false,
+    "ownerReport": "Would not connect, then connected and disconnected straight away",
+    "audioConfirmed": false,
+    "followupTonePlayed": false,
+    "silentGuardian": {
+      "passed": true,
+      "startupMs": 1079,
+      "samples": [
+        {
+          "clockBasis": "system-uptime-ms-v1",
+          "ageMs": 78,
+          "pid": 3460
+        },
+        {
+          "clockBasis": "system-uptime-ms-v1",
+          "ageMs": 93,
+          "pid": 3460
+        },
+        {
+          "clockBasis": "system-uptime-ms-v1",
+          "ageMs": 484,
+          "pid": 3460
+        },
+        {
+          "clockBasis": "system-uptime-ms-v1",
+          "ageMs": 78,
+          "pid": 3460
+        },
+        {
+          "clockBasis": "system-uptime-ms-v1",
+          "ageMs": 93,
+          "pid": 3460
+        },
+        {
+          "clockBasis": "system-uptime-ms-v1",
+          "ageMs": 94,
+          "pid": 3460
+        },
+        {
+          "clockBasis": "system-uptime-ms-v1",
+          "ageMs": 47,
+          "pid": 3460
+        },
+        {
+          "clockBasis": "system-uptime-ms-v1",
+          "ageMs": 31,
+          "pid": 3460
+        },
+        {
+          "clockBasis": "system-uptime-ms-v1",
+          "ageMs": 31,
+          "pid": 3460
+        },
+        {
+          "clockBasis": "system-uptime-ms-v1",
+          "ageMs": 109,
+          "pid": 3460
+        },
+        {
+          "clockBasis": "system-uptime-ms-v1",
+          "ageMs": 157,
+          "pid": 3460
+        },
+        {
+          "clockBasis": "system-uptime-ms-v1",
+          "ageMs": 219,
+          "pid": 3460
+        },
+        {
+          "clockBasis": "system-uptime-ms-v1",
+          "ageMs": 219,
+          "pid": 3460
+        },
+        {
+          "clockBasis": "system-uptime-ms-v1",
+          "ageMs": 234,
+          "pid": 3460
+        },
+        {
+          "clockBasis": "system-uptime-ms-v1",
+          "ageMs": 234,
+          "pid": 3460
+        }
+      ],
+      "skewedPlaylistUpdates": 15,
+      "stalledAgeMs": 11906,
+      "soundMutations": 0,
+      "realScheduledGuardian": true,
+      "noTvOrCaptureOrPlayback": true,
+      "originalMutePreserved": true,
+      "journalRemoved": true,
+      "guardianExited": true,
+      "atUtc": "2026-11-10T21:53:02.136Z"
+    }
+  },
+  "physicalAcceptance": {
+    "passed": null,
+    "status": "See separate owner-confirmed stages",
+    "candidate": "Recovery 2.4.4",
+    "computer": "IMACCESS-QA",
+    "installerSHA256": "30fba87af2100fe7c42ea7a9a7774b3cf7a7c1c539514883a6d0e65ebd107859",
+    "pictureConfirmed": true,
+    "pictureOwnerReport": "Picture appears and stays connected",
+    "audioConfirmed": true,
+    "audioOwnerReport": "LG speakers only",
+    "stopConfirmed": null,
+    "stopSilentCheckPassed": true,
+    "postStopSoundPlayed": false,
+    "reconnectConfirmed": null,
+    "source": "Owner replies in the existing visible Codex conversation",
+    "hostInstallationTested": false
+  },
+  "silentCaptureAcceptance": {
+    "tvConnected": false,
+    "soundPlayed": false,
+    "muteChanged": false,
+    "interactiveGuardian": {
+      "readyMs": 1063,
+      "heartbeats": 15,
+      "passed": true
+    },
+    "interactiveLastSample": {
+      "durationMs": 20296,
+      "speed": 1.01,
+      "frames": 291,
+      "duplicates": 175,
+      "dropped": 7
+    },
+    "smoothMotionProven": false,
+    "packagedStopSilentCheckPassed": true,
+    "postStopAudibleCheckPassed": null
+  },
+  "remoteCIClaimed": false,
+  "publicDistributionApproved": false,
+  "workingHostReplaced": false,
+  "evidence": [
+    {
+      "file": "build-2.4.3.log",
+      "sha256": "4a1d6a72590e61ab895018162943f4aa60289edfa5a263f6b010ad1391ca17b3"
+    },
+    {
+      "file": "build-2.4.4.log",
+      "sha256": "3913bad5dbb04763c657da33c60bbd852711212cc38675fe0604b8478e58f1a5"
+    },
+    {
+      "file": "targeted-clock-tests.log",
+      "sha256": "3a2885d9e4b81e683abfdda6dda4e7abd5c545514b570c3c7009ac1b1ff689d4"
+    },
+    {
+      "file": "file-sharing-tests.log",
+      "sha256": "71b95e7e8da3feb7691df9cb8aa2d011e7a5647eb050badbc683af097b398cea"
+    },
+    {
+      "file": "full-source-tests.log",
+      "sha256": "caf1ed76e533ffa608d0abb1ad98b9c0ad6a3bbb820c936c2a574bf1172018ae"
+    },
+    {
+      "file": "full-source-tests-final.log",
+      "sha256": "febb3e485183a29a2af66bdc454f193dd290e2f97d99636669f23991388461f3"
+    },
+    {
+      "file": "source-tests-2.4.4.log",
+      "sha256": "cd53ec817d374b6f8c3686646d65410e4bc2d0e1d3072ccc5b3a8ae6c78c23e3"
+    },
+    {
+      "file": "guarded-2.4.3.log",
+      "sha256": "00a57c89412e3ad44d27c40abf5b63a0254bc6359043afbeffe2771fcc6306d3"
+    },
+    {
+      "file": "guarded-2.4.4.log",
+      "sha256": "ea50a12031f6841c7689b5a3d563d1fce9112cd53e3461a222c57b3d84f74521"
+    },
+    {
+      "file": "package-removed.json",
+      "sha256": "924351fde71ccdc78cb20c966bdbb8c1339c64f184432b878b1f3d09572f0f2a"
+    },
+    {
+      "file": "package-installed.json",
+      "sha256": "3145c4aa041d152d1ee8e03808014496bc8043483e8a3662a0d2c80481d8e129"
+    },
+    {
+      "file": "package-244-removed.json",
+      "sha256": "5861af9f4553283c21b8db966cd87de52e125af6117b0d1061511e2466ced1b4"
+    },
+    {
+      "file": "package-244-installed.json",
+      "sha256": "3fa97a60841f163b76e9df221f1fe6bae34bd2af6fd033f8983fb89606262cb0"
+    },
+    {
+      "file": "silent-installed-clock-result.json",
+      "sha256": "4fd6920bf4db5a3f83ed829ad0d70680d83290e2d00b80ea84dbd26b1065f753"
+    },
+    {
+      "file": "silent-installed-clock-result-244.json",
+      "sha256": "747dc04e33bbd26917014308201485bf9933bb5eb997a80649d3b5d4095fa4fd"
+    },
+    {
+      "file": "compare-clocks.json",
+      "sha256": "ca0b80de1b7199db9d0516d586def686682b90d8a8fa5be11cc7ba2f40e38628"
+    },
+    {
+      "file": "audio-243-initial.json",
+      "sha256": "2e2221b0b0cc300cf5dc18e7c399c9af460a8c2068825270e277b222a8b2d519"
+    },
+    {
+      "file": "audio-243-steady.json",
+      "sha256": "9a50ac95476ea093e491c260c03e7c1cc3b796d93df4db5968b03e6581982c5a"
+    },
+    {
+      "file": "host-preservation-after.json",
+      "sha256": "978e6d21e0554d308b449b4527183ca9c95c3a604b9919e005fa0a9f735d4e94"
+    },
+    {
+      "file": "Capture-Load/summary.json",
+      "sha256": "9c2ce708ede683d4f92d3f7685bd23e035b43b3b4cb2cb5f98c2101194592bb8"
+    },
+    {
+      "file": "Capture-Load-CPU5/summary.json",
+      "sha256": "4f26fe7e3c295586100ccc27c43ee95ae9ed75415adfa810e4ea17b36139b879"
+    },
+    {
+      "file": "Capture-Load-244/summary.json",
+      "sha256": "9d52812cd0c6ed225182b9c18e9509589cad533a791e297ae8eb135ce6ad7db7"
+    },
+    {
+      "file": "vbox-six-cpu-firmware-hang.log",
+      "sha256": "25e8973e502ea4e8e2de00cb31b0dfe032f5f6f04f6e857c60ac563d374860b1"
+    },
+    {
+      "file": "capture-awake-244-summary.json",
+      "sha256": "b6c46c8b3c61650216fcbc6e33dcfbf00ae57bec2e5bd9f1c9f755d6be717693"
+    },
+    {
+      "file": "capture-interactive-244-summary.json",
+      "sha256": "fdb7c4e29269394d30c90617f802a74c9c34f675a0c9baec6030cc0468d109f9"
+    },
+    {
+      "file": "capture-openh264-244-summary.json",
+      "sha256": "c34c206ce70ff0e996ff734339e84c213c90cf18651a6fdf2a8cba52f5fa9e4f"
+    },
+    {
+      "file": "session-ready-244.json",
+      "sha256": "b27e559712ec0e33b52ce59c0054e05d7a30201fba9dddcf135950ad0754f5ce"
+    },
+    {
+      "file": "archived-installers.json",
+      "sha256": "eb7632e7674d82d766b30ce075c606b6a9739caa89706fd6bb8783631f1c2a27"
+    },
+    {
+      "file": "cleanup-244.json",
+      "sha256": "c2b8022d6c6f89754d7e222702c8b6c2b488923a0861829789d874bd61d3481d"
+    },
+    {
+      "file": "owner-acceptance-244.json",
+      "sha256": "d21766d797ee7e16fc410c5980c05450c5d0820ee733632dfb64a8c06231944b"
+    },
+    {
+      "file": "audio-244-initial.json",
+      "sha256": "f668a57db35a5b93b2527f2eb3d4045d6c149f964c84b9962056ca684c0db5f2"
+    },
+    {
+      "file": "audio-244-steady.json",
+      "sha256": "caa3860e51ec2739d6b14b8777c559e67424dc5208bf1273a3a89a2e113e85de"
+    },
+    {
+      "file": "audio-244-after-tone.json",
+      "sha256": "28cc0ec42b7755b20fc04816aaf839a36f5532d712a52847dcb0c8b4515a2a81"
+    },
+    {
+      "file": "session-final-244.json",
+      "sha256": "3643abaa9d574c114f97cb37fb4a47fb8acd9879970df07939c5256c80c516f8"
+    },
+    {
+      "file": "tone-helper-exit-244.json",
+      "sha256": "b09eb271990bb42886adb1724f165de986fb56a80f9ba30f74a16d344c7dce48"
+    },
+    {
+      "file": "brief-sound-check.json",
+      "sha256": "608c85383f1c0a5f59f02aa97b01970ccea80fc0b61182b7d78ee83becbb3bb6"
+    },
+    {
+      "file": "brief-sound-play.json",
+      "sha256": "b59361007a23831e8334062b8eaf89facbbb84349d5ae1cb4ad60773a5883777"
+    },
+    {
+      "file": "stopped-check-244.json",
+      "sha256": "0cca70b040705df73397d2d559604e334f0b1b2d9d78ec3b202206f8e8da7da1"
+    }
+  ]
+}

@@ -9,11 +9,12 @@ const serverSource=fs.readFileSync(path.join(__dirname,'..','server.cjs'),'utf8'
 const policy=require('../encoder-fallback.cjs');
 function sandbox(audio=false){
  const timers=[],spawns=[],modes=[];
+ let elapsed=100000,playlist=null;
  const fakeFs={
-  mkdirSync(){},readdirSync(){return []},
-  statSync(){throw Error('No HLS playlist yet')},
-  existsSync(p){return String(p).includes('qa-fake-ffmpeg.exe')},
-  unlinkSync(){},readFileSync(){throw Error('No file reads in simulation')}
+  mkdirSync(){},readdirSync(){return playlist?['index.m3u8']:[]},
+  statSync(){if(playlist)return playlist;throw Error('No HLS playlist yet')},
+  existsSync(p){return String(p).includes('qa-fake-ffmpeg.exe')||!!(playlist&&String(p).endsWith('index.m3u8'))},
+  unlinkSync(){playlist=null},readFileSync(){throw Error('No file reads in simulation')}
  };
  const fakeCP={
   spawn(binary,args){
@@ -47,6 +48,7 @@ function sandbox(audio=false){
   './lg-launch.cjs':{launchTv:async()=>{throw Error('No TV available')}},
   './sound.cjs':fakeSound,
   './encoder-fallback.cjs':policy,
+  '../elapsed-clock.cjs':{now:()=>elapsed},
   '../viewing-policy.cjs':{maxMs:()=>null,deadline:()=>null,active:()=>true,
     iso:()=>null,MODE:'until-stopped'}
  };
@@ -63,7 +65,9 @@ function sandbox(audio=false){
  };
  vm.runInNewContext(serverSource,context,{filename:'fake-cast-server.cjs',timeout:1500});
  const server=module.exports;
- return {server,spawns,modes,runTimers(){
+ return {server,spawns,modes,advance(ms){elapsed+=ms},publish(mtimeMs){
+   playlist={mtimeMs,ctimeMs:mtimeMs,size:100,ino:1,mtime:new Date(mtimeMs)};
+  },runTimers(){
    while(timers.length){const cb=timers.shift();cb();}
  }};
 }
@@ -88,8 +92,8 @@ test('live server uses single OpenH264 recovery for a running MF process with no
  const x=sandbox();
  x.server.startCapture();
  const first=x.spawns[0];
- const future=Date.now()+policy.STARTUP_GRACE_MS+900;
- assert.equal(x.server.watchdogTick(future),true);
+ x.advance(policy.STARTUP_GRACE_MS+900);
+ assert.equal(x.server.watchdogTick(),true);
  assert.equal(first.signalSent,'SIGTERM');
  assert.equal(x.server.status().videoEncoder,'libopenh264');
  assert.equal(x.server.status().encoderFallbackUsed,true);
@@ -98,7 +102,8 @@ test('live server uses single OpenH264 recovery for a running MF process with no
  assert.equal(x.modes.length,2);
  assert.equal(x.modes[1].codec,'libopenh264');
  // A second stall must fail closed, not loop forever or return to MF.
- const result=x.server.watchdogTick(Date.now()+2*policy.STARTUP_GRACE_MS+4000);
+ x.advance(policy.STARTUP_GRACE_MS+4000);
+ const result=x.server.watchdogTick();
  assert.equal(result,true);
  assert.match(x.server.status().error,/No HLS playlist after OpenH264 fallback/);
  assert.equal(x.spawns[1].signalSent,'SIGTERM');
@@ -113,6 +118,23 @@ test('owner Stop while FFmpeg is active never starts a second capture',()=>{
  x.runTimers();
  assert.equal(x.spawns.length,1);
  assert.equal(x.server.status().encoderFallbackUsed,false);
+});
+test('Clock-skewed fresh HLS keeps audio; an actually unchanged playlist still triggers recovery',()=>{
+ const x=sandbox(true);x.server.startCapture();
+ for(let i=0;i<20;i++){
+  x.advance(1000);
+  // Reproduce filesystem time lagging the process clock, then jumping ahead.
+  x.publish(Date.now()+(i<10?-60000:60000)+i*1000);
+  assert.equal(x.server.watchdogTick(),false);
+  assert.equal(x.server.status().audioState,'active');
+  assert.equal(x.server.status().streamReady,true);
+ }
+ assert.equal(x.server.status().recoveryCount,0);
+ x.advance(9000);
+ assert.equal(x.server.watchdogTick(),true,'A real freeze is still detected');
+ assert.equal(x.server.status().recoveryCount,1);
+ assert.equal(x.spawns[0].signalSent,'SIGTERM');
+ x.server.stopCapture();
 });
 
 test('audio pipe EPIPE during Cinema restart cannot crash cast or discard sound',()=>{

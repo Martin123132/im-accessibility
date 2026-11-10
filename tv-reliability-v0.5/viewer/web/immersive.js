@@ -35,7 +35,9 @@
  function request(route,method,data,cb){
   var xhr=new XMLHttpRequest();
   xhr.open(method||'GET','/api/'+route,true);
-  xhr.timeout=5500;xhr.setRequestHeader('Authorization','Bearer '+key);
+  // Audio routing may wait nine seconds for its independent safety task plus
+  // bounded native endpoint calls. Do not cancel it after only 5.5 seconds.
+  xhr.timeout=route==='audio-route'?20000:5500;xhr.setRequestHeader('Authorization','Bearer '+key);
   if(data!==undefined)xhr.setRequestHeader('Content-Type','application/json');
   var done=false;
   function settle(err,reply){if(done)return;done=true;cb(err,reply)}

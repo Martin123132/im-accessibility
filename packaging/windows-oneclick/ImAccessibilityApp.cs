@@ -115,7 +115,7 @@ if(op=="start"&&File.Exists(encoderProfile)){
    readonly System.Windows.Forms.Timer healthPoll=new System.Windows.Forms.Timer();
   public MainWindow(){
 #if REBUILT_FFMPEG_PRIVATE
-   Text="I'm-accessibility - Recovery 2.4.2 Private Preview";
+   Text="I'm-accessibility - Recovery 2.4.4 Private Preview";
 #else
    Text="I'm-accessibility - Recovery 2.2 Private Preview";
 #endif
