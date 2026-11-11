@@ -5,6 +5,7 @@
 // Only the exact playback endpoint can be touched; never changes volume or capture devices.
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto');
 const VIEWING=require('../viewing-policy.cjs');
+const CLOCK=require('../elapsed-clock.cjs');
 const ROOT=__dirname,NATIVE=path.resolve(ROOT,'../cast/native/SpeakerEndpoint.exe');
 const JOURNAL=path.join(ROOT,'runtime','speaker-route.json');
 const WATCH=path.join(ROOT,'speaker-route-watch.cjs');
@@ -19,7 +20,7 @@ const TASK_NAME=taskNameFor(path.resolve(ROOT,'../..'));
 // A null deadline means: keep the guard until journal removal or lost heartbeat.
 const HEARTBEAT_TIMEOUT_MS=22000, MAX_TV_SESSION_MS=VIEWING.maxMs();
 function startIndependentGuard({taskName=TASK_NAME,readyFile=READY,sessionTag,execFn=cp.spawnSync,
- fsApi=fs,nowFn=()=>Date.now(),pauseFn=ms=>Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,ms)}={}){
+ fsApi=fs,nowFn=CLOCK.now,pauseFn=ms=>Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,ms)}={}){
  if(!/^[a-f0-9]{32}$/.test(sessionTag||''))throw Error('No verified audio guard session identity');
  const started=nowFn();
  const r=execFn('schtasks.exe',['/Run','/TN',taskName],{
@@ -31,7 +32,7 @@ function startIndependentGuard({taskName=TASK_NAME,readyFile=READY,sessionTag,ex
    const stat=fsApi.lstatSync(readyFile);
    if(!stat.isFile()||stat.isSymbolicLink())throw Error('Unsafe audio guardian readiness file');
    const ready=JSON.parse(fsApi.readFileSync(readyFile,'utf8'));
-   if(ready.sessionTag===sessionTag&&Number.isSafeInteger(ready.beatAt)&&
+   if(ready.clockBasis===CLOCK.BASIS&&ready.sessionTag===sessionTag&&Number.isSafeInteger(ready.beatAt)&&
       ready.beatAt>=started-1000&&ready.beatAt<=nowFn()&&nowFn()-ready.beatAt<=5000&&
       Number.isSafeInteger(ready.pid)&&ready.pid>0)return true;
   }catch(e){if(e.code!=='ENOENT'&&e.code!=='EBUSY'&&
@@ -40,12 +41,12 @@ function startIndependentGuard({taskName=TASK_NAME,readyFile=READY,sessionTag,ex
  }
  throw Error('Independent Windows audio guardian did not report readiness');
 }
-function guardianReady(sessionTag,{file=READY,fsApi=fs,now=Date.now()}={}){
+function guardianReady(sessionTag,{file=READY,fsApi=fs,now=CLOCK.now()}={}){
  try{
   const st=fsApi.lstatSync(file);
   if(!st.isFile()||st.isSymbolicLink())return false;
   const data=JSON.parse(fsApi.readFileSync(file,'utf8'));
-  return data.sessionTag===sessionTag&&Number.isSafeInteger(data.beatAt)&&
+  return data.clockBasis===CLOCK.BASIS&&data.sessionTag===sessionTag&&Number.isSafeInteger(data.beatAt)&&
    data.beatAt<=now&&now-data.beatAt<=7000&&Number.isSafeInteger(data.pid)&&data.pid>0;
  }catch{return false}
 }
@@ -58,14 +59,27 @@ function runNative(binary,args,spawnSync=cp.spawnSync){
  if(!validDeviceId(data.deviceIdHash)||!isBit(data.muted)||data.endpoint!=='default-speaker-output')throw Error('Unexpected playback endpoint');
  return data;
 }
+function publishRename(temp,file,fsApi=fs,pauseFn=ms=>Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,ms)){
+ // Windows readers/scanners may briefly deny replacement of a file. Retain
+ // the previous complete recovery record until an atomic rename succeeds.
+ for(let attempt=0;;attempt++){
+  try{fsApi.renameSync(temp,file);return}
+  catch(e){
+   if(attempt>=5||!['EPERM','EACCES','EBUSY'].includes(e.code))throw e;
+   pauseFn(20*(attempt+1));
+  }
+ }
+}
 function atomic(file,obj,fsApi=fs){
  fsApi.mkdirSync(path.dirname(file),{recursive:true});
  const tmp=file+'.'+process.pid+'.tmp';
- fsApi.writeFileSync(tmp,JSON.stringify(obj)+'\n',{flag:'w'});
- fsApi.renameSync(tmp,file);
+ try{
+  fsApi.writeFileSync(tmp,JSON.stringify(obj)+'\n',{flag:'w'});
+  publishRename(tmp,file,fsApi);
+ }finally{try{fsApi.unlinkSync(tmp)}catch{}}
 }
 class SpeakerRouter{
- constructor({binary=NATIVE,journal=JOURNAL,fsApi=fs,clock=()=>Date.now(),
+ constructor({binary=NATIVE,journal=JOURNAL,fsApi=fs,clock=CLOCK.now,
   statusFn=null,casFn=null,watchFn=null,guardianReadyFn=guardianReady,
   enforceIndependentGuard=null,sessionTag=crypto.randomBytes(16).toString('hex')}={}){
   this.binary=binary;this.journal=journal;this.fs=fsApi;this.clock=clock;
@@ -98,7 +112,7 @@ class SpeakerRouter{
  }
  journalSave(now=this.clock()){
   if(!this.ownership)return;
-  atomic(this.journal,{...this.ownership,viewingMode:VIEWING.MODE,lastPulse:now},this.fs);
+  atomic(this.journal,{...this.ownership,clockBasis:CLOCK.BASIS,viewingMode:VIEWING.MODE,lastPulse:now},this.fs);
  }
  recover(){
   const x=this.readJournal();
@@ -186,8 +200,9 @@ class SpeakerRouter{
  }
  expire(){
   if(!this.ownership)return false;
-  if(this.clock()-this.lastPulse < HEARTBEAT_TIMEOUT_MS &&
-     (MAX_TV_SESSION_MS===null||this.clock()-this.ownership.startedAt < MAX_TV_SESSION_MS))return false;
+  const now=this.clock();
+  if(now>=this.lastPulse&&now>=this.ownership.startedAt&&now-this.lastPulse < HEARTBEAT_TIMEOUT_MS &&
+     (MAX_TV_SESSION_MS===null||now-this.ownership.startedAt < MAX_TV_SESSION_MS))return false;
   return this.restore();
  }
  restore(){
@@ -211,4 +226,4 @@ class SpeakerRouter{
  }
 }
 module.exports={SpeakerRouter,runNative,validDeviceId,HEARTBEAT_TIMEOUT_MS,MAX_TV_SESSION_MS,JOURNAL,NATIVE,
- READY,TASK_NAME,taskNameFor,startIndependentGuard,guardianReady};
+ READY,TASK_NAME,taskNameFor,startIndependentGuard,guardianReady,publishRename};

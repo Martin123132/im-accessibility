@@ -1,7 +1,31 @@
 using System;
 using System.IO;
+using System.Text;
+using System.Threading;
+using System.Security.Cryptography;
 namespace ImAccessibilitySafety {
  internal static class InstallSafety {
+  static string UpdateMutexName(string root) {
+   using(var hash=SHA256.Create())return "Local\\ImAccessibility-Install-"+
+    BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(Path.GetFullPath(root).TrimEnd('\\').ToLowerInvariant()))).Replace("-","");
+  }
+  sealed class InstallLease:IDisposable {
+   readonly Mutex mutex;
+   internal InstallLease(Mutex value){mutex=value;}
+   public void Dispose(){mutex.ReleaseMutex();mutex.Dispose();}
+  }
+  internal static IDisposable AcquireInstallLock(string root) {
+   var mutex=new Mutex(false,UpdateMutexName(root));
+   bool acquired=false;
+   try{try{acquired=mutex.WaitOne(0);}catch(AbandonedMutexException){acquired=true;}
+    if(!acquired)throw new IOException("Another installation or update is already running. Please wait for it to finish.");
+    return new InstallLease(mutex);
+   }catch{mutex.Dispose();throw;}
+  }
+  internal static bool UpdateInProgress(string root) {
+   try{using(AcquireInstallLock(root))return false;}
+   catch(IOException){return true;}
+  }
   internal static void NoLinks(string path) {
    for(var item=new DirectoryInfo(Path.GetFullPath(path));item!=null;item=item.Parent)
     if(item.Exists&&(item.Attributes&FileAttributes.ReparsePoint)!=0)

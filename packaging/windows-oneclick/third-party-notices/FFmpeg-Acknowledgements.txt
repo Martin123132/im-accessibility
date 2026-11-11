@@ -1,0 +1,21 @@
+Third-party acknowledgements
+============================
+
+The bundled separate FFmpeg executable uses FreeType. The FreeType Project
+and its contributors retain their original copyright notices. The FreeType
+License, copyright headers and component/path index are reproduced in the
+accompanying dependency materials. This is an explicit acknowledgement of
+FreeType's contribution, not a claim that this application authored it.
+
+FFmpeg, Node.js and their dependencies retain their own terms. The original
+application's PolyForm Noncommercial licence does not replace or restrict
+those third-party licences. Modification and redistribution rights for those
+components are governed by the included upstream terms.
+
+The source and notice collection includes build/test/other-platform code
+as well as linked dependencies. A licence appearing in that collection does
+not by itself establish that code under it is present in the executable.
+
+The pinned executable is NOT cleared for public redistribution. See
+FFmpeg-Licence-Review.json for the specific libzvbi finding. Its vendor LGPL
+label and configure flags are not treated as a completed licence audit.

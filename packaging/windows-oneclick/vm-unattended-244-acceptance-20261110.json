@@ -1,0 +1,377 @@
+{
+  "schema": 1,
+  "recordedUtc": "2026-11-10T23:23:41.838Z",
+  "sourceCommit": "939cae5855a1319161348cb9fa6b7e322c29a9ca",
+  "candidate": "Recovery 2.4.4",
+  "installerSHA256": "30fba87af2100fe7c42ea7a9a7774b3cf7a7c1c539514883a6d0e65ebd107859",
+  "privateRepository": true,
+  "applicationChanged": false,
+  "installerRebuilt": false,
+  "publicReleaseApproved": false,
+  "merged": false,
+  "realWindowsProfile": true,
+  "windowsBuild": "26300",
+  "elevated": false,
+  "checks": [
+    {
+      "name": "Initial guest boot does not autostart the prior installation",
+      "passed": true
+    },
+    {
+      "name": "Ordinary GUI uninstall removes installed objects and preserves settings",
+      "passed": true
+    },
+    {
+      "name": "Ordinary GUI reinstall verifies 113 files and preserves settings",
+      "passed": true
+    },
+    {
+      "name": "Idle state: after-install",
+      "passed": true
+    },
+    {
+      "name": "Idle state: desktop",
+      "passed": true
+    },
+    {
+      "name": "Idle state: startmenu",
+      "passed": true
+    },
+    {
+      "name": "Idle state: existing",
+      "passed": true
+    },
+    {
+      "name": "Idle state: scaled",
+      "passed": true
+    },
+    {
+      "name": "Idle state: after-reboot",
+      "passed": true
+    },
+    {
+      "name": "Idle state: reopened-after-reboot",
+      "passed": true
+    },
+    {
+      "name": "Idle state: final",
+      "passed": true
+    },
+    {
+      "name": "Installed app and installer accessible metadata",
+      "passed": true
+    },
+    {
+      "name": "No external developer runtime or user autorun entry",
+      "passed": true
+    },
+    {
+      "name": "Protected working host installation and tasks preserved",
+      "passed": true
+    },
+    {
+      "name": "VM shut down and task-owned VM processes exited",
+      "passed": true
+    }
+  ],
+  "passed": 15,
+  "failed": 0,
+  "settingsSHA256": "D6F8572E0ED8AB05C70EC8951AE09576DCB3F8E558F136EE98038F108B857C33",
+  "layout": {
+    "observed": true,
+    "guestScalePercent": 150,
+    "actualGuestPixels": [
+      1280,
+      960
+    ],
+    "keyboardReachedLowerControls": true,
+    "uninstallConfirmationDefaultNo": true,
+    "scaleRestoredPercent": 100,
+    "humanScreenReaderAcceptance": false,
+    "scale200PercentTested": false
+  },
+  "signing": {
+    "status": "NotSigned",
+    "internetZonePresent": false,
+    "downloadSmartScreenExercised": false
+  },
+  "thisRun": {
+    "tvStreamStarted": false,
+    "pairingPerformed": false,
+    "soundPlayed": false,
+    "hostTasksChanged": false,
+    "hostInstallChanged": false
+  },
+  "previousSourceTests": {
+    "passed": 277,
+    "expectedSkips": 2,
+    "failed": 0,
+    "rerunForEvidenceOnlyChanges": false
+  },
+  "remaining": [
+    "Physical TV reconnect",
+    "Audible post-Stop confirmation",
+    "Human assistive-technology acceptance and additional display/text scaling",
+    "Trusted signing and real download/SmartScreen acceptance",
+    "Recipient access to complete corresponding-source/build/notice bundles"
+  ],
+  "evidenceDirectory": "D:\\ImAccessibility-VM-QA-20261110\\Unattended-244-20261110",
+  "evidence": [
+    {
+      "file": "app-150-cancelled.png",
+      "sha256": "3a5c3bd97d9880a186ba478a849c3e149f1807137203cc98e34febfb4a6d9e3a"
+    },
+    {
+      "file": "app-150-confirm.png",
+      "sha256": "385ad786c470bf9917db336d785f99d1f2d443dcb04d3477782542dc20854bec"
+    },
+    {
+      "file": "app-150-keyboard.png",
+      "sha256": "3b217ce8f0a3adc6c69bed1cb7fff792bc5a7c2088b05bb55fab9e377dd54bfc"
+    },
+    {
+      "file": "app-150-top.png",
+      "sha256": "0dda76137e353886fbf0d00f13d71853767ec635931b883844ba492ce38eb70f"
+    },
+    {
+      "file": "app-150-uninstall-focus.png",
+      "sha256": "eff6f34c8d48e57360896a60a5efca8464cfbf96f889515212bf9288c352ef80"
+    },
+    {
+      "file": "app-accessibility.json",
+      "sha256": "80cf23e92e14193220f1347c572e4f6f6574db78e4889ec66f3da116b967d8e6"
+    },
+    {
+      "file": "before-reboot.png",
+      "sha256": "d36b2c2f1ee5dcd6ffd141c6d3d3b1a0df88d42015d14af72fbedcb13af4cc1a"
+    },
+    {
+      "file": "boot-before.json",
+      "sha256": "bc2fba766b3fc249000bc76f305df1d8d497135dbd1162fb586844328fc3480f"
+    },
+    {
+      "file": "boot.png",
+      "sha256": "fa307209eaf33c2bec93d1b6e08562c4b26a13f7a1d6fbe24b46aaaccdf6e069"
+    },
+    {
+      "file": "check-launch-state.ps1",
+      "sha256": "71f4d163207a6c99f0ed10b4917e64296588040525821ca3911fe74b2416a314"
+    },
+    {
+      "file": "check-package-metadata.ps1",
+      "sha256": "c45c63db5d408b3a8734b9237e06b75375f0e8c52d1ee848e3a376352424c3cd"
+    },
+    {
+      "file": "check-shortcuts.ps1",
+      "sha256": "f158722c8f1adeca7cd458608409c891e76280d907314d54968dc7a8660c8b1f"
+    },
+    {
+      "file": "cleanup.json",
+      "sha256": "7e0131478f03c3855eac745957ae96f09cb461424d1c76bdf0fdd34f0482e961"
+    },
+    {
+      "file": "desktop-shortcut-open.png",
+      "sha256": "8c393cb48c5a19a69348988a5acca1132749afd4f4ef14aba4c87dd684e97a49"
+    },
+    {
+      "file": "display-before.png",
+      "sha256": "f56f89e896e9bee72642a3a4392cc18a7bc04f820b934bc2e86f85c42fd34f8b"
+    },
+    {
+      "file": "display-focus.png",
+      "sha256": "3f8cdc0d517704760337e3fba1fdb090b74f2f46eb744ee9adf613aff7fc1b0c"
+    },
+    {
+      "file": "display-restored-confirmed.png",
+      "sha256": "9d17042dea8091025a71e7161ef0b7491119a58963acea82755c28b6fc99e374"
+    },
+    {
+      "file": "display-restored.png",
+      "sha256": "b191fdc4b699af62c8e05356e1a733ec6c4aeab874d855a21b6bc19908aa2205"
+    },
+    {
+      "file": "display-scale-150.png",
+      "sha256": "fbf27eaa51b2f928baf88a9f7ac3c76d9ba8fbfd95dca5e8296fb4faf0cbe8af"
+    },
+    {
+      "file": "display-scale-combo.png",
+      "sha256": "035813bef036573e2841712a5927b05e18fbab15098ca35f5a8c3c97616d51d6"
+    },
+    {
+      "file": "display-scale-focus.png",
+      "sha256": "ec0cd540217b0b2b3d3726f6284178dc6f2f01b3353ef46adbe54eb0022154a4"
+    },
+    {
+      "file": "display-scale-options.png",
+      "sha256": "bcd299b717745142beb2de832c6aa706c49c4d7ec25432698f5b2e55d168f5b5"
+    },
+    {
+      "file": "existing-installer-150-ready.png",
+      "sha256": "b4ad019a3fdf86e4e21712cb6cc00fad1f79ba24889b87a71895809780c3085f"
+    },
+    {
+      "file": "existing-installer-150.png",
+      "sha256": "9d2f7f12075c18d09da3d9c7c21331418c2d0f7e55bd41a4ab141ae139120ced"
+    },
+    {
+      "file": "host-preservation-after.json",
+      "sha256": "5cf4a9ae3529c782c2f98945213fdf4b94747b74c79f49f87031bb4a1a2f7501"
+    },
+    {
+      "file": "host-preservation-before.json",
+      "sha256": "e1d56521d8ba62a363b900881fb57aa3095f53bc5193ce7b83018020e76b5c32"
+    },
+    {
+      "file": "installer-accessibility.json",
+      "sha256": "083a123324b519f62f5bbae2bcda4f88430a9eccde225196b987dab5f145bf6e"
+    },
+    {
+      "file": "launch-after-install.json",
+      "sha256": "5980d1d07e89c8399b2cf23f5f49cb7851c4584d3fe638c6c507bd9cf8fe420a"
+    },
+    {
+      "file": "launch-after-reboot.json",
+      "sha256": "770da7916ab09843d5101e2a61d348121dcb1b33c37fb54b651c144355fe7a5d"
+    },
+    {
+      "file": "launch-desktop.json",
+      "sha256": "8598805b1cee758e36645e9dbedf2bca25e4cd74fee96294b5aa2742a76c9ea0"
+    },
+    {
+      "file": "launch-existing.json",
+      "sha256": "1bc174db69cc82749e280b7477a5b9ffea8300971ed4cd2a7531bdadc1077fbe"
+    },
+    {
+      "file": "launch-final.json",
+      "sha256": "35b43d78da6de2d159f96046ee533f1159cd48e11bd481ef5c76bc383a3c2e4b"
+    },
+    {
+      "file": "launch-reopened-after-reboot.json",
+      "sha256": "14bdc77c1fdb126e04003a4b3dc3d7f13e34ef4580cbbc18791cf67aa974cb72"
+    },
+    {
+      "file": "launch-scaled.json",
+      "sha256": "df7225c15d0f5148f23535f4f3b70eed9700ceb95363b5408c963be46901b3a6"
+    },
+    {
+      "file": "launch-startmenu.json",
+      "sha256": "d193d791d7590ac857120ffff4daaa46535993373cc97249d1551a69f47345b6"
+    },
+    {
+      "file": "metadata.json",
+      "sha256": "9a4ba1c23ea1172b298b687924873e0c0cff64884840fdf5ac554a5519136d98"
+    },
+    {
+      "file": "package-before.json",
+      "sha256": "cab6d7d536a3007e249a9444b33f253986015f955ba5b2d6c204983df0b49fb5"
+    },
+    {
+      "file": "package-reinstalled.json",
+      "sha256": "11e1445d3acbc8fe3cd9c8e822fbc03251df9467d756c79a73a104b262d5febe"
+    },
+    {
+      "file": "package-removed.json",
+      "sha256": "370abbfcd09c6c55b00102f8bd481ada7f4f22378b098280e4be874fed5b4fa4"
+    },
+    {
+      "file": "prepare-guest.ps1",
+      "sha256": "c999fc60fad9aa0f26447c1590f06b548ddce97247d47e77ae301001489aef7a"
+    },
+    {
+      "file": "reboot-requested.txt",
+      "sha256": "72a18c4b4008cb9527193b55cc6dae109d4abcb872bc8a9d6e2b4f883cbed956"
+    },
+    {
+      "file": "reinstall-focus.png",
+      "sha256": "8591701d0afb5bddbcb71e8671a0cea544cac4fcd5750e84684fc7e58723fac1"
+    },
+    {
+      "file": "reinstall-keyboard.png",
+      "sha256": "64eef41cb6fc492698cb5213cdfc5809970c56535633f7f61e0200e3d2317bb4"
+    },
+    {
+      "file": "reinstall-ready.png",
+      "sha256": "7e40bab72b1bedff624cfe5874e9ce2cf2bad98e9d461c9a99605b07173df1fa"
+    },
+    {
+      "file": "reinstall-result.png",
+      "sha256": "e3caeb514edbe63bae75c0eec3556888f8f1deacfc1bf7b14cada656711db48b"
+    },
+    {
+      "file": "reinstalled-app.png",
+      "sha256": "9b00ff3b387ff9ed8f5879906bbf55ebce255df67d1496e563e4eec8d476b360"
+    },
+    {
+      "file": "reopened-after-reboot.png",
+      "sha256": "3ee5067f0f87bb73d6d7d79c2b90b730c28a677ab6c0d285f7c48ec7700af5ed"
+    },
+    {
+      "file": "restore-display-focus.png",
+      "sha256": "fa3f304126aab9b884e7dd215edfbfc04159147c3c2c2e62cfe5509a1a36208b"
+    },
+    {
+      "file": "restore-display-loaded.png",
+      "sha256": "5c6d31e59c713d547b20d284411ddd4968941bbc3a75c1fa6919b278a3de0f79"
+    },
+    {
+      "file": "restore-display-ready.png",
+      "sha256": "583ece4b6528026c665fd1e6837cb8fb1b7fc913a91a8f5fc94a17340e3a9ac7"
+    },
+    {
+      "file": "shortcut-desktop-after-reboot.json",
+      "sha256": "dd74113853d2659ff5c66d2e7af7033b06820037f7833ada2a61fd230bb05903"
+    },
+    {
+      "file": "shortcut-desktop.json",
+      "sha256": "481134c36c616139b8d46a5ee55eeca9a4703ed8d666f9335e34b12e06dc08d8"
+    },
+    {
+      "file": "shortcut-startmenu.json",
+      "sha256": "867c4784e773db7142b43e4a359ea72508c80dbb8e4bef7d4d904256684b783a"
+    },
+    {
+      "file": "started-processes.json",
+      "sha256": "1b4fa0e07d1d443ee4012a811a5e2249180c03af070aa0425c4bfbcffb899586"
+    },
+    {
+      "file": "startmenu-shortcut-open.png",
+      "sha256": "a4936b73fced2ce50efd099247de05678cd92463bb58b24adf1509b9365f9093"
+    },
+    {
+      "file": "uninstall-cancelled.png",
+      "sha256": "0bffd022d0e2e38a80ec97b0429fdd3730afe69bf7392da54bd0afc9b0631cf4"
+    },
+    {
+      "file": "uninstall-confirm-again.png",
+      "sha256": "cd74a13b448028f2b868a5981046979b3e420b2b491ec26aad320eb2caee9e7e"
+    },
+    {
+      "file": "uninstall-confirm.png",
+      "sha256": "5ed9135a3b368e6ab13b6e4b654f69c53db6d6ac3a2c0bf72059bea3e92a26f1"
+    },
+    {
+      "file": "uninstall-progress.png",
+      "sha256": "a579fced5ecc9c5312d9a1c7bbfb4bc359ff59967a845afac857a3734fd5d4e6"
+    },
+    {
+      "file": "uninstall-result.png",
+      "sha256": "57ff8500a213534cef935010e6f41377b22bd10d19437293e4f27e93ac7ccc39"
+    },
+    {
+      "file": "verify-guest-package.ps1",
+      "sha256": "275e51d9236132e24f4572f07bd4c1d4bfdc85e10602ce6526a2cfc818dcb698"
+    },
+    {
+      "file": "verify-host-preservation.ps1",
+      "sha256": "637394075a94f08148487613dcf9c76453c7c911e5ba4ef1643f91f48ffe996c"
+    },
+    {
+      "file": "vm-final-config.txt",
+      "sha256": "00c19e1eeaa48df153480f816b416ea7a98bfd96c31ab04542bfe0efad71b9bc"
+    },
+    {
+      "file": "write-receipt.cjs",
+      "sha256": "67a3b7592e3c09e9399d13ef92d503cd91f2e0868775da3f28b21786e286a9f2"
+    }
+  ]
+}

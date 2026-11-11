@@ -1,0 +1,14 @@
+# Preserve the exact upstream notice bytes used by pins.json on Windows too.
+*.txt text eol=lf
+*.json text eol=lf
+*.html -text
+*.zip -text
+# Large generated/upstream mirrors are reviewed through their pinned hashes and index.
+# Preserve original spacing and heading separators; they are not code conflict markers.
+FFmpeg-Dependency-Notices.txt -diff
+Rust-COPYRIGHT-library.html -diff
+# These evidence records are byte-pinned copies, including their recorded line endings.
+FFmpeg-Build-Record.json -text whitespace=cr-at-eol
+FFmpeg-Licence-Review.json -text whitespace=cr-at-eol
+FFmpeg-Rebuild-Record.json -text whitespace=cr-at-eol
+FFmpeg-Rebuild-Source-Appendix.json -text whitespace=cr-at-eol

@@ -94,7 +94,11 @@ test('HLS stall detection distinguishes a live encoder from one stuck with a run
   fs.writeFileSync(file,'#EXTM3U\n');
   const now=Date.now(),old=new Date(now-12000);
   fs.utimesSync(file,old,old);
-  const measured=cast.manifestAgeMs(dir,now);
-  assert.ok(measured>11000&&measured<13000,'Age determined from actual playlist time');
+  assert.equal(cast.manifestAgeMs(dir,100000),0,'First observation establishes elapsed-time baseline');
+  assert.equal(cast.manifestAgeMs(dir,112000),12000,'Unchanged playlist still becomes stale');
+  fs.writeFileSync(file,'#EXTM3U\n#EXT-X-MEDIA-SEQUENCE:2\n');
+  fs.utimesSync(file,new Date(now+60000),new Date(now+60000));
+  assert.equal(cast.manifestAgeMs(dir,112100),0,'Progress is fresh even with a future filesystem timestamp');
+  assert.equal(cast.manifestAgeMs(dir,121100),9000,'A future timestamp cannot hide a real stall');
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });

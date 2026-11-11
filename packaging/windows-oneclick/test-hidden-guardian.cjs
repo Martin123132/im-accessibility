@@ -24,14 +24,16 @@ async function verify({scheduled=false,appExe=null,nodeExe=process.execPath,repo
   fs.mkdirSync(path.dirname(marker),{recursive:true});
   fs.writeFileSync(path.join(dir,watch),`const fs=require('node:fs'),path=require('node:path');
 if(process.argv.length!==3||process.argv[2]!=='--task-guardian')process.exit(2);
-fs.writeFileSync(path.join(__dirname,'fixture-ready.json'),JSON.stringify({pid:process.pid,parentPid:process.ppid,args:process.argv.slice(2)}));
+const ready=path.join(__dirname,'fixture-ready.json');
+fs.writeFileSync(ready+'.tmp',JSON.stringify({pid:process.pid,parentPid:process.ppid,args:process.argv.slice(2)}));
+fs.renameSync(ready+'.tmp',ready);
 const timer=setInterval(()=>{if(fs.existsSync(path.join(__dirname,'fixture-stop'))){clearInterval(timer);process.exit(0)}},100);
 setTimeout(()=>process.exit(3),60000).unref();`);
   if(appExe)fs.copyFileSync(appExe,app);
   else{
    const csc=path.join(process.env.WINDIR,'Microsoft.NET/Framework64/v4.0.30319/csc.exe');
    const compiled=cp.spawnSync(csc,['/nologo','/target:winexe','/platform:x64','/out:'+app,
-    ...['System.Windows.Forms.dll','System.Drawing.dll','System.Web.Extensions.dll'].map(x=>'/reference:'+x),path.join(__dirname,'ImAccessibilityApp.cs')],{encoding:'utf8',windowsHide:true,timeout:25000});
+    ...['System.Windows.Forms.dll','System.Drawing.dll','System.Web.Extensions.dll'].map(x=>'/reference:'+x),path.join(__dirname,'ImAccessibilityApp.cs'),path.join(__dirname,'InstallSafety.cs')],{encoding:'utf8',windowsHide:true,timeout:25000});
    assert.equal(compiled.status,0,compiled.stdout+compiled.stderr);
   }
   fs.copyFileSync(path.join(__dirname,'audio-guard-task.ps1'),script);

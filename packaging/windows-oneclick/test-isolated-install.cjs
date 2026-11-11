@@ -3,15 +3,15 @@
 // Does not register tasks, create shortcuts/registry entries, discover or contact TVs,
 // launch a host, capture a desktop, or change a real speaker. All GUI runs self-exit.
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),cp=require('node:child_process'),crypto=require('node:crypto'),assert=require('node:assert/strict');
-function main(setup,output){
- if(process.platform!=='win32'||!setup||!output)throw Error('Usage on Windows: node test-isolated-install.cjs SETUP_EXE NEW_REPORT_DIRECTORY');
+function main(setup,output,ffprobe){
+ if(process.platform!=='win32'||!setup||!output)throw Error('Usage on Windows: node test-isolated-install.cjs SETUP_EXE NEW_REPORT_DIRECTORY [FFPROBE_EXE]');
  const reportDir=path.resolve(output);fs.mkdirSync(reportDir,{recursive:false});
  const qa=path.join(os.tmpdir(),'ImAccessibility-QA',crypto.randomUUID().replaceAll('-',''));
  const local=path.join(qa,'LocalAppData');fs.mkdirSync(local,{recursive:true});fs.writeFileSync(path.join(qa,'.disposable-profile'),'disposable QA only\n');
  const env={...process.env,LOCALAPPDATA:local,IM_ACCESSIBILITY_QA_ROOT:qa,IM_ACCESSIBILITY_CONFIG_PATH:path.join(local,'ImAccessibility','settings.json')};
  const app=path.join(local,'Programs','ImAccessibility'),receipts=[],checks=[];
- function run(exe,args){
-  const r=cp.spawnSync(exe,args,{env,encoding:'utf8',windowsHide:true,timeout:45000,maxBuffer:500000});
+ function run(exe,args,timeout=45000){
+  const r=cp.spawnSync(exe,args,{env,encoding:'utf8',windowsHide:true,timeout,maxBuffer:500000});
   receipts.push({program:path.basename(exe),arguments:args.map(x=>path.basename(x)),pid:r.pid,exited:r.status!==null,exitCode:r.status,signal:r.signal||null});
   if(r.error||r.status!==0)throw Error(path.basename(exe)+' failed: '+String(r.error||r.stderr));
   return r.stdout;
@@ -25,11 +25,32 @@ function main(setup,output){
  try{
   gui(setup,'--verify','archive',/^SUCCESS VALID/);
   gui(setup,'--test-install','fresh-install',/^SUCCESS /);
+  const packageManifest=JSON.parse(fs.readFileSync(path.join(app,'installer-manifest.json'),'utf8'));
+  const rebuilt=packageManifest.buildId===require('./third-party-notices/rebuilt-pins.json').buildId;
+  if(rebuilt){
+   const pins=require('./third-party-notices/rebuilt-pins.json');
+   assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(app,'Runtime','ffmpeg.exe'))).digest('hex'),pins.ffmpegSHA256);
+   assert.equal(fs.readFileSync(path.join(app,'encoder-profile.txt'),'utf8').trim(),'h264_mf');
+   for(const material of pins.notices){
+    assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(app,'THIRD_PARTY',material.file))).digest('hex'),material.sha256);
+   }
+   checks.push('rebuilt-runtime-profile-and-evidence');
+  }
   assert.equal(fs.existsSync(env.IM_ACCESSIBILITY_CONFIG_PATH),false);checks.push('fresh-no-settings');
   const self=JSON.parse(gui(path.join(app,'ImAccessibility.exe'),'--selftest','runtime-selftest',/"node":true/));
   assert.equal(self.ffmpeg,true);assert.equal(self.settingsPresent,false);
+  if(ffprobe){
+   const runtimeReport=path.join(reportDir,'packaged-runtime');
+   run(path.join(app,'Runtime','node.exe'),[path.join(__dirname,'ffmpeg-rebuild','test-isolated.cjs'),
+    path.join(app,'Runtime','ffmpeg.exe'),path.resolve(ffprobe),runtimeReport,
+    path.join(app,'tv-reliability-v0.5','cast','sound.cjs')],120000);
+   const actual=JSON.parse(fs.readFileSync(path.join(runtimeReport,'results.json'),'utf8'));
+   assert.equal(actual.pass,11);assert.equal(actual.fail,0);assert.equal(actual.activeChildrenAtEnd,0);
+   checks.push('eleven-synthetic-checks-using-installed-runtime-and-arguments');
+  }
   const a11y=JSON.parse(gui(path.join(app,'ImAccessibility.exe'),'--accessibility-selftest','accessibility',/"allNamed":true/));
   assert.equal(a11y.tabOrderValid,true);assert.equal(a11y.allTabStops,true);
+  if(rebuilt){assert.match(a11y.window,/Recovery 2\.4\.5/);checks.push('distinct-recovery-2.4.5-title');}
   const guardianStatus=node(`const cp=require('node:child_process'),path=require('node:path');const r=cp.spawnSync(path.join(process.env.SystemRoot,'System32/WindowsPowerShell/v1.0/powershell.exe'),['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',${JSON.stringify(path.join(app,'audio-guard-task.ps1'))},'-Action','Status'],{encoding:'utf8',windowsHide:true,timeout:12000});if(r.status!==0)throw Error(r.stderr);console.log(r.stdout);`);
   assert.equal(JSON.parse(guardianStatus).installed,false);checks.push('packaged-audio-guardian-status');
   const first=path.join(app,'first-run.cjs');
@@ -56,6 +77,13 @@ function main(setup,output){
   assert.match(node(reconfirm),/PASS/);checks.push('reinstalled-tv-reselection-preserves-settings');
   gui(setup,'--test-install','overwrite-refused',/^FAILED .*already installed/s);
   gui(setup,'--test-existing','existing-app-verified-without-overwrite',/^SUCCESS .*ImAccessibility.exe/);
+  if(rebuilt){
+   const receipt=path.join(app,'installer-manifest.json'),originalReceipt=fs.readFileSync(receipt);
+   try{
+    const previous=JSON.parse(originalReceipt);delete previous.buildId;fs.writeFileSync(receipt,JSON.stringify(previous));
+    gui(setup,'--test-existing','older-preview-offers-update-not-open',/^FAILED .*older preview.*Choose Update/s);
+   }finally{fs.writeFileSync(receipt,originalReceipt);}
+  }
   const appExe=path.join(app,'ImAccessibility.exe'),appBytes=fs.readFileSync(appExe);
   fs.appendFileSync(appExe,'changed');
   gui(setup,'--test-existing','modified-existing-app-not-opened',/^FAILED .*could not be verified/s);

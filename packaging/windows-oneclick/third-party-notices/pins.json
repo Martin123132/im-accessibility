@@ -1,0 +1,58 @@
+{
+  "ffmpegSHA256": "71ac0a64a4e3e0caaf7a8c25c7e73d161ac1b269cca930d207e89e1b23959dfb",
+  "completeDependencyInventory": true,
+  "notices": [
+    {
+      "file": "OpenH264-LICENSE.txt",
+      "sha256": "dd5c1c9668512530fa5a96e4c29ac4033d70a7eeb0eed7a42fddb6dd794ebdbb",
+      "url": "https://raw.githubusercontent.com/cisco/openh264/1bca62311e447fd9c39fc93de2c4b96cd5ce971c/LICENSE",
+      "reason": "The pinned FFmpeg builder statically includes OpenH264; its BSD binary redistribution notice must accompany the package."
+    },
+    {
+      "file": "GPL-3.0.txt",
+      "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903",
+      "url": "https://raw.githubusercontent.com/FFmpeg/FFmpeg/d4070a14cecc7e29eb278f9b6036c2284255f70d/COPYING.GPLv3",
+      "reason": "The bundled LGPLv3 text incorporates GPLv3. Include both licence texts; this does not change the FFmpeg build to GPL-only."
+    },
+    {
+      "file": "FFmpeg-Dependency-Notices.txt",
+      "sha256": "97edf2d876566ba8da6355dea3a53f9e7c7d991004c4cced8ca409996273ab36",
+      "reason": "Exact-runtime dependency source/notice evidence; see FFmpeg-Source-Materials.json for origins and unresolved limits."
+    },
+    {
+      "file": "FFmpeg-Dependency-Notices.zip",
+      "sha256": "796ae1dc6d995de53c35fa1694ff07236b382aa466733f9ec667aff09686ecfa",
+      "reason": "Exact-runtime dependency source/notice evidence; see FFmpeg-Source-Materials.json for origins and unresolved limits."
+    },
+    {
+      "file": "Rust-COPYRIGHT-library.html",
+      "sha256": "5647be074c8edf7339fd863055923a8fc80bc5610a8d4661ec3b767b9d392c27",
+      "reason": "Exact-runtime dependency source/notice evidence; see FFmpeg-Source-Materials.json for origins and unresolved limits."
+    },
+    {
+      "file": "FFmpeg-Source-Materials.json",
+      "sha256": "49c702f6cc98ffdf79a4cc7431fd45718c9dc38bceb5172f5e0523f4867faa6b",
+      "reason": "Exact-runtime dependency source/notice evidence; see FFmpeg-Source-Materials.json for origins and unresolved limits."
+    },
+    {
+      "file": "FFmpeg-Source-README.txt",
+      "sha256": "d94a3d3023146061c45cca0adcf39d3a9ac9c96e6b605005bec79e497657c7ec",
+      "reason": "Exact-runtime dependency source/notice evidence; see FFmpeg-Source-Materials.json for origins and unresolved limits."
+    },
+    {
+      "file": "FFmpeg-Build-Record.json",
+      "sha256": "76f31998f60e86d65d3513dbaf40e5e4a0731674ecf80161fb0a785b2153a6bd",
+      "reason": "Exact-runtime dependency source/notice evidence; see FFmpeg-Source-Materials.json for origins and unresolved limits."
+    },
+    {
+      "file": "FFmpeg-Licence-Review.json",
+      "sha256": "bc179a03bbce8ef8e7cd820746cf9a85a33cf0c5b4d60c82487de69559101d2b",
+      "reason": "Exact-runtime dependency source/notice evidence; see FFmpeg-Source-Materials.json for origins and unresolved limits."
+    },
+    {
+      "file": "FFmpeg-Acknowledgements.txt",
+      "sha256": "f457853041335966b827994e7bef23a08e6ed9a76ae7c801ce0ae74288221952",
+      "reason": "Exact-runtime dependency source/notice evidence; see FFmpeg-Source-Materials.json for origins and unresolved limits."
+    }
+  ]
+}

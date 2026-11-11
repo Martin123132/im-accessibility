@@ -1,0 +1,5 @@
+# Unified patches contain blank context lines prefixed by one required space.
+*.patch text eol=lf whitespace=-blank-at-eol
+*.sh text eol=lf
+upstream-image-*.json -text
+BtbN-Build-Scripts-LICENSE.txt text eol=lf

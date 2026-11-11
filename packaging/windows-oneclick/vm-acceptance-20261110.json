@@ -1,0 +1,297 @@
+{
+  "schema": 1,
+  "recordedUtc": "2026-11-10T20:31:36.6582613Z",
+  "buildId": "recovery2.4.2-vm-20261110",
+  "privatePreview": true,
+  "baseSourceCommit": "231ea8b238e52e0d09ba67799aa02e833d9f40ad",
+  "sourceCommit": "Commit containing this receipt; raw working-tree SHA256 below includes local line endings.",
+  "installer": {
+    "file": "D:\\ImAccessibility-Private-Installer-20261110\\Candidate-2.4.2\\out\\ImAccessibility-Setup-v0.3.21-RECOVERY2.4.2-PRIVATE-PREVIEW.exe",
+    "sizeBytes": 107409408,
+    "sha256": "5a8a4e5a654964c723537c07e43e280daa96838ec52ab83d220611ca7adf8a07",
+    "files": 112,
+    "nodeVersion": "v24.15.0",
+    "ffmpegVersion": "ffmpeg version n9.0.2-48-gd4070a14ce-imaccessibility-private-20261110 Copyright (c) 2000-2026 the FFmpeg developers",
+    "privatePreview": true,
+    "buildId": "recovery2.4.2-vm-20261110"
+  },
+  "signature": "NotSigned",
+  "secondByteIdenticalBuildPerformed": false,
+  "sourceFiles": [
+    {
+      "path": "packaging/tests/windows-gui.test.cjs",
+      "sha256": "a3bcabf369eae3dae6dbeaf964be1692bcc932d1dfbfb3942a080a4fcb5b4619"
+    },
+    {
+      "path": "packaging/windows-oneclick/ImAccessibilityApp.cs",
+      "sha256": "cba87bb24d363bd289cd3c0f5fd83702907f53afa8907d8f480d327dd9aa94ac"
+    },
+    {
+      "path": "packaging/windows-oneclick/ImAccessibilitySetup.cs",
+      "sha256": "a6fd13f4179c6f5a1d29a4daff1757f513f3482faf7d876521cbea1fba311ba2"
+    },
+    {
+      "path": "packaging/windows-oneclick/ImAccessibilityUninstall.cs",
+      "sha256": "349d9e212d4f5133e2dfa75d8079152133871660c2a6817713de6462173e0d4f"
+    },
+    {
+      "path": "packaging/windows-oneclick/build-oneclick.ps1",
+      "sha256": "a76f6e444ffe547339ced1b00202bc0f63ede2391ef0f4d70744e96561557a09"
+    },
+    {
+      "path": "packaging/windows-oneclick/gui-config-bridge.cjs",
+      "sha256": "b551bcd3b2d55248b50bf29fe0fefd89556c2c21eb4b82d3bda34e09694ff029"
+    },
+    {
+      "path": "packaging/windows-oneclick/test-hidden-guardian.cjs",
+      "sha256": "d37a7323ad5071718ea6e3ed294b6aabadf9db42fe07537be6db23f45103bf51"
+    },
+    {
+      "path": "packaging/windows-oneclick/test-isolated-install.cjs",
+      "sha256": "17c0246a0df28c085aee9dcb788d2c4738f0d92c655f4c9844ef5982d345de63"
+    },
+    {
+      "path": "packaging/windows-oneclick/third-party-notices/rebuilt-pins.json",
+      "sha256": "cacb77b43c4e68179c245c0005270d54c01f2540e286ac8d714f3ca514d60de5"
+    }
+  ],
+  "buildRecipe": "Same explicit inputs as private-installer-20261110.json, current source, and new Candidate-2.4.2 output directory.",
+  "runtimePins": {
+    "nodeVersion": "v24.15.0",
+    "nodeSha256": "3331e1ffe19874215472217c5e94f5a0c6d8e18c4ac7111d3937aa0ad5e9b4a5",
+    "ffmpegVersion": "ffmpeg version n9.0.2-48-gd4070a14ce-imaccessibility-private-20261110 Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffmpegSha256": "b35f4924476dad990b0414e3031ab20d7e90604201b39621fd937b265062ea69"
+  },
+  "virtualMachine": {
+    "product": "Oracle VirtualBox 7.2.22",
+    "uuid": "39ceb5e6-b75c-4810-8a41-e3aa76648967",
+    "os": "Microsoft Windows 11 Enterprise Evaluation",
+    "build": "26300",
+    "account": "qaowner",
+    "realWindowsUserProfile": true,
+    "redirectedLocalAppData": false,
+    "testInstallMode": false,
+    "elevated": false,
+    "developerToolsOnPath": [],
+    "network": "NAT, no forwarded ports",
+    "hostAudio": false,
+    "sharedFolders": false,
+    "hostUsb": false,
+    "hardwareCheckBypasses": false
+  },
+  "checks": {
+    "source": {
+      "passed": 271,
+      "expectedSkips": 2,
+      "failed": 0
+    },
+    "sourcePackagingCheckPassed": true,
+    "payload": {
+      "failures": [],
+      "passed": 112
+    },
+    "guardedInstallerPassed": 23,
+    "guardedInstallerChildren": 19,
+    "ordinaryVmGuiInstallPassed": true,
+    "realShortcuts": 2,
+    "realUninstallEntries": 1,
+    "installCreatedTask": false,
+    "installStartedStream": false,
+    "reopenedViaActualDesktopShortcut": true,
+    "smallScreenAndKeyboardScrollObserved": true,
+    "invalidSavedNetworkPrimaryStatusObserved": true,
+    "freshNoTvDiscoveryObserved": true,
+    "runtimePassed": 11,
+    "runtimeFailed": 0,
+    "runtimeChildren": 82,
+    "runtimeChildrenExited": true,
+    "scheduledGuardian": {
+      "passed": true,
+      "scheduledTaskExercised": true,
+      "task": "ImAccessibility-AudioGuard-934a1a3729d8b56c",
+      "guardianPid": 4140,
+      "launcherPid": 4780,
+      "visibleWindows": 0,
+      "headlessConsoleHosts": 1,
+      "gracefulExit": true,
+      "fixtureOnly": true,
+      "audioOrTvStarted": false,
+      "appSHA256": "f7fd1c03e60b7566bea5ac0af641780ad1fc00cc8fae2b27fa99779b730b2f8d",
+      "taskRemoved": true,
+      "scratchRemoved": true
+    },
+    "actualPackagedAudioPreparation": {
+      "passed": true,
+      "elapsedMs": 19758,
+      "output": {
+        "ready": true,
+        "note": "Audio restoration enabled on demand; no automatic triggers."
+      },
+      "streamStarted": false,
+      "audioDeviceTouched": false
+    },
+    "ordinaryAppUninstallPassed": true,
+    "finalFilesShortcutsRegistryAndTasksRemoved": true,
+    "retainedFixtureSettingsSHA256": "61BA6C61793C01A0994C75B4AC42A311C8F9E530D722DBEF34FA9B5B8C9EE8B8",
+    "settingsPreservedByteForByte": true,
+    "packagedDhcpFixturePassed": true
+  },
+  "previousFailures": [
+    "Recovery 2.3 small-screen clipping and overlapping setup label",
+    "Recovery 2.3 uninstall task removal exceeded 12-second deadline; failed closed",
+    "Older saved-network primary status did not reflect validation failure",
+    "Guardian fixture PowerShell deadline, then partial readiness JSON race; fixed fixture passed",
+    "One unrelated 80ms mock-dispatch timing failure under VM load; file recheck 13/13 and final full suite 271/271 passed without changing that code"
+  ],
+  "guardianVmOnlyHarnessChanges": {
+    "powerShellDeadlineMs": 60000,
+    "startupDeadlineMs": 60000,
+    "watcherSafetyMs": 240000,
+    "readinessAtomic": true,
+    "shipped": false,
+    "details": "Payload/test-hidden-guardian-vm-v2.cjs; original test fixture deadlines retained in repository except atomic readiness publication."
+  },
+  "preservation": {
+    "hostInstalledFiles": 129,
+    "hostFileFailures": 0,
+    "settingsAndShortcutsUnchanged": true,
+    "hostTaskCount": 3,
+    "hostTaskDefinitionsAndLastRunUnchanged": true,
+    "unexpectedHostAppTasks": 0,
+    "hostNetworkAdapterInventoryUnchanged": true
+  },
+  "cleanup": {
+    "atUtc": "2026-11-10T20:31:36.6071319Z",
+    "shutdownMethod": "VBoxManage controlvm UUID shutdown (graceful, without force)",
+    "poweredOffVerified": true,
+    "vmProcessIdsVerifiedExited": [
+      21348,
+      31848,
+      9580
+    ],
+    "vboxServicePidVerifiedExited": 20128,
+    "remainingVirtualBoxProcesses": 0,
+    "vboxSDS": "Stopped",
+    "guestRuntimeChildren": 82,
+    "guestRuntimeChildrenExited": true,
+    "guardedInstallerChildren": 19,
+    "guardedInstallerChildrenExited": true,
+    "guestAppRemoved": true,
+    "guestTasksRemaining": 0,
+    "vmDiskRetained": true,
+    "downloadChunkRemovalBlocked": true,
+    "unrelatedProcessesStopped": false
+  },
+  "gates": {
+    "repositoryVisibility": "private",
+    "publicBinaryApproved": false,
+    "physicalLgTested": false,
+    "realLanDiscoveryPairingTested": false,
+    "physicalSpeakerRestorationTested": false,
+    "humanScreenReaderHighDpiTested": false,
+    "downloadSmartScreenTested": false,
+    "trustedPublisherSigned": false,
+    "recipientSourceDeliveryApproved": false,
+    "mergePerformed": false,
+    "workingHostInstallationChanged": false,
+    "githubActionsRunForThisBranch": "No open PR; existing workflow triggers only main pushes and pull requests. Local source check and full suite passed."
+  },
+  "localEvidenceRoot": "D:\\ImAccessibility-VM-QA-20261110\\Evidence",
+  "evidence": [
+    {
+      "path": "Guest-2.4.2\\installed.json",
+      "sha256": "027ce37d8687b32714543c51293ec800b98496fa87902c035103162ecb1bc713"
+    },
+    {
+      "path": "Guest-2.4.2\\before-uninstall.json",
+      "sha256": "21b49faeeb60035f7c2e57f44acfdb193699728e7186cede8ad97a9f388acfb8"
+    },
+    {
+      "path": "Guest-2.4.2\\final-uninstalled.json",
+      "sha256": "9a1e7cb7842fe9d36162d4879b9abe3754e90cc15428897f5333e8de4c1e8d56"
+    },
+    {
+      "path": "Guest-2.4.2\\installer-transfer.json",
+      "sha256": "3209a0b250685a7643c4e7af2a095d9bd655ccf243c49e5ac63403999668a334"
+    },
+    {
+      "path": "Guest-2.4.2\\shortcut-launch.json",
+      "sha256": "f7527752d7ae57d67752c6190c8e1655defa822d115974c634a7efbf80d161ff"
+    },
+    {
+      "path": "Guest-2.4.2\\prepare-audio.json",
+      "sha256": "68d08195e13d21a4c79e8190f236fb773dcf395d011758992d84480029f5a53d"
+    },
+    {
+      "path": "Guest-2.4.2\\guardian.json",
+      "sha256": "6d732d22e3e440802622868de7e4d0a825660ff5781dd2cb962ba5edc79b5316"
+    },
+    {
+      "path": "Guest-2.4.2\\runtime\\results.json",
+      "sha256": "d37a5bd7aa76d231e525c1ba74768b4fafd7622513b09ed72002a75bcecb1136"
+    },
+    {
+      "path": "Guest-2.3\\settings-fixture.json",
+      "sha256": "78c4b4103bb44bfc3c88e08ecc63b8e7be9297b2cc19e82a2c6a27d5eb7d4eec"
+    },
+    {
+      "path": "Guest-2.4.1\\uninstalled.json",
+      "sha256": "68571c3b02a8867045dbd6cd51c08ed3aa11cbb8e7ecd857edebf015c8b1c619"
+    },
+    {
+      "path": "recovery2.4.2-guarded-install\\summary.json",
+      "sha256": "45bb55e9e4ff9a153823bde9bb48089449a40013f346600b02b613e053de0464"
+    },
+    {
+      "path": "recovery2.4.2-source-tests-final.log",
+      "sha256": "9bff0d7dabb8d9a48746c71e94760fef23c05268c3804c04d2032e989eb27b63"
+    },
+    {
+      "path": "recovery2.4.2-source-tests.log",
+      "sha256": "af15bae2ebfd06eeba6ba8765a4ace28043c5c2392450f75ced969602dfddf97"
+    },
+    {
+      "path": "pilot-timing-recheck.log",
+      "sha256": "89d83a58e0cdaa38b02590ffc3bba1eb16ddee0d014514673fd22c28e2a7becc"
+    },
+    {
+      "path": "host-preservation-after.json",
+      "sha256": "ec32a9dacd55cdd156c8efb4d3c4767432ee58a6a70f57dc85b998af1cf6a4ae"
+    },
+    {
+      "path": "network-adapters-final.json",
+      "sha256": "ee2079138c469c779537e59e982b4c26145b9ec8b9a5abc8cb7701c74b228b2d"
+    },
+    {
+      "path": "cleanup-final.json",
+      "sha256": "cd40586605c0d160f34100b2a76f242a4cfe583d1340a32660254a83e3215dd6"
+    },
+    {
+      "path": "guardian-vm-v2.json",
+      "sha256": "0a85ad88b0b305ea0e1d8d53fc2999fe8dc6082cf7d7161cd8975264fbe05ab5"
+    },
+    {
+      "path": "recovery2.4.2-first-app.png",
+      "sha256": "217ba939d8083ae22abb48a448a9e6184b50ddbaa852e8ec7ce6ebb308d3103a"
+    },
+    {
+      "path": "recovery2.4.2-keyboard-footer.png",
+      "sha256": "b20f99b4fd5bb57602c07e299dfa6b46b8ce9421d1aee7341b307a018b390073"
+    },
+    {
+      "path": "recovery2.4.2-fresh-discovery-result.png",
+      "sha256": "301aee81a81165354e27b886547b35f9a7b7c14bf7ae07cdd2981ed0d3e2ec60"
+    },
+    {
+      "path": "recovery2.4.2-uninstall-progress.png",
+      "sha256": "d4c2fae716086e7af67d491e40ea8391e374a561a2779d110da7a2a406281102"
+    },
+    {
+      "path": "recovery2.4.2-uninstall-result.png",
+      "sha256": "89d9e83d244e7c74fe5af6840f593308d6152e8d8230389786fa4fbff5a1c653"
+    }
+  ],
+  "buildReportSHA256": "82920a2561490a6b6f96d4892f7deeba0a69a4edd8c15539bb9e1dd056e90799",
+  "releaseAuditSHA256": "216457934aa614637583de34662aaab405e946432e587a0ae3936389d55fe4bb",
+  "privacy": "Guest credentials and unattended provisioning files excluded from this receipt and source commit."
+}

@@ -15,9 +15,12 @@ using System.Web.Script.Serialization;
 using Microsoft.Win32;
 
 namespace ImAccessibilityInstaller {
- static class InstallCore {
+ static partial class InstallCore {
   const string PayloadResource="ImAccessibilityInstallerPayload";
   public const string Version="v0.3.21-independent-audio-guard-private-preview";
+#if REBUILT_FFMPEG_PRIVATE
+  public const string BuildId="recovery2.4.5-update-20261111";
+#endif
   public static string LocalData {
    get {string e=Environment.GetEnvironmentVariable("LOCALAPPDATA");
     return String.IsNullOrWhiteSpace(e)?Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData):e;}
@@ -37,6 +40,10 @@ namespace ImAccessibilityInstaller {
     if(Convert.ToString(map["product"])!="ImAccessibility"||
        Convert.ToString(map["version"])!=Version)
      throw new Exception("Unrecognised product/version in signed-internal package.");
+#if REBUILT_FFMPEG_PRIVATE
+    if(!map.ContainsKey("buildId")||Convert.ToString(map["buildId"])!=BuildId)
+     throw new Exception("The package does not match this private preview build.");
+#endif
     return map;
    }
   }
@@ -72,24 +79,16 @@ namespace ImAccessibilityInstaller {
   }
   public static string ExistingApplication(){
    string root=Destination;
-   ImAccessibilitySafety.InstallSafety.NoTreeLinks(root);
-   string receipt=Path.Combine(root,"installer-manifest.json");
-   if(!File.Exists(receipt))throw new Exception("An existing folder has no installation receipt. It has been preserved; no program was opened.");
-   var map=new JavaScriptSerializer().Deserialize<Dictionary<string,object>>(File.ReadAllText(receipt));
-   if(Convert.ToString(map["product"])!="ImAccessibility"||Convert.ToString(map["version"])!=Version)
-    throw new Exception("A different version is installed. Open it from its own shortcut, Stop the TV, then uninstall it before installing this version.");
-   bool appListed=false;
-   foreach(var entry in Entries(map)){
-    string rel=Convert.ToString(entry["path"]),full;SafeEntry(root,rel,out full);
-    if(!File.Exists(full)||new FileInfo(full).Length!=Convert.ToInt64(entry["bytes"])||
-      !String.Equals(Hash(full),Convert.ToString(entry["sha256"]),StringComparison.OrdinalIgnoreCase))
-     throw new Exception("The installed app could not be verified: "+rel+". No files were replaced or program opened.");
-    if(rel=="ImAccessibility.exe")appListed=true;
-   }
-   if(!appListed)throw new Exception("The installed application is missing from its receipt.");
+   if(InstallerAction()!="open")throw new Exception("An older preview is installed. Choose Update to keep your TV settings and install the new version.");
+   var map=ReadInstalledManifest(root);
+   VerifyInstalled(root,map);
+   VerifySamePackage(map);
    return Path.Combine(root,"ImAccessibility.exe");
   }
   public static string Install(bool test, Action<string> progress){
+   using(ImAccessibilitySafety.InstallSafety.AcquireInstallLock(Destination))return InstallNew(test,progress);
+  }
+  static string InstallNew(bool test, Action<string> progress){
    string root=Destination;
    if(test)ImAccessibilitySafety.InstallSafety.CheckTestProfile(LocalData);
    ImAccessibilitySafety.InstallSafety.NoLinks(root);
@@ -104,6 +103,22 @@ namespace ImAccessibilityInstaller {
    Directory.CreateDirectory(stage);
    bool promoted=false;
    try{
+    ExtractPackage(stage,progress);
+    progress("Moving the verified app into your Windows profile.");
+    if(Directory.Exists(root))throw new Exception("Installation target appeared while extracting; no overwrite.");
+    Directory.Move(stage,root);promoted=true;
+    if(!test){
+     try{CreateShortcuts(root);progress("Added Windows Start Menu / desktop shortcuts.");}
+     catch(Exception ex){progress("Shortcut setup needs manual action: "+ex.Message);}
+     try{RegisterUninstaller(root);}
+     catch(Exception ex){progress("Windows uninstall registration incomplete: "+ex.Message);}
+    }
+    return root;
+   }finally{
+    if(!promoted&&Directory.Exists(stage))Directory.Delete(stage,true);
+   }
+  }
+  static void ExtractPackage(string stage,Action<string> progress){
     progress("Reading the bundled application and offline runtime.");
     using(var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream(PayloadResource)){
      if(stream==null)throw new Exception("Installer payload resource is missing.");
@@ -144,19 +159,6 @@ namespace ImAccessibilityInstaller {
        if(!allNames.Contains(required))throw new Exception("Essential application component is missing: "+required);
      }
     }
-    progress("Moving the verified app into your Windows profile.");
-    if(Directory.Exists(root))throw new Exception("Installation target appeared while extracting; no overwrite.");
-    Directory.Move(stage,root);promoted=true;
-    if(!test){
-     try{CreateShortcuts(root);progress("Added Windows Start Menu / desktop shortcuts.");}
-     catch(Exception ex){progress("Shortcut setup needs manual action: "+ex.Message);}
-     try{RegisterUninstaller(root);}
-     catch(Exception ex){progress("Windows uninstall registration incomplete: "+ex.Message);}
-    }
-    return root;
-   }finally{
-    if(!promoted&&Directory.Exists(stage))Directory.Delete(stage,true);
-   }
   }
   static void Shortcut(string filename,string target,string root){
    // A private acceptance build must never replace the restored owner's link.
@@ -218,9 +220,15 @@ namespace ImAccessibilityInstaller {
  }
  sealed class InstallerWindow:Form {
   Button install=new Button();CheckBox open=new CheckBox();TextBox output=new TextBox();
+  Button close=new Button();bool busy=false;
   Label destination=new Label();
   public InstallerWindow(){
-   Text="Install I'm-accessibility - Recovery 2.2 Private Preview";BackColor=Color.FromArgb(247,249,251);
+#if REBUILT_FFMPEG_PRIVATE
+   Text="Install or update I'm-accessibility - Recovery 2.4.5 Private Preview";
+#else
+   Text="Install I'm-accessibility - Recovery 2.2 Private Preview";
+#endif
+   BackColor=Color.FromArgb(247,249,251);
    ForeColor=Color.FromArgb(25,44,59);Font=new Font("Segoe UI",10);
    StartPosition=FormStartPosition.CenterScreen;Size=new Size(710,455);MinimumSize=new Size(675,430);
    Controls.Add(new Label{Left=28,Top=22,Width=642,Height=48,
@@ -246,7 +254,7 @@ namespace ImAccessibilityInstaller {
    install.AccessibleDescription="Verify bundled files and install the app without starting TV streaming.";
    Controls.Add(install);
    install.Click+=(s,e)=>BeginInstall();
-   var close=new Button{Text="Close",Left=332,Top=288,Width=126,Height=49};
+   close.Text="Close";close.SetBounds(332,288,126,49);
    close.TabIndex=2;close.AccessibleName="Close installation without changes";
    close.AccessibleDescription="Dismiss the installer. Does not start TV streaming.";
    close.Click+=(s,e)=>Close();Controls.Add(close);
@@ -256,10 +264,21 @@ namespace ImAccessibilityInstaller {
    output.AccessibleName="Installation progress and verification messages";
    output.AccessibleDescription="Read-only log of installed files and any errors.";
    Controls.Add(output);
-   if(Directory.Exists(InstallCore.Destination)){
-    install.Text="Open installed app";install.AccessibleName="Verify and open the existing installed app";
-    open.Enabled=false;output.Text="Already installed. Open the app to use Stop or Uninstall. No files will be overwritten.";
-   }
+   try{
+    string action=InstallCore.InstallerAction();
+    if(action=="open"){
+     install.Text="Open installed app";install.AccessibleName="Verify and open the existing installed app";
+     install.AccessibleDescription="Open this installed version without changing its files or starting TV streaming.";
+     open.Enabled=false;output.Text="This version is already installed. Open the app when you are ready. No files will be overwritten.";
+    }else if(action=="update"){
+     install.Text="Update I'm-accessibility";install.AccessibleName="Update I'm-accessibility and keep saved TV settings";
+     install.AccessibleDescription="Verify the new version, close an idle app and update it. Pairing, shortcuts and the audio safety task are kept. The TV stays off.";
+     open.Text="Open the app after updating (TV remains off until you select Start)";
+     open.AccessibleName="Open I'm-accessibility after updating";
+     output.Text=InstallCore.UpdateDescription();
+    }
+   }catch(Exception ex){install.Enabled=false;open.Enabled=false;output.Text=ex.Message;}
+   FormClosing+=(s,e)=>{if(busy&&e.CloseReason==CloseReason.UserClosing)e.Cancel=true;};
    KeyPreview=true;KeyDown+=(sender,e)=>{if(e.KeyCode==Keys.Escape){Close();e.Handled=true;}};
 
   }
@@ -273,23 +292,28 @@ namespace ImAccessibilityInstaller {
     openName=open.AccessibleName,installName=install.AccessibleName,
     progressName=output.AccessibleName,progressFocusable=output.TabStop};
   }
-  void Log(string s){if(IsHandleCreated)BeginInvoke(new Action(()=>output.AppendText("\r\n"+s)));}
+  void Log(string s){if(IsHandleCreated&&!IsDisposed)BeginInvoke(new Action(()=>output.AppendText("\r\n"+s)));}
   async void BeginInstall(){
-   install.Enabled=false;
+   if(busy)return;
+   busy=true;install.Enabled=false;close.Enabled=false;open.Enabled=false;
    try{
-    if(Directory.Exists(InstallCore.Destination)){
+    string action=InstallCore.InstallerAction();
+    if(action=="open"){
      string existing=await Task.Run(()=>InstallCore.ExistingApplication());
      Process.Start(new ProcessStartInfo(existing){WorkingDirectory=InstallCore.Destination,UseShellExecute=true});
-     Close();return;
+     busy=false;Close();return;
     }
     bool launch=open.Checked;
-    string folder=await Task.Run(()=>InstallCore.Install(false,Log));
-    Log("Installation complete. Open using the desktop or Start Menu shortcut.");
-    MessageBox.Show(this,"I'm-accessibility installed successfully.\r\nOpen the app to select your LG TV and start viewing when you're ready.",
-     "Installation complete",MessageBoxButtons.OK,MessageBoxIcon.Information);
+    bool update=action=="update";
+    string folder=await Task.Run(()=>update?InstallCore.Update(false,Log):InstallCore.Install(false,Log));
+    Log(update?"Update complete. Your saved TV settings and shortcuts have been kept.":"Installation complete. Open using the desktop or Start Menu shortcut.");
+    MessageBox.Show(this,update?"I'm-accessibility was updated successfully.\r\nYour saved TV and pairing are ready. Streaming starts only when you choose Start.":
+     "I'm-accessibility installed successfully.\r\nOpen the app to select your LG TV and start viewing when you're ready.",
+     update?"Update complete":"Installation complete",MessageBoxButtons.OK,MessageBoxIcon.Information);
     if(launch)Process.Start(new ProcessStartInfo(Path.Combine(folder,"ImAccessibility.exe")){WorkingDirectory=folder,UseShellExecute=true});
-    Close();
-   }catch(Exception ex){Log("Installation stopped: "+ex.Message);MessageBox.Show(this,ex.Message,"Installation did not finish",MessageBoxButtons.OK,MessageBoxIcon.Error);install.Enabled=true;}
+    busy=false;Close();
+   }catch(Exception ex){Log("Install or update stopped: "+ex.Message);MessageBox.Show(this,ex.Message,"Install or update did not finish",MessageBoxButtons.OK,MessageBoxIcon.Error);}
+   finally{busy=false;if(!IsDisposed){install.Enabled=true;close.Enabled=true;open.Enabled=true;}}
   }
  }
  static class Program {
@@ -304,10 +328,14 @@ namespace ImAccessibilityInstaller {
     }
     return;
    }
-   if(args.Length==2&&(args[0]=="--verify"||args[0]=="--test-install"||args[0]=="--test-existing")){
+   if(args.Length==2&&(args[0]=="--verify"||args[0]=="--test-install"||args[0]=="--test-existing"||
+      args[0]=="--test-update"||args[0]=="--test-update-fail-after-backup"||args[0]=="--test-update-fail-after-promotion")){
     try{
      string result;
-     if(args[0]=="--test-existing"){
+     if(args[0].StartsWith("--test-update",StringComparison.Ordinal)){
+      string fault=args[0]=="--test-update-fail-after-backup"?"after-backup":args[0]=="--test-update-fail-after-promotion"?"after-promotion":null;
+      result=InstallCore.Update(true,s=>{},fault);
+     }else if(args[0]=="--test-existing"){
       ImAccessibilitySafety.InstallSafety.CheckTestProfile(InstallCore.LocalData);
       result=InstallCore.ExistingApplication();
      }else result=args[0]=="--verify"?InstallCore.VerifyArchive():InstallCore.Install(true,s=>{});

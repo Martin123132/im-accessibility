@@ -1,0 +1,245 @@
+{
+  "schema": 1,
+  "buildId": "recovery2.3-ffmpeg-20261110",
+  "privatePreview": true,
+  "baseSourceCommit": "2d42593b069be0c4954495058ceba12502b1c7d3",
+  "sourceChanges": "Recorded in the commit containing this receipt; final read-only audit/test scripts were refined after the single installer build.",
+  "installer": {
+    "file": "D:\\ImAccessibility-Private-Installer-20261110\\Candidate-2.3\\out\\ImAccessibility-Setup-v0.3.21-RECOVERY2.3-PRIVATE-PREVIEW.exe",
+    "sizeBytes": 107406848,
+    "sha256": "70f5efef6e314e22b04a387725aee055995f18f51273ed799e3405fe5f47939f",
+    "files": 112,
+    "nodeVersion": "v24.15.0",
+    "ffmpegVersion": "ffmpeg version n9.0.2-48-gd4070a14ce-imaccessibility-private-20261110 Copyright (c) 2000-2026 the FFmpeg developers"
+  },
+  "signature": "NotSigned",
+  "buildInputs": {
+    "previewManifest": {
+      "path": "D:\\ImAccessibility-Distribution-Evidence-20261109\\Notice-QA-Bundle\\package-manifest.json",
+      "sha256": "bbaade41aa6887c6827675a426662df0c4e1faabf4a4ebe6b0217ad63d0a55e1"
+    },
+    "nodeExe": {
+      "path": "D:\\ImAccessibility-TV-Selection-Fix-20261109\\Candidate-2.2\\staging\\Runtime\\node.exe",
+      "sha256": "3331e1ffe19874215472217c5e94f5a0c6d8e18c4ac7111d3937aa0ad5e9b4a5"
+    },
+    "nodeLicense": {
+      "path": "D:\\ImAccessibility-TV-Selection-Fix-20261109\\Candidate-2.2\\staging\\THIRD_PARTY\\Node-LICENSE.txt",
+      "sha256": "4573185d56580da2b890ba34a85a409257640f1c5632eade4300137266194d18"
+    },
+    "ffmpegExe": {
+      "path": "D:\\ImAccessibility-FFmpeg-Rebuild-20261110\\output-attempt3\\bin\\ffmpeg.exe",
+      "sha256": "b35f4924476dad990b0414e3031ab20d7e90604201b39621fd937b265062ea69"
+    },
+    "ffmpegLicense": {
+      "path": "D:\\ImAccessibility-TV-Selection-Fix-20261109\\Candidate-2.2\\staging\\THIRD_PARTY\\FFmpeg-LICENSE.txt",
+      "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
+    },
+    "ffmpegReadme": {
+      "path": "D:\\ImAccessibility-LGPL-Release-20261107\\packaging\\windows-oneclick\\third-party-notices\\FFmpeg-Rebuilt-README.txt",
+      "sha256": "0b40a202cc60a6565cd223371f27262f31688aa143628419d52f895333e39919"
+    },
+    "csharpCompiler": {
+      "path": "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe",
+      "sha256": "aae1db57f898ca8bda18590c56f86ced6d0ead80c22033b76fdfe9119706f116"
+    }
+  },
+  "compilerDefines": [
+    "REBUILT_FFMPEG_PRIVATE"
+  ],
+  "byteForByteSecondBuildPerformed": false,
+  "runtime": {
+    "ffmpeg": "D:\\Temp\\ImAccessibility-QA\\1dc3c231e59c4118b621424b464bc5d9\\LocalAppData\\Programs\\ImAccessibility\\Runtime\\ffmpeg.exe",
+    "ffprobe": "D:\\ImAccessibility-FFmpeg-Rebuild-20261110\\output-attempt3\\bin\\ffprobe.exe",
+    "ffmpegSha256": "b35f4924476dad990b0414e3031ab20d7e90604201b39621fd937b265062ea69",
+    "ffprobeSha256": "bb61125e166c6c31bbb2272355fd13b71ac2ca0bc0e2f1396bf98537dd4f0b6d",
+    "argumentSourceModule": "D:\\Temp\\ImAccessibility-QA\\1dc3c231e59c4118b621424b464bc5d9\\LocalAppData\\Programs\\ImAccessibility\\tv-reliability-v0.5\\cast\\sound.cjs",
+    "argumentSourceSha256": "b5c1b09038c28b3fa0fcec517f4be02baf70a7384d952d8d45cb103a4c703c5b"
+  },
+  "checks": {
+    "source": {
+      "passed": 271,
+      "expectedSkips": 2,
+      "failed": 0
+    },
+    "sourcePackagingCheckPassed": true,
+    "finalNoticeTestsPassed": 12,
+    "payload": {
+      "failures": [],
+      "passed": 112
+    },
+    "privatePathsFlagged": [],
+    "guardedInstallerPassed": 24,
+    "guardedChecks": [
+      "archive",
+      "fresh-install",
+      "rebuilt-runtime-profile-and-evidence",
+      "fresh-no-settings",
+      "runtime-selftest",
+      "eleven-synthetic-checks-using-installed-runtime-and-arguments",
+      "accessibility",
+      "distinct-recovery-2.3-title",
+      "packaged-audio-guardian-status",
+      "packaged-dhcp-validation",
+      "active-session-refused",
+      "audio-pending-refused",
+      "unknown-file-refused",
+      "modified-file-refused",
+      "junction-refused",
+      "uninstall",
+      "reinstall-preserving-settings",
+      "reinstalled-tv-reselection-preserves-settings",
+      "overwrite-refused",
+      "existing-app-verified-without-overwrite",
+      "older-preview-preserved-not-opened",
+      "modified-existing-app-not-opened",
+      "final-uninstall",
+      "settings-preserved-byte-for-byte"
+    ],
+    "installedRuntimePassed": 11,
+    "installedRuntimeFailed": 0,
+    "hiddenGuardianFixturePassed": true,
+    "visibleGuardianWindows": 0,
+    "negativePackageChecksPassed": 4,
+    "unknownRuntimeRejectedBeforeExecution": true
+  },
+  "isolation": {
+    "host": "Windows 10 Home 19045",
+    "method": "Guarded disposable directory with redirected LOCALAPPDATA",
+    "realWindowsUserProfile": false,
+    "virtualMachine": false,
+    "registryShortcutsAndTasksExercised": false,
+    "physicalTvTested": false,
+    "syntheticInputsOnly": true,
+    "tvSessionStarted": false,
+    "audioDevicesChanged": false
+  },
+  "preservation": {
+    "installedFiles": 129,
+    "allInstalledHashesUnchanged": true,
+    "settingsShortcutsUninstallEntryUnchanged": true,
+    "tasks": [
+      {
+        "name": "ImAccessibility-AudioGuard-77070c2f1283ad05",
+        "state": "Ready",
+        "xmlUnchanged": true,
+        "lastRunUnchanged": true,
+        "triggerCount": 0,
+        "beforeLastRunUtc": "2026-11-09T17:20:20.0000000Z",
+        "afterLastRunUtc": "2026-11-09T17:20:20.0000000Z"
+      },
+      {
+        "name": "ImAccessibility-AudioGuard-v1",
+        "state": "Ready",
+        "xmlUnchanged": true,
+        "lastRunUnchanged": true,
+        "triggerCount": 0,
+        "beforeLastRunUtc": "2026-11-09T03:13:13.0000000Z",
+        "afterLastRunUtc": "2026-11-09T03:13:13.0000000Z"
+      },
+      {
+        "name": "ImAccessibility-TV-v1",
+        "state": "Ready",
+        "xmlUnchanged": true,
+        "lastRunUnchanged": true,
+        "triggerCount": 0,
+        "beforeLastRunUtc": "2026-11-09T03:13:13.0000000Z",
+        "afterLastRunUtc": "2026-11-09T03:13:13.0000000Z"
+      }
+    ]
+  },
+  "cleanup": {
+    "atUtc": "2026-11-10T02:19:57.8381394Z",
+    "guardedInstallProcesses": 39,
+    "guardedInstallProcessesAllExited": true,
+    "runtimeProcesses": 82,
+    "runtimeProcessesAllExited": true,
+    "activeRuntimeChildren": 0,
+    "guardianGracefullyExited": true,
+    "guardianScratchRemoved": true,
+    "scratch": [
+      {
+        "path": "D:\\Temp\\ImAccessibility-QA\\7e82b98c37b94966acae4844d7a5e5c5",
+        "removed": true
+      },
+      {
+        "path": "D:\\Temp\\ImAccessibility-QA\\1dc3c231e59c4118b621424b464bc5d9",
+        "removed": true
+      }
+    ],
+    "remainingTaskOwnedProcesses": [],
+    "cleanupActions": "Read-only verification; no process terminated and no folder deleted by this check."
+  },
+  "readyForPublicDistribution": false,
+  "blockers": [
+    "Rebuilt FFmpeg remains a private candidate; final public distribution approval is outstanding",
+    "FFmpeg source archives are retained privately; recipient source download is not published",
+    "Trusted publisher signing not established",
+    "Public binary publication is not authorised",
+    "Human Narrator/NVDA speech and Windows 11 compatibility not accepted",
+    "Normal installer/uninstaller in a genuine isolated Windows user or VM not tested",
+    "Physical LG picture/audio, Stop/restoration and reconnect not accepted for Recovery 2.3"
+  ],
+  "evidenceRoot": "D:\\ImAccessibility-Private-Installer-20261110",
+  "evidenceFiles": [
+    {
+      "file": "Candidate-2.3/out/build-report.json",
+      "sha256": "994548b8e61b467696f70a7f7b31bdd97eec6140c05d8ec9a836f85cc6a60f7f"
+    },
+    {
+      "file": "Candidate-2.3/staging/installer-manifest.json",
+      "sha256": "e5a0e8141d2912376e92c21ad19643f17512d55ac4c1d553dbde901696071216"
+    },
+    {
+      "file": "Candidate-2.3/out/native-helper-provenance/native-verification.json",
+      "sha256": "8e2c906e54556a89a4c1a4b5a82cd7c17a0fa09b167dcee314942fba02aaf576"
+    },
+    {
+      "file": "build.log",
+      "sha256": "df5a58e41f33b91c4110381c8bda4409a79b76a208a9074b4552c0835e3f2ee7"
+    },
+    {
+      "file": "source-tests-final.log",
+      "sha256": "c2dd0668acec8c16761514fc3181abcfd1574a8724dbf69ff57f26d1d43c200f"
+    },
+    {
+      "file": "source-check-final-exits.json",
+      "sha256": "1676741c248e4a2e3c2bcb41d0af26270bbbf2d4f5ba57f606b49f51a4ab871b"
+    },
+    {
+      "file": "notice-pin-final-tests.log",
+      "sha256": "b6414a15be71827e022063b836b51ed5dc186f428cd5bd538f246d3f5a9bf24f"
+    },
+    {
+      "file": "Packaged-Runtime-Install-QA/summary.json",
+      "sha256": "54a386104b47fb26d4e055cc72a449ed377dd4826551e1afaf7bcca6edc85037"
+    },
+    {
+      "file": "Packaged-Runtime-Install-QA/packaged-runtime/results.json",
+      "sha256": "2b46a3a098413288f6cbbf44fb0f6283cb86e87b0926e29aac034a301f8c7122"
+    },
+    {
+      "file": "hidden-guardian.json",
+      "sha256": "a3fd9923d3e46d0108ba1b6dc6a9d2e8fce4f5177f349dbed41f0c287da75fcb"
+    },
+    {
+      "file": "negative-audit-results.json",
+      "sha256": "a4c129e0fe802ce07dd63aaf2c02e911dbf580f541852ea5e6673c0716311fa9"
+    },
+    {
+      "file": "unknown-runtime-rejection.json",
+      "sha256": "82f27ffd43e0add01e40775c2f957cbbf90f23c8338f2904ee415b6915b3ddc9"
+    },
+    {
+      "file": "release-audit-final-verified.json",
+      "sha256": "8752edfdec244d03ec891ff98660727b2384f8577b4726547032d5ba3f221a56"
+    },
+    {
+      "file": "preservation-after.json",
+      "sha256": "38e803fd82637b496afc001973e02258977addb24d95de2e95d8aa12f57283db"
+    },
+    {
+      "file": "cleanup-final.json",
+      "sha256": "ab6f4e5b8c2554376b5726f64063f94c4fff169436e79a23ddb518e064c6306e"
+    }
+  ]
+}

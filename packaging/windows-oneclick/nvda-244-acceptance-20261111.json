@@ -1,0 +1,533 @@
+{
+  "schema": 1,
+  "createdUtc": "2026-11-11T00:20:41.903020+00:00",
+  "privateOnly": true,
+  "sourceCommit": "939cae5855a1319161348cb9fa6b7e322c29a9ca",
+  "installerSHA256": "30fba87af2100fe7c42ea7a9a7774b3cf7a7c1c539514883a6d0e65ebd107859",
+  "runtimeOrApplicationChanged": false,
+  "installerRebuilt": false,
+  "windows": {
+    "build": "26300",
+    "scalePercent": 100,
+    "width": 1280,
+    "height": 720,
+    "nonElevated": true,
+    "realUserProfile": true,
+    "virtualAudioOutputDuringTest": false
+  },
+  "nvda": {
+    "version": "2026.3.1.58288",
+    "download": {
+      "sha256": "6f80a5b0ca720a7d0d314b5be212f37388bbe81a1107ac3298c1821a1cd3f052",
+      "signatureStatus": "Valid",
+      "publisher": "CN=NV Access Limited, O=NV Access Limited, L=Camp Mountain, S=Queensland, C=AU",
+      "bytes": 69896584
+    },
+    "portableOnly": true,
+    "installedOnHost": false,
+    "humanListeningTest": false,
+    "watchdogRecoveriesSeconds": [
+      0.7016052999999829,
+      0.6064294999999902,
+      0.5657781000001023,
+      0.5225468999999521,
+      0.5585279000000583,
+      0.9235840999999709
+    ]
+  },
+  "checks": [
+    {
+      "id": "app-focused-controls",
+      "status": "pass",
+      "count": 10,
+      "names": [
+        "PC network connection",
+        "Find TVs on selected Wi-Fi",
+        "Televisions found on your Wi-Fi",
+        "LG television IPv4 address",
+        "Confirm this is my own LG television",
+        "Enable LG television speaker audio",
+        "Start Windows desktop streaming to LG TV",
+        "Refresh TV streaming status",
+        "Open accessible application uninstaller",
+        "TV application activity and status messages"
+      ]
+    },
+    {
+      "id": "discovery-list-keyboard-selection",
+      "status": "pass",
+      "foundDevices": 3,
+      "unsupportedDevices": 2,
+      "lgDevices": 1,
+      "settingsSaved": false
+    },
+    {
+      "id": "start-confirmation-read-and-cancel",
+      "status": "pass",
+      "defaultButton": "Yes",
+      "cancelGesture": "Alt+N",
+      "streamStarted": false
+    },
+    {
+      "id": "uninstall-confirmation-read-and-cancel",
+      "status": "pass",
+      "defaultButton": "No",
+      "cancelGesture": "Enter",
+      "uninstalled": false
+    },
+    {
+      "id": "existing-installation-screen",
+      "status": "pass",
+      "controlsRead": [
+        "Open installed app",
+        "Close",
+        "Progress text"
+      ],
+      "filesOverwritten": false
+    },
+    {
+      "id": "discovery-completion-announcement",
+      "status": "fail",
+      "detail": "Visible completion/results were not automatically spoken before subsequent keyboard input; result list remained keyboard-accessible."
+    },
+    {
+      "id": "saved-settings-and-idle-close",
+      "status": "pass",
+      "settingsUnchanged": true,
+      "appProcesses": 0,
+      "listeners": 0,
+      "audioJournal": false,
+      "guestAppTasks": 0
+    },
+    {
+      "id": "host-preservation",
+      "status": "pass",
+      "filesVerified": 129,
+      "settingsUnchanged": true,
+      "shortcutsUnchanged": 3,
+      "taskDefinitionsAndLastRunUnchanged": 3
+    },
+    {
+      "id": "normal-tool-cleanup",
+      "status": "pass",
+      "nvdaQuit": true,
+      "vmPoweredOff": true,
+      "vmProcessesExited": 5,
+      "virtualAudioOutputRestored": true,
+      "forcedKills": 0
+    }
+  ],
+  "passCount": 8,
+  "failCount": 1,
+  "screenreaderFirstRunAccepted": false,
+  "findings": [
+    {
+      "id": "missing-discovery-announcement",
+      "status": "open",
+      "implementationChanged": false
+    },
+    {
+      "id": "existing-install-button-description",
+      "status": "open",
+      "detail": "Name says open existing app; description still says install the app."
+    }
+  ],
+  "notExercised": [
+    "Live NVDA Save and Stop activation",
+    "Physical TV reconnect",
+    "Audible post-Stop restoration",
+    "Human screen-reader usability",
+    "High contrast",
+    "200% scaling",
+    "Internet-download SmartScreen"
+  ],
+  "preserved": {
+    "hostAppFiles": 129,
+    "hostSettings": true,
+    "hostShortcuts": 3,
+    "hostTasks": 3,
+    "guestSettingsSHA256": "D6F8572E0ED8AB05C70EC8951AE09576DCB3F8E558F136EE98038F108B857C33"
+  },
+  "cleanup": {
+    "atUtc": "2026-11-11T00:18:04.3478953Z",
+    "vmPoweredOff": true,
+    "virtualAudioOutputRestored": true,
+    "trackedProcesses": [
+      {
+        "pid": 40576,
+        "recordedCreation": "2026-11-11T00:02:08.686664+00:00",
+        "sameProcessRemaining": false
+      },
+      {
+        "pid": 3444,
+        "recordedCreation": "2026-11-11T00:02:08.751697+00:00",
+        "sameProcessRemaining": false
+      },
+      {
+        "pid": 24264,
+        "recordedCreation": "2026-11-11T00:02:09.264993+00:00",
+        "sameProcessRemaining": false
+      },
+      {
+        "pid": 37632,
+        "recordedCreation": "2026-11-11T00:02:09.591042+00:00",
+        "sameProcessRemaining": false
+      },
+      {
+        "pid": 34140,
+        "recordedCreation": "2026-11-11T00:02:10.547047+00:00",
+        "sameProcessRemaining": false
+      }
+    ],
+    "remainingOracleProcesses": [],
+    "hostProcessesTerminated": 0,
+    "guestProcessesForceTerminated": 0,
+    "hostAppsLeftOpen": true
+  },
+  "signing": {
+    "product": "ImAccessibility",
+    "at": "2026-11-11T00:02:08.5813262Z",
+    "binaryName": "ImAccessibility-Setup-v0.3.21-RECOVERY2.4.4-PRIVATE-PREVIEW.exe",
+    "sha256": "30fba87af2100fe7c42ea7a9a7774b3cf7a7c1c539514883a6d0e65ebd107859",
+    "authStatus": "NotSigned",
+    "signtoolStatus": "NotSigned",
+    "signtoolPresent": true,
+    "currentUserEligibleSigningCertificates": 0,
+    "trustedSignatureVerified": false,
+    "signedOrModifiedByThisScript": false,
+    "publisherCertificateIssuedByThisScript": false,
+    "publicReleaseApprovedByThisScript": false,
+    "blockers": [
+      "Not signed with a validated publicly trusted publisher identity",
+      "No usable code-signing certificate for this Windows user",
+      "Owner-approved certificate route, licence and release distribution permission still required"
+    ]
+  },
+  "release": {
+    "repositoryPrivate": true,
+    "merged": false,
+    "published": false,
+    "sourceAssetsUploaded": false,
+    "externalSpend": 0
+  },
+  "speechExcerptsRedacted": [
+    "Speaking [LangChangeCommand ('en_GB'), 'PC network connection', 'combo box', 'Ethernet  |  [LAN address]  ([LAN address])', 'collapsed', 'Select the private Wi-Fi or Ethernet network where the TV is connected.', CancellableSpeech (still valid)]",
+    "Speaking [LangChangeCommand ('en_GB'), 'Find TVs on selected Wi-Fi', 'button', 'Read-only local discovery. No TV launch, pairing or system changes.', CancellableSpeech (still valid)]",
+    "Speaking [LangChangeCommand ('en_GB'), 'LG television IPv4 address', 'edit', 'read only', 'Filled automatically when you select a discovered TV. No typing required.', CancellableSpeech (still valid), 'Searching...']",
+    "Speaking [LangChangeCommand ('en_GB'), 'Televisions found on your Wi-Fi', 'list', 'Select an LG webOS TV. Other discovered devices may not support Windows desktop streaming yet.', CancellableSpeech (still valid)]",
+    "Speaking [LangChangeCommand ('en_GB'), '1Cast-AFTSS-945 | [LAN address] | Found - viewing not yet supported', 'not selected', CancellableSpeech (still valid)]",
+    "Speaking [LangChangeCommand ('en_GB'), '1Cast-AFTSS-945 | [LAN address] | Found - viewing not yet supported', CancellableSpeech (still valid)]",
+    "Speaking [LangChangeCommand ('en_GB'), 'DIAL device | [LAN address] | Found - viewing not yet supported', CancellableSpeech (still valid)]",
+    "Speaking [LangChangeCommand ('en_GB'), 'LG device | [LAN address] | LG webOS (model checked on connection)', CancellableSpeech (still valid)]",
+    "Speaking [LangChangeCommand ('en_GB'), 'LG television IPv4 address', 'edit', 'read only', 'Filled automatically when you select a discovered TV. No typing required.', CancellableSpeech (still valid), 'selected [LAN address]']",
+    "Speaking [LangChangeCommand ('en_GB'), 'Confirm this is my own LG television', 'check box', 'not checked', 'Required acknowledgement before saving a discovered LG.', CancellableSpeech (still valid)]",
+    "Speaking [LangChangeCommand ('en_GB'), 'Enable LG television speaker audio', 'check box', 'not checked', 'When selected, TV sound may temporarily mute laptop output.', CancellableSpeech (still valid)]",
+    "Speaking [LangChangeCommand ('en_GB'), 'Refresh TV streaming status', 'button', 'Read current session state. Keyboard shortcut F5.', CancellableSpeech (still valid)]",
+    "Speaking [LangChangeCommand ('en_GB'), 'Open accessible application uninstaller', 'button', 'Stop the TV session before uninstalling.', CancellableSpeech (still valid)]",
+    "Speaking [LangChangeCommand ('en_GB'), 'Uninstall', 'dialog', 'Stop this TV stream, restore laptop sound and open the uninstaller? Your saved TV settings will be kept.', CancellableSpeech (still valid)]",
+    "Speaking [LangChangeCommand ('en_GB'), 'TV application activity and status messages', 'edit', 'read only', 'multi line', 'Read-only log of setup, discovery, and streaming status.', CancellableSpeech (still valid), '00:08:55  This TV is discoverable; desktop viewing currently supports only tested LG webOS.']",
+    "Speaking [LangChangeCommand ('en_GB'), 'TV application activity and status messages', 'edit', 'read only', 'multi line', 'Read-only log of setup, discovery, and streaming status.', CancellableSpeech (still valid), '00:11:30  Choose Start TV to connect.']",
+    "Speaking [LangChangeCommand ('en_GB'), 'Start Windows desktop streaming to LG TV', 'button', 'Requires confirmation. Windows mouse control remains off until explicitly enabled.', CancellableSpeech (still valid)]",
+    "Speaking [LangChangeCommand ('en_GB'), 'Confirm TV start', 'dialog', 'Open the Windows desktop stream on your selected LG TV?\\r\\nTV audio will stay disabled.\\r\\nWindows mouse control will remain OFF until you enable it on the TV.', CancellableSpeech (still valid)]",
+    "Speaking [LangChangeCommand ('en_GB'), 'Verify and open the existing installed app', 'button', 'Verify bundled files and install the app without starting TV streaming.', CancellableSpeech (still valid)]",
+    "Speaking [LangChangeCommand ('en_GB'), 'Close installation without changes', 'button', 'Dismiss the installer. Does not start TV streaming.', CancellableSpeech (still valid)]",
+    "Speaking [LangChangeCommand ('en_GB'), 'Installation progress and verification messages', 'edit', 'read only', 'multi line', 'Read-only log of installed files and any errors.', CancellableSpeech (still valid), 'selected Already installed. Open the app to use Stop or Uninstall. No files will be overwritten.']"
+  ],
+  "evidence": [
+    {
+      "file": "boot-before.json",
+      "bytes": 421,
+      "sha256": "d0231232efa9d270b4685fca98e4640603807d7130dec2933c986e64830f3f52"
+    },
+    {
+      "file": "boot.png",
+      "bytes": 811388,
+      "sha256": "e79e2ad63843e7ba20e69fda3ab4717f1785a979520cb848c03eaed5831c4976"
+    },
+    {
+      "file": "check-final-guest.ps1",
+      "bytes": 2658,
+      "sha256": "4fcbad8cc738e4a462cea7be9d728d403d571042baf0c1690a06d956de653606"
+    },
+    {
+      "file": "cleanup.json",
+      "bytes": 958,
+      "sha256": "5ba49ff0ced7619147a65913dddb1016a0767fec506cb6c33838a3e19c1435ac"
+    },
+    {
+      "file": "discovery-result.png",
+      "bytes": 325908,
+      "sha256": "4dccf132e7cf410b9636e470b9a45fb1c884a12f5c38c8d405e32222d6cb440b"
+    },
+    {
+      "file": "discovery-started.png",
+      "bytes": 319018,
+      "sha256": "b8ad2b7a7ac99f73a2b2410aa6867449e78fffae4ac28e240da125779ad6c1a3"
+    },
+    {
+      "file": "guest-cleanup.json",
+      "bytes": 176,
+      "sha256": "b506f1ea0ada96b94a46792591c68e73f6e4d7d3d589e00d7b1c1646f3c8ab00"
+    },
+    {
+      "file": "host-preservation-after.json",
+      "bytes": 1397,
+      "sha256": "6421caa2768d392f744352f093b0d44532bb9be41001732785a2acfbedb8dbfb"
+    },
+    {
+      "file": "host-preservation-before.json",
+      "bytes": 1397,
+      "sha256": "2f4c3bc2e7ee9d7218c3f328f791a4917b6eda5dcf2b9002941661a0e25a3cb4"
+    },
+    {
+      "file": "installer-existing.png",
+      "bytes": 516481,
+      "sha256": "a290b8c8a8d1985b23420bc142961538bb6d2378adcc4f45a71373679c0ab091"
+    },
+    {
+      "file": "launch-final.json",
+      "bytes": 758,
+      "sha256": "fb14c8f7dd85bc4d8f63993b545469b715065b74616e4b36d0ee2c23ee43dae1"
+    },
+    {
+      "file": "lg-keyboard-selected.png",
+      "bytes": 326478,
+      "sha256": "1c60a50ee0a01a454c57a4adfa863590d5e2348a5ea6dc4d3554065ec828ad0b"
+    },
+    {
+      "file": "nvda-activity-log.log",
+      "bytes": 23217,
+      "sha256": "b2b981cf86f2964ede27c596b838560cce185f8f64b9d2a70502377bf8b2c9b0"
+    },
+    {
+      "file": "nvda-address.log",
+      "bytes": 20204,
+      "sha256": "855df73c23a90fd1efe52516c9f930628a30977f9eb7599779837f60b392b415"
+    },
+    {
+      "file": "nvda-app-closed.log",
+      "bytes": 23656,
+      "sha256": "6d60463a11e50faa43a77f9e6a19b7337dae7c782f498c88124b23b75292893c"
+    },
+    {
+      "file": "nvda-app-ready.png",
+      "bytes": 318665,
+      "sha256": "c89607e90a1e9388ddabf576f184ecb2bf64a7efdec0ba203a93ffc9e4f94089"
+    },
+    {
+      "file": "nvda-app-start.png",
+      "bytes": 811365,
+      "sha256": "06250ae7b161aa66bf5b19d112fd065524a703850b93e1d53aa84e609f94dad9"
+    },
+    {
+      "file": "nvda-confirm.log",
+      "bytes": 20572,
+      "sha256": "2ce85187d6abe148683b3e1f836c06403334132a924a684e0530462957792184"
+    },
+    {
+      "file": "nvda-discovery.log",
+      "bytes": 17647,
+      "sha256": "65c0afd639740173092e78664f45ef47a4b05e615781e879d38e34bee4d24fe9"
+    },
+    {
+      "file": "nvda-download.json",
+      "bytes": 332,
+      "sha256": "35bbc815c90c4ac2d210ea01c3df4d27a3e33e6a79a52d369eeb630b47858816"
+    },
+    {
+      "file": "nvda-final-app-close.log",
+      "bytes": 34621,
+      "sha256": "a1bec5ef19eab2c5d071c62f75a7d25ca7268f5049a7e8a724c6629ac5bab32a"
+    },
+    {
+      "file": "nvda-find-focus.log",
+      "bytes": 16943,
+      "sha256": "d2a01e88d0f225e1a64bba4538df5bfc48ef855d40304854cedcdf80ad3a51a1"
+    },
+    {
+      "file": "nvda-installer-close-focus.log",
+      "bytes": 43461,
+      "sha256": "5a465f4bfe46701b0040bb82fd69a574d2f81f8bab7fb7e79b05e7f0bdcee63d"
+    },
+    {
+      "file": "nvda-installer-closed.log",
+      "bytes": 44379,
+      "sha256": "c10bc0ba26ce274e459fbde06f7051ebb02d0615dee9176af863fd95d330f80c"
+    },
+    {
+      "file": "nvda-installer-progress.log",
+      "bytes": 43940,
+      "sha256": "4da35f97c8bb20ef4729bef4c572e9fd75a23a7d91ec2082ab2fbea2b3da13e8"
+    },
+    {
+      "file": "nvda-installer.log",
+      "bytes": 43117,
+      "sha256": "09a923ff05fbcad91a1bd4116d2db34851b8cc7f5ffa5ab39a868383f3487c59"
+    },
+    {
+      "file": "nvda-launch.log",
+      "bytes": 16591,
+      "sha256": "31ee1ebac1338ada3f781abe0a366c72b31f53a9fa7c259014c0ced63be16671"
+    },
+    {
+      "file": "nvda-list-arrow1.log",
+      "bytes": 18794,
+      "sha256": "9b28a0ad4ed27d50b7d606c46ebc2c857e868896bda56f81fa6fab04cec02cf3"
+    },
+    {
+      "file": "nvda-list-arrow2.log",
+      "bytes": 19494,
+      "sha256": "12405c9ca57cce1baa540d2f84de9bd764761e525bd155b7696193b504754e1b"
+    },
+    {
+      "file": "nvda-list-focus.log",
+      "bytes": 18477,
+      "sha256": "97a2cfef8a7aa7aa694102c01a27bb655394ec2b1fc1d66c43e6c34cecdaecfd"
+    },
+    {
+      "file": "nvda-list-lg.log",
+      "bytes": 19810,
+      "sha256": "2d9af982f21a2f39aa896cae98d109789b7bc1fc3a4e68996a8c5d8c570c47d6"
+    },
+    {
+      "file": "nvda-portable-progress.png",
+      "bytes": 811375,
+      "sha256": "a933093143ca8b2dba91e0df89ce4d7960e45032bcedc8b052cafae1eaed800b"
+    },
+    {
+      "file": "nvda-reopen-activity.log",
+      "bytes": 27995,
+      "sha256": "4db318dcb9194a412d99acdc87d84c1292c8e838c672d81881afbfe8cfe82ca1"
+    },
+    {
+      "file": "nvda-reopen-refresh.log",
+      "bytes": 28680,
+      "sha256": "b6fd264ab2008a1c90cac3d69ea743bb02c048266ad5375ecb75d3020cbb40e5"
+    },
+    {
+      "file": "nvda-reopen-start.log",
+      "bytes": 29067,
+      "sha256": "65cb7d94c25733574c896abc428f40f97a2f1b844cb800df0751c1c50db79400"
+    },
+    {
+      "file": "nvda-reopen-uninstall.log",
+      "bytes": 28339,
+      "sha256": "3e9c9c1330e47c7ea885244e0c8b63391c48ea83840706d86e71fa316d336872"
+    },
+    {
+      "file": "nvda-reopen.log",
+      "bytes": 27565,
+      "sha256": "d7c169816a7452ee06520c01ba04c6181c15e1491ba243692cd20d207f2e41bc"
+    },
+    {
+      "file": "nvda-sound.log",
+      "bytes": 20942,
+      "sha256": "bfeaaa35311eb1e3d459fcd18d27d73e7f987401d7b322f0d9af98c256b944c8"
+    },
+    {
+      "file": "nvda-start-cancel.log",
+      "bytes": 30022,
+      "sha256": "3a9da3eeae82add4fccdfd34b8fd27588216f7befba0d78c3de2f9b9541cfa51"
+    },
+    {
+      "file": "nvda-start-dialog.log",
+      "bytes": 29725,
+      "sha256": "87621260f7abcf39771f0d55b6f990d45c024aea5f11f227271df660beee23c9"
+    },
+    {
+      "file": "nvda-start.log",
+      "bytes": 21277,
+      "sha256": "b79927d812f314054c3c8ca127c2fe8c075dc6a34857334f5b0e7b8323b98096"
+    },
+    {
+      "file": "nvda-uninstall-cancel.log",
+      "bytes": 22507,
+      "sha256": "5616895ff07f2d1a0e279c210bd926046c501e8c40d29b31cbb5a9f9ff50d81e"
+    },
+    {
+      "file": "nvda-uninstall-dialog.log",
+      "bytes": 22210,
+      "sha256": "5668daafea4bb43938ffd8e08d3592f6d914415aa3bb9168e10e1e4db0261376"
+    },
+    {
+      "file": "nvda-uninstall.log",
+      "bytes": 21615,
+      "sha256": "0f17df7415903cf5dc7d78cbebec11a29726d213ea01bb2800a8a8693685c8fe"
+    },
+    {
+      "file": "nvda.ini",
+      "bytes": 402,
+      "sha256": "35e26b1365146e657f0d99946f21da7e74eb47d477a4c46979fd8ba774cd888f"
+    },
+    {
+      "file": "nvda.log",
+      "bytes": 45104,
+      "sha256": "6c406e00af9dbd062a69a878c07e721cec469df1cf2f23a6c65ab40208818c28"
+    },
+    {
+      "file": "nvda_2026.3.1.exe",
+      "bytes": 69896584,
+      "sha256": "6f80a5b0ca720a7d0d314b5be212f37388bbe81a1107ac3298c1821a1cd3f052"
+    },
+    {
+      "file": "prepare-guest.ps1",
+      "bytes": 2326,
+      "sha256": "66c12f2eae876e042da29419e438d3bae934234406e834758d525c68de883dda"
+    },
+    {
+      "file": "processes-before-reader-exit.json",
+      "bytes": 900,
+      "sha256": "12bd91a2205fa24f4ee9774788e5b1c0de615eaef58eca94cdb5c4164f1f1551"
+    },
+    {
+      "file": "speech-excerpts-redacted.txt",
+      "bytes": 4354,
+      "sha256": "c7fb138fa2649166c9fecdc0481bd7f1fcb2d553706806ca19d519bdfae4e0e7"
+    },
+    {
+      "file": "start-dialog.png",
+      "bytes": 335550,
+      "sha256": "c8bfe85eb688508936289d83729baf1b823a83e8b6e6deeb17ca5c78fe909d93"
+    },
+    {
+      "file": "uninstall-dialog.png",
+      "bytes": 342389,
+      "sha256": "f60600b6031f4d102da632f281955cd77e04dfba05d8b6c8349e52a2137396cf"
+    },
+    {
+      "file": "verify-host-after.ps1",
+      "bytes": 2468,
+      "sha256": "2e9a0404a6bbb139890ab49b2989fce6c0014426cbf8b1d4941c42982df70842"
+    },
+    {
+      "file": "verify-host-before.ps1",
+      "bytes": 2469,
+      "sha256": "d631c0cb82bbd55e7b12646f2826b948bd8f302ee98925d85d33fab6154d711c"
+    },
+    {
+      "file": "vm-before.txt",
+      "bytes": 3798,
+      "sha256": "9ae6b65d15eba5b08513094e16b43dfb50cb7617dabe59af9a9935034c1ca915"
+    },
+    {
+      "file": "vm-final.txt",
+      "bytes": 3798,
+      "sha256": "f16789f1c4bc2ad5a49833b4069ea4d0493f39bf08cddbc2b8c424e6a0eb6349"
+    },
+    {
+      "file": "vm-running-processes.json",
+      "bytes": 850,
+      "sha256": "ffe382e4a892e8f8a42024ea537cb06f488a128631537a2aeec370b9ceadc517"
+    },
+    {
+      "file": "vm-started-processes.json",
+      "bytes": 245,
+      "sha256": "d4861e9cb549b01a9289bfee37a608e0e41dfbc98a5524ef5ee9282cb79d4f67"
+    },
+    {
+      "file": "write-receipt.py",
+      "bytes": 7263,
+      "sha256": "821ce22e4f5864fd1802eefcf2643c7a08fd24298f852d7fd2a0dae4b616674b"
+    }
+  ]
+}

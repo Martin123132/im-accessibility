@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Windows.Forms;
 using System.Web.Script.Serialization;
+using System.Threading.Tasks;
 using Microsoft.Win32;
 namespace ImAccessibilityDesktop {
  static class UninstallProgram {
@@ -106,7 +107,7 @@ namespace ImAccessibilityDesktop {
    si.UseShellExecute=false;si.CreateNoWindow=true;si.RedirectStandardOutput=true;si.RedirectStandardError=true;
    using(var p=Process.Start(si)){
     var output=p.StandardOutput.ReadToEndAsync();var error=p.StandardError.ReadToEndAsync();
-    if(!p.WaitForExit(12000)){p.Kill();p.WaitForExit(2000);throw new Exception("Audio safety task removal timed out. No files deleted.");}
+    if(!p.WaitForExit(60000)){p.Kill();p.WaitForExit(2000);throw new Exception("Audio safety task removal timed out. No files deleted.");}
     if(p.ExitCode!=0)throw new Exception("Audio safety task still needs attention. No files deleted. "+error.Result);
    }
    Directory.Delete(root,true);
@@ -181,7 +182,21 @@ namespace ImAccessibilityDesktop {
    }
    if(ConfirmUninstall()!=DialogResult.Yes)return;
    try{
-    DoUninstall(root);
+    Exception failure=null;bool finished=false;
+    using(var progress=new Form{Text="Uninstalling I'm-accessibility",Width=460,Height=180,
+     StartPosition=FormStartPosition.CenterScreen,FormBorderStyle=FormBorderStyle.FixedDialog,
+     ControlBox=false,MaximizeBox=false,MinimizeBox=false,AccessibleName="Uninstall progress"}){
+     progress.Controls.Add(new Label{Dock=DockStyle.Fill,Padding=new Padding(20),
+      AccessibleName="Uninstall progress message",
+      Text="Checking the installation and removing its audio safety task.\r\n\r\nPlease wait. This can take up to a minute. Your saved TV settings will be kept."});
+     progress.FormClosing+=(s,e)=>{if(!finished&&e.CloseReason==CloseReason.UserClosing)e.Cancel=true;};
+     progress.Shown+=async(s,e)=>{
+      try{await Task.Run(()=>DoUninstall(root));}catch(Exception ex){failure=ex;}
+      finally{finished=true;progress.Close();}
+     };
+     Application.Run(progress);
+    }
+    if(failure!=null)throw failure;
     MessageBox.Show("I'm-accessibility was uninstalled. Your personal TV setup settings were preserved.",
      "Uninstall completed",MessageBoxButtons.OK,MessageBoxIcon.Information);
    }catch(Exception ex){MessageBox.Show(ex.Message,"Uninstall stopped without deleting application files",MessageBoxButtons.OK,MessageBoxIcon.Error);}
