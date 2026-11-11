@@ -1,0 +1,125 @@
+{
+  "schema": 1,
+  "privateOnly": true,
+  "sourceCommit": "939cae5855a1319161348cb9fa6b7e322c29a9ca",
+  "evidenceCommit": "2195724cd8307e7ebb71badd9599babe474b6f73",
+  "installerRebuilt": false,
+  "published": false,
+  "repositoryVisibility": "private",
+  "assets": [
+    {
+      "file": "ImAccessibility-Setup-v0.3.21-RECOVERY2.4.4-PRIVATE-PREVIEW.exe",
+      "bytes": 107410432,
+      "sha256": "30fba87af2100fe7c42ea7a9a7774b3cf7a7c1c539514883a6d0e65ebd107859",
+      "role": "Private Windows installer"
+    },
+    {
+      "file": "ImAccessibility-FFmpeg-Sources-20261107-part1.zip",
+      "bytes": 1444201250,
+      "sha256": "215a284f1fafaec6f42a91bef946cc914b6e45ae6a0f35aaec3b9e9c4ca80dc4",
+      "role": "Original dependency sources, part 1 of 2"
+    },
+    {
+      "file": "ImAccessibility-FFmpeg-Sources-20261107-part2.zip",
+      "bytes": 924879727,
+      "sha256": "caf73f180a7f19a3648fe5e4e1bdbb508605d9e0a9d183aae3cb4525878eb705",
+      "role": "Original dependency sources, part 2 of 2"
+    },
+    {
+      "file": "ImAccessibility-FFmpeg-Rebuild-20261110-Source-Appendix.zip",
+      "bytes": 44557760,
+      "sha256": "530763d054f8ba75aaf0c78fd9c7ea76486ee675f45e561f4387853bb3a167e6",
+      "role": "Required FFmpeg modifications, inputs, build scripts and evidence"
+    },
+    {
+      "file": "ImAccessibility-App-Source-939cae5855a1.zip",
+      "bytes": 15639947,
+      "sha256": "a885be000c828b6132b735a1f32b9dbbca690b903f93e961223fb0a28dd2e27e",
+      "role": "Exact application source at 939cae5855a1319161348cb9fa6b7e322c29a9ca"
+    }
+  ],
+  "verification": {
+    "appSourceArchiveFiles": 228,
+    "originalArchiveMembersRead": 746,
+    "sourceInventoryFilesVerified": 736,
+    "extraDistributionMaterials": [
+      {
+        "path": "distribution-materials/FFmpeg-Acknowledgements.txt",
+        "bytes": 1154,
+        "sha256": "f457853041335966b827994e7bef23a08e6ed9a76ae7c801ce0ae74288221952"
+      },
+      {
+        "path": "distribution-materials/FFmpeg-Build-Record.json",
+        "bytes": 5805,
+        "sha256": "76f31998f60e86d65d3513dbaf40e5e4a0731674ecf80161fb0a785b2153a6bd"
+      },
+      {
+        "path": "distribution-materials/FFmpeg-Dependency-Notices.txt",
+        "bytes": 22256671,
+        "sha256": "97edf2d876566ba8da6355dea3a53f9e7c7d991004c4cced8ca409996273ab36"
+      },
+      {
+        "path": "distribution-materials/FFmpeg-Dependency-Notices.zip",
+        "bytes": 12154059,
+        "sha256": "796ae1dc6d995de53c35fa1694ff07236b382aa466733f9ec667aff09686ecfa"
+      },
+      {
+        "path": "distribution-materials/FFmpeg-Licence-Review.json",
+        "bytes": 261108,
+        "sha256": "bc179a03bbce8ef8e7cd820746cf9a85a33cf0c5b4d60c82487de69559101d2b"
+      },
+      {
+        "path": "distribution-materials/FFmpeg-Source-Materials.json",
+        "bytes": 261188,
+        "sha256": "49c702f6cc98ffdf79a4cc7431fd45718c9dc38bceb5172f5e0523f4867faa6b"
+      },
+      {
+        "path": "distribution-materials/FFmpeg-Source-README.txt",
+        "bytes": 4229,
+        "sha256": "d94a3d3023146061c45cca0adcf39d3a9ac9c96e6b605005bec79e497657c7ec"
+      },
+      {
+        "path": "distribution-materials/Rust-COPYRIGHT-library.html",
+        "bytes": 1499465,
+        "sha256": "5647be074c8edf7339fd863055923a8fc80bc5610a8d4661ec3b767b9d392c27"
+      },
+      {
+        "path": "distribution-materials/third-party-notices/FFmpeg-Source-Materials.json",
+        "bytes": 261188,
+        "sha256": "49c702f6cc98ffdf79a4cc7431fd45718c9dc38bceb5172f5e0523f4867faa6b"
+      },
+      {
+        "path": "distribution-materials/verify-source-materials.cjs",
+        "bytes": 2525,
+        "sha256": "d41861840bc6891094b528a7ea8e92f163c837ce3b477fe5e982c4398125f272"
+      }
+    ],
+    "rebuildAppendixFilesVerified": 129,
+    "eachAssetBelowGitHubTwoGiBLimit": true
+  },
+  "limitations": [
+    "Local delivery kit only; no release asset upload or recipient download verified",
+    "Unchanged original dependency binaries reused; no independent full dependency rebuild claimed",
+    "Installer unsigned; downloaded-file SmartScreen acceptance outstanding",
+    "Human assistive-technology acceptance, physical reconnect and audible post-Stop check outstanding"
+  ],
+  "localEvidence": [
+    {
+      "file": "README.md",
+      "sha256": "bfeb63d92e6ffcfc20b33402ef9f8744b989a1fb0c08bb80e9df2abbbf4719e3"
+    },
+    {
+      "file": "assemble-kit.py",
+      "sha256": "f0781a2e846392c3189646aa73fd7d3ca1162ba0fd103cb9fb4a9fb89a5dc3e0"
+    },
+    {
+      "file": "publisher-signature.json",
+      "sha256": "2fc5359a97070c232be75532cd616c51e354dc6d0125ab00dac4e90ba8be1c12"
+    },
+    {
+      "file": "certificate-store-check.json",
+      "sha256": "15c05a317402a5a95113b0ba3ee453597b13f2d27b5ca82451c5734c7c7cfed6"
+    }
+  ],
+  "recipientDeliveryVerified": false
+}
