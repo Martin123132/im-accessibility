@@ -1,5 +1,18 @@
 # Changelog
 
+## 11 November 2026 — Recovery 2.4.5 source preview
+
+- Update an existing recognised preview in place without uninstalling, preserving settings, pairing, shortcuts and the on-demand audio-safety task.
+- Verify both packages before replacement, refuse active or uncertain sessions, and restore the previous version after caught replacement failures.
+- Retain the 2.4.4 TV/audio/discovery implementation and rebuilt FFmpeg runtime. Real Windows 11 VM update, reopening and normal uninstall passed; source suite: 278 pass, 2 expected skips, 0 fail.
+- Refresh the current-version documentation and link the remaining public-installer acceptance work. No public installer is published.
+
+## 10 November 2026 — Recovery 2.3–2.4.4 private acceptance
+
+- Package the rebuilt FFmpeg with the identified libzvbi/LittleCMS components excluded and matching source/build records retained.
+- Correct Windows VM setup/uninstall handling, shared audio clocks and recovery-journal contention.
+- Record owner-confirmed LG picture and TV-speaker sound, independent Windows VM installation lifecycle checks, and the later NVDA discovery-announcement gap.
+
 ## 26 October 2026 - LG v0.3.21 source candidate
 
 - Preserve the owner-tested Cinema H.264/AAC pipeline and live-edge playback-stutter fixes from commit e322f22.

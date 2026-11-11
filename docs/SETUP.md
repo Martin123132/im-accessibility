@@ -1,6 +1,6 @@
 # Getting started with I’m-accessibility
 
-**Current status:** a private Windows source preview, not a one-click installer. This guide lets you reproduce the safe tests before configuring any real input or video.
+**Current status:** Recovery 2.4.5 source preview. A private standalone installer has passed Windows VM installation/update checks; there is no approved public installer download. This developer guide reproduces source tests. See [current version and acceptance](CURRENT_STATUS.md).
 
 ## Requirements
 
@@ -14,7 +14,7 @@ Cloning this repository does **not** install or authorise the PC Bridge applicat
 
 ## First-run television discovery (Windows installer source)
 
-The Windows setup UI now includes **Find TVs**, which scans a user-selected trusted local network **before** any TV is paired or settings are saved. It recognises multiple TV and receiver families, while clearly distinguishing a detected device from one with an implemented connection adapter. It also retains manual IP entry.
+The Windows setup UI includes **Find TVs**, which scans a user-selected trusted local network **before** any TV is paired or settings are saved. It recognises multiple TV and receiver families, while distinguishing a detected device from one with an implemented connection adapter. The installed GUI uses discovery and selection; users do not need to type an IP address.
 
 The current owner-tested connection is LG OLED55CX6LA. Other models/brands need a validated adapter and hardware testing; the scanner cannot itself cast to them. See [TV platform support](TV_PLATFORM_SUPPORT.md).
 
@@ -25,7 +25,7 @@ The Windows installer is presently a private test build. There is no approved pu
 ~~~powershell
 git clone https://github.com/Martin123132/im-accessibility.git
 cd im-accessibility
-npm.cmd ci --prefix tv-reliability-v0.5/cast
+npm.cmd ci --prefix tv-reliability-v0.5/cast --ignore-scripts
 ~~~
 
 Use npm.cmd on Windows if PowerShell blocks npm.ps1. There is no need to change the machine’s PowerShell execution policy globally.

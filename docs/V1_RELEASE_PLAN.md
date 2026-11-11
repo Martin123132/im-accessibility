@@ -2,6 +2,8 @@
 
 The destination is a usable **I’m-accessibility v1 product**: something a new person can install, understand, use, stop and recover without needing the original engineer's laptop.
 
+**Latest evidence:** Recovery 2.4.5 has passed real Windows 11 VM update/install lifecycle checks; Recovery 2.4.4 has owner-confirmed LG picture and TV-speaker sound. [Current status](CURRENT_STATUS.md) separates completed checks from the remaining public-installer work. The broad v1 gates below are product acceptance criteria, not a claim that no component has been tested.
+
 ## Existing foundation
 
 - [x] Windows desktop displayed on a compatible LG television.
@@ -43,4 +45,4 @@ Music, YouTube, Sky, checkers, Worms, other games and voice are experimental tas
 
 Each benchmark records: task success, elapsed time, human interventions, target accuracy, recovery time, residual damage and repeatability.
 
-**Definition of done:** an independent user can set it up, safely operate a real PC, understand what the assistant is doing, stop it promptly and recover from a wrong action. Until then this remains a private preview.
+**Definition of done:** an independent user can set it up, safely operate a real PC, understand what the assistant is doing, stop it promptly and recover from a wrong action. Until then this remains a source preview with private installer acceptance builds.

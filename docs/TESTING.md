@@ -5,7 +5,7 @@ Tests should not require a personal research conversation, a live Codex submissi
 ## Restore the declared dependency
 
 ~~~powershell
-npm.cmd ci --prefix tv-reliability-v0.5/cast
+npm.cmd ci --prefix tv-reliability-v0.5/cast --ignore-scripts
 ~~~
 
 ## Run all safe tests
@@ -15,7 +15,7 @@ npm.cmd run check:source
 npm.cmd test
 ~~~
 
-**npm test** runs only the known TV and Codex test files; it excludes live-readonly-smoke and any real Codex submission. Windows GitHub Actions uses the same commands after restoring the pinned TV dependency. The existing checkpoint recorded 37 passed, 0 failed and 2 live-HLS skips.
+**npm test** runs only the known safe suites; it excludes live-readonly-smoke and any real Codex submission. Windows GitHub Actions uses the same commands after restoring the pinned TV dependency. The Recovery 2.4.5 Windows result is **278 passed, 0 failed and 2 expected live-HLS skips**. It includes the actual C# updater transaction with disposable fixtures. See the [update evidence](PRIVATE_UPDATE_2_4_5_2026-11-11.md) and [current acceptance](CURRENT_STATUS.md).
 
 ## Run the Codex safety suite
 
@@ -31,7 +31,7 @@ node --test .\tv-reliability-v0.5\tests\session-policy.test.cjs
 
 Also run the explicit **\*.test.cjs** files in **tv-reliability-v0.5/viewer/tests/**. Avoid including the separate live-readonly-smoke script in a default test glob.
 
-## Isolated checkpoint results
+## Historical initial checkpoint
 
 | Result | Number |
 | --- | ---: |

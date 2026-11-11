@@ -8,7 +8,7 @@
 
 **Public source preview · Windows-to-TV across brands (LG connection prototype) · Human-led AI assistance**
 
-[Current recovery acceptance](docs/TV_SELECTION_RECOVERY_2026-11-09.md) · [Get started](docs/SETUP.md) · [Features](docs/FEATURES.md) · [V1 release plan](docs/V1_RELEASE_PLAN.md) · [Safety](docs/SECURITY.md)
+[Current version and acceptance](docs/CURRENT_STATUS.md) · [Get started](docs/SETUP.md) · [Features](docs/FEATURES.md) · [V1 release plan](docs/V1_RELEASE_PLAN.md) · [Safety](docs/SECURITY.md)
 
 </div>
 
@@ -16,11 +16,11 @@
 
 ## Which version is current?
 
-**November 9 source preview: LG v0.3.21 Recovery 2.2.** This checkout includes the recovery fixes used in the private Windows installer: TV selection with preserved settings, Windows audio setup, graceful Stop/Uninstall handling, and an independent audio guardian that opens no black console window. The owner installed Recovery 2.2 and confirmed desktop picture and sound on the LG OLED55CX6LA, no black window, and Stop with laptop sound restored. Recovery 2.1 also passed shortcut reopen/reconnect and normal uninstall. See the [acceptance record and exact installer hash](docs/TV_SELECTION_RECOVERY_2026-11-09.md).
+**11 November source preview: Recovery 2.4.5.** The latest installer supports updating an existing 2.4.4 installation without uninstalling it, while retaining TV pairing, settings, shortcuts and the on-demand audio-safety task. This update was exercised through the ordinary installer UI in a separate Windows 11 VM. The full source suite passed **278 tests, with 2 expected skips and 0 failures**. See the [update evidence and exact installer hash](docs/PRIVATE_UPDATE_2_4_5_2026-11-11.md).
 
-**There is no approved public installer download yet.** The [completed dependency review](docs/LICENCE_REVIEW_2026-11-09.md) resolves the missing build record and verifies the retained sources/notices, but identifies a concrete libzvbi licence blocker in the current vendor-labelled LGPL runtime. The working Recovery 2.2 installation is preserved; a narrow future-build patch is supplied separately. Latest source tests: **270 passed, 2 expected skips, 0 failures**. Signing/SmartScreen, Windows 11, human screen-reader acceptance, a genuinely isolated Windows user/VM install test and physical DHCP renewal remain unverified. These results do not establish support for other TV models.
+**The latest physical result is Recovery 2.4.4:** the owner confirmed the Windows VM picture and TV-speaker sound on the LG OLED55CX6LA, then reported the laptop installation working. Version 2.4.5 retains the same TV/audio/discovery code and runtime binaries; its new acceptance covers updating, reopening and uninstalling. These results do not establish support for other TV models.
 
-**Earlier [draft PR #24](https://github.com/Martin123132/im-accessibility/pull/24)** contains the v0.3.17 browser-memory/one-click source candidate. It remains a historical development review alongside the later v0.3.21 source until the repo maintainer resolves its status. GitHub updates do **not** replace the owner's installed Windows/LG setup.
+**There is no approved public installer download yet.** Source is available for inspection and development. The [rebuilt FFmpeg](docs/FFMPEG_PRIVATE_REBUILD_2026-11-10.md) excludes the libraries identified in the older runtime review, and the matching source/build materials are retained. Remaining public-installer work is recorded explicitly in [current status](docs/CURRENT_STATUS.md): the observed screen-reader discovery announcement gap, broader human accessibility acceptance, signing and the real download experience, and recipient access to the matching third-party sources. Do not use historical draft packages as a supported release.
 
 The [October source checkpoint](docs/OWNER_TESTED_LG_SOURCE_2026-10-26.md) and [earlier working-version history](docs/WHAT_IS_WORKING_2026-10-25.md) remain available for comparison.
 
@@ -101,7 +101,7 @@ On Windows with Node.js 24 installed:
 ~~~powershell
 git clone https://github.com/Martin123132/im-accessibility.git
 cd im-accessibility
-npm.cmd ci --prefix tv-reliability-v0.5/cast
+npm.cmd ci --prefix tv-reliability-v0.5/cast --ignore-scripts
 npm.cmd run doctor
 npm.cmd test
 ~~~
