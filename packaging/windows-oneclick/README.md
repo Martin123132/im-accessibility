@@ -21,6 +21,7 @@ This does **not** establish full Windows 11 compatibility, signed-download trust
 ## Source components
 
 - `ImAccessibilitySetup.cs`: the one-file GUI installer that embeds an authenticated file inventory and checks every unpacked SHA-256 before completing a per-user installation. It creates desktop and Start Menu shortcuts and an uninstall entry after installation.
+- `InstallUpdate.cs`: the in-place update path. A newer installer offers **Update I'm-accessibility**, keeps saved settings, pairing, shortcuts and the existing on-demand audio task, and closes an idle app normally. An active stream must be stopped first. It verifies both packages before replacement and restores the previous version if a caught replacement error occurs.
 - `ImAccessibilityApp.cs`: Windows Forms app for explicitly selecting a LAN adapter and discovered LG TV, saving first-run settings and requesting an explicitly confirmed TV Start or Stop.
 - `ImAccessibilityUninstall.cs`: per-user uninstaller, with owner-settings preservation and refusal if a TV session is active, if unknown files are present, or if installed payload hashes differ from the receipt.
 - `gui-config-bridge.cjs`: a narrow allowlisted local interface that delegates to the existing validated Node setup, launch, status and stop modules. No arbitrary command/shell bridge.
@@ -66,3 +67,9 @@ All examples and source files are generic. Do not store personal `settings.json`
 Both Windows GUIs now consume the same current-lease, live-session status. First-run setup requires explicit choice when several physical private NICs are present, and the GUI can opt into the on-demand audio-restoration task with an explained confirmation. Existing settings are preserved.
 
 See [source hardening evidence and release gates](../../docs/SOURCE_HARDENING_2026-11-09.md). The reproducible disposable-profile test is `test-isolated-install.cjs`; it never uses the owner installation's tree and does not register real tasks, shortcuts or registry entries. This remains a private binary preview pending the listed distribution and physical acceptance gates.
+
+## Updating an installed private preview
+
+From Recovery 2.4.5, open the newer installer and choose **Update I'm-accessibility**. Do not uninstall the previous version. If a TV stream is running, choose **Stop TV stream** in the app first and wait for laptop sound to return. The updater closes an idle app, checks the replacement files, and keeps the saved TV setup and existing shortcuts. Opening the same installer again offers **Open installed app**; an older installer cannot downgrade a newer recognised build.
+
+The update is for recognised per-user previews with a valid installation receipt. Modified or unexpected files, unfinished audio recovery and linked installation folders cause a clear refusal without replacing the app. Recovery covers caught replacement failures; sudden power loss during the directory exchange has not been accepted as an automatic recovery scenario. `installer-update.test.cjs` exercises the real C# transaction with marked disposable fixtures, including both rollback points and active-service refusals.

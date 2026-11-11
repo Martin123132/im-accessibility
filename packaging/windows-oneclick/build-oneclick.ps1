@@ -37,7 +37,7 @@ if($isRebuilt){
   if((Get-FileHash -LiteralPath $pin[0] -Algorithm SHA256).Hash.ToLowerInvariant() -cne $pin[1]){throw 'Rebuilt preview runtime/licence inputs do not match verified pins'}
  }
 }
-$recoveryTag=if($isRebuilt){'RECOVERY2.4.4'}else{'RECOVERY2.2'}
+$recoveryTag=if($isRebuilt){'RECOVERY2.4.5'}else{'RECOVERY2.2'}
 $buildId=if($isRebuilt){$rebuiltPins.buildId}else{'recovery2.2-original-runtime'}
 $nodeVersion=(& $NodeExe -p 'process.version' | Out-String).Trim()
 if($LASTEXITCODE -ne 0 -or $nodeVersion -notmatch '^v24\.'){throw ('Expected tested Node 24, got '+$nodeVersion)}
@@ -135,7 +135,7 @@ function Compile-Exe([string]$sourceFile,[string]$outputName,[string[]]$referenc
  if($isRebuilt){$argsList+='/define:REBUILT_FFMPEG_PRIVATE'}
  foreach($ref in $references){$argsList+=('/reference:'+$ref)}
  $argsList+=(Join-Path $source $sourceFile)
- if($sourceFile -eq 'ImAccessibilityUninstall.cs'){$argsList+=(Join-Path $source 'InstallSafety.cs')}
+ if($sourceFile -in @('ImAccessibilityUninstall.cs','ImAccessibilityApp.cs')){$argsList+=(Join-Path $source 'InstallSafety.cs')}
  & $csc @argsList
  if($LASTEXITCODE -ne 0){throw ('C# failed to compile '+$sourceFile)}
 }
@@ -182,6 +182,7 @@ foreach($ref in @('System.Windows.Forms.dll','System.Drawing.dll','System.Web.Ex
 }
 $compilerArgs+=('/resource:'+$zip+',ImAccessibilityInstallerPayload')
 $compilerArgs+=(Join-Path $source 'ImAccessibilitySetup.cs')
+$compilerArgs+=(Join-Path $source 'InstallUpdate.cs')
 $compilerArgs+=(Join-Path $source 'InstallSafety.cs')
 & $csc @compilerArgs
 if($LASTEXITCODE -ne 0){throw 'Windows installer EXE compiler failed'}

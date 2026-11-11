@@ -33,7 +33,7 @@ setTimeout(()=>process.exit(3),60000).unref();`);
   else{
    const csc=path.join(process.env.WINDIR,'Microsoft.NET/Framework64/v4.0.30319/csc.exe');
    const compiled=cp.spawnSync(csc,['/nologo','/target:winexe','/platform:x64','/out:'+app,
-    ...['System.Windows.Forms.dll','System.Drawing.dll','System.Web.Extensions.dll'].map(x=>'/reference:'+x),path.join(__dirname,'ImAccessibilityApp.cs')],{encoding:'utf8',windowsHide:true,timeout:25000});
+    ...['System.Windows.Forms.dll','System.Drawing.dll','System.Web.Extensions.dll'].map(x=>'/reference:'+x),path.join(__dirname,'ImAccessibilityApp.cs'),path.join(__dirname,'InstallSafety.cs')],{encoding:'utf8',windowsHide:true,timeout:25000});
    assert.equal(compiled.status,0,compiled.stdout+compiled.stderr);
   }
   fs.copyFileSync(path.join(__dirname,'audio-guard-task.ps1'),script);

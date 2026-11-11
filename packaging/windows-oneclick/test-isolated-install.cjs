@@ -50,7 +50,7 @@ function main(setup,output,ffprobe){
   }
   const a11y=JSON.parse(gui(path.join(app,'ImAccessibility.exe'),'--accessibility-selftest','accessibility',/"allNamed":true/));
   assert.equal(a11y.tabOrderValid,true);assert.equal(a11y.allTabStops,true);
-  if(rebuilt){assert.match(a11y.window,/Recovery 2\.4\.4/);checks.push('distinct-recovery-2.4.4-title');}
+  if(rebuilt){assert.match(a11y.window,/Recovery 2\.4\.5/);checks.push('distinct-recovery-2.4.5-title');}
   const guardianStatus=node(`const cp=require('node:child_process'),path=require('node:path');const r=cp.spawnSync(path.join(process.env.SystemRoot,'System32/WindowsPowerShell/v1.0/powershell.exe'),['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',${JSON.stringify(path.join(app,'audio-guard-task.ps1'))},'-Action','Status'],{encoding:'utf8',windowsHide:true,timeout:12000});if(r.status!==0)throw Error(r.stderr);console.log(r.stdout);`);
   assert.equal(JSON.parse(guardianStatus).installed,false);checks.push('packaged-audio-guardian-status');
   const first=path.join(app,'first-run.cjs');
@@ -81,7 +81,7 @@ function main(setup,output,ffprobe){
    const receipt=path.join(app,'installer-manifest.json'),originalReceipt=fs.readFileSync(receipt);
    try{
     const previous=JSON.parse(originalReceipt);delete previous.buildId;fs.writeFileSync(receipt,JSON.stringify(previous));
-    gui(setup,'--test-existing','older-preview-preserved-not-opened',/^FAILED .*different private preview/s);
+    gui(setup,'--test-existing','older-preview-offers-update-not-open',/^FAILED .*older preview.*Choose Update/s);
    }finally{fs.writeFileSync(receipt,originalReceipt);}
   }
   const appExe=path.join(app,'ImAccessibility.exe'),appBytes=fs.readFileSync(appExe);

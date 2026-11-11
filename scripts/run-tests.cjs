@@ -42,6 +42,7 @@ const packageTests=[
  'packaging/tests/gui-save-guard.test.cjs',
  'packaging/windows-oneclick/discover-setup.test.cjs',
  'packaging/windows-oneclick/installer-source.test.cjs',
+ 'packaging/windows-oneclick/installer-update.test.cjs',
  'packaging/windows-oneclick/audit-release.test.cjs',
  'packaging/windows-oneclick/verify-source-materials.test.cjs',
  'packaging/windows-oneclick/native-source.test.cjs'

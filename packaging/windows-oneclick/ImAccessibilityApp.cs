@@ -115,7 +115,7 @@ if(op=="start"&&File.Exists(encoderProfile)){
    readonly System.Windows.Forms.Timer healthPoll=new System.Windows.Forms.Timer();
   public MainWindow(){
 #if REBUILT_FFMPEG_PRIVATE
-   Text="I'm-accessibility - Recovery 2.4.4 Private Preview";
+   Text="I'm-accessibility - Recovery 2.4.5 Private Preview";
 #else
    Text="I'm-accessibility - Recovery 2.2 Private Preview";
 #endif
@@ -470,6 +470,9 @@ if(op=="start"&&File.Exists(encoderProfile)){
  }
  static class Program{
   [STAThread] static void Main(string[] args){
+   if(args.Length==0&&ImAccessibilitySafety.InstallSafety.UpdateInProgress(Engine.Root)){
+    MessageBox.Show("An update is in progress. Open I'm-accessibility when it finishes.","Update in progress",MessageBoxButtons.OK,MessageBoxIcon.Information);return;
+   }
    if(args.Length>0&&args[0]=="--audio-guardian"){
     Environment.ExitCode=args.Length==1?Engine.RunAudioGuardian():2;return;
    }

@@ -10,8 +10,8 @@ test('Windows GUIs compile; installed app exposes named keyboard-accessible cont
  const csc=path.join(process.env.WINDIR,'Microsoft.NET/Framework64/v4.0.30319/csc.exe');
  try{
   for(const [name,files,refs] of [
-   ['App',['windows-oneclick/ImAccessibilityApp.cs'],['System.Windows.Forms.dll','System.Drawing.dll','System.Web.Extensions.dll']],
-   ['Setup',['windows-oneclick/ImAccessibilitySetup.cs','windows-oneclick/InstallSafety.cs'],['System.Windows.Forms.dll','System.Drawing.dll','System.Web.Extensions.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll','Microsoft.CSharp.dll']],
+   ['App',['windows-oneclick/ImAccessibilityApp.cs','windows-oneclick/InstallSafety.cs'],['System.Windows.Forms.dll','System.Drawing.dll','System.Web.Extensions.dll']],
+   ['Setup',['windows-oneclick/ImAccessibilitySetup.cs','windows-oneclick/InstallUpdate.cs','windows-oneclick/InstallSafety.cs'],['System.Windows.Forms.dll','System.Drawing.dll','System.Web.Extensions.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll','Microsoft.CSharp.dll']],
    ['Uninstall',['windows-oneclick/ImAccessibilityUninstall.cs','windows-oneclick/InstallSafety.cs'],['System.Windows.Forms.dll','System.Web.Extensions.dll']],
    ['Panel',['windows-control-panel/TVControls.cs','windows-control-panel/TVFinderDialog.cs'],['System.Windows.Forms.dll','System.Drawing.dll','System.Web.Extensions.dll','Microsoft.CSharp.dll']]
   ]){
@@ -49,7 +49,7 @@ class StopGate {
 }`);
   const compiled=cp.spawnSync(csc,['/nologo','/target:exe','/main:StopGate','/out:'+gate,
    ...['System.Windows.Forms.dll','System.Drawing.dll','System.Web.Extensions.dll'].map(x=>'/reference:'+x),
-   path.join(repo,'packaging/windows-oneclick/ImAccessibilityApp.cs'),harness],{encoding:'utf8',windowsHide:true,timeout:25000});
+   path.join(repo,'packaging/windows-oneclick/ImAccessibilityApp.cs'),path.join(repo,'packaging/windows-oneclick/InstallSafety.cs'),harness],{encoding:'utf8',windowsHide:true,timeout:25000});
   assert.equal(compiled.status,0,compiled.stdout+compiled.stderr);
   const gated=cp.spawnSync(gate,[],{encoding:'utf8',windowsHide:true,timeout:10000});
   assert.equal(gated.status,0,gated.stdout+gated.stderr);assert.match(gated.stdout,/PASS stop\/close\/uninstall/);
@@ -108,7 +108,7 @@ class Selection {
   const csc=path.join(process.env.WINDIR,'Microsoft.NET/Framework64/v4.0.30319/csc.exe');
   const built=cp.spawnSync(csc,['/nologo','/target:exe','/main:Selection','/out:'+exe,
    ...['System.Windows.Forms.dll','System.Drawing.dll','System.Web.Extensions.dll'].map(x=>'/reference:'+x),
-   path.join(repo,'packaging/windows-oneclick/ImAccessibilityApp.cs'),harness],{encoding:'utf8',windowsHide:true,timeout:25000});
+   path.join(repo,'packaging/windows-oneclick/ImAccessibilityApp.cs'),path.join(repo,'packaging/windows-oneclick/InstallSafety.cs'),harness],{encoding:'utf8',windowsHide:true,timeout:25000});
   assert.equal(built.status,0,built.stdout+built.stderr);
   const run=cp.spawnSync(exe,[],{env:{...process.env,LOCALAPPDATA:profile},encoding:'utf8',windowsHide:true,timeout:40000});
   assert.equal(run.status,0,run.stdout+run.stderr);assert.match(run.stdout,/PASS preserved-settings/);
